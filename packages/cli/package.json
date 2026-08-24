@@ -1,0 +1,23 @@
+{
+  "name": "ddt",
+  "version": "1.0.0",
+  "description": "Daily Dashboard Tracker — local-first personal ledger dashboard",
+  "type": "module",
+  "bin": {
+    "ddt": "./dist/cli.js"
+  },
+  "main": "dist/cli.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@ddt/server": "workspace:*",
+    "commander": "^13.1.0",
+    "open": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}

@@ -141,3 +141,13 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# DDT custom ignores
+DDT/
+.obsidian/
+dist/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+

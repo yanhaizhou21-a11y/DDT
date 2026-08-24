@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --paper: #F6F4EE;
+    --ink: #232019;
+    --ink-soft: #6B6455;
+    --ledger-blue: #2F4858;
+    --stamp-red: #A83A34;
+    --rule: #DDD7C7;
+    --card: #FFFDF8;
+  }
+
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Accessibility focus ring (§6 in design.md) */
+  :focus-visible {
+    outline: 2px solid var(--ledger-blue);
+    outline-offset: 2px;
+  }
+
+  /* Thin scrollbar to match ledger feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--rule);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-soft);
+  }
+}
+
+@layer components {
+  .ledger-card {
+    background-color: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+
+  .ledger-header {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+  }
+
+  .ledger-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}

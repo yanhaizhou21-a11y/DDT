@@ -10,6 +10,7 @@ import {
 import { Header } from '../components/Header';
 import { DotLedger } from '../components/DotLedger';
 import { EmptyState } from '../components/EmptyState';
+import { ConfirmDialog } from '../components/AlertDialog';
 import {
   Utensils,
   Plus,
@@ -43,6 +44,8 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
   });
   const [historyMap, setHistoryMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [itemToDelete, setItemToDelete] = useState<FoodEntry | null>(null);
+
 
   // Quick Inline Add state
   const [newItemName, setNewItemName] = useState('');
@@ -107,14 +110,21 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (item: FoodEntry) => {
+    setItemToDelete(item);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await deleteFoodEntry(id);
+      await deleteFoodEntry(itemToDelete.id);
+      setItemToDelete(null);
       loadData(selectedDate);
     } catch (err) {
       console.error(err);
     }
   };
+
 
   const jumpDay = (offset: number) => {
     const d = new Date(selectedDate + 'T00:00:00');
@@ -348,7 +358,7 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
                           {item.status}
                         </span>
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDeleteClick(item)}
                           className="p-1 text-ink-soft hover:text-stamp-red opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Delete entry"
                         >
@@ -375,7 +385,24 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
           );
         })}
       </div>
+
+      {/* Confirmation Dialog for Food Log Deletion */}
+      <ConfirmDialog
+        isOpen={itemToDelete !== null}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Food Entry?"
+        description={
+          itemToDelete
+            ? `Are you sure you want to remove "${itemToDelete.itemName}" from your food log?`
+            : ''
+        }
+        confirmText="Delete Entry"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };
+
 

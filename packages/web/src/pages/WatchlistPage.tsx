@@ -10,7 +10,9 @@ import {
 } from '../api';
 import { Header } from '../components/Header';
 import { Modal } from '../components/Modal';
+import { ConfirmDialog } from '../components/AlertDialog';
 import { EmptyState } from '../components/EmptyState';
+
 import {
   Film,
   Search,
@@ -97,6 +99,8 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
   const [selectedItem, setSelectedItem] = useState<WatchlistItem | null>(null);
   const [editPosterUrl, setEditPosterUrl] = useState('');
   const [savingPoster, setSavingPoster] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<WatchlistItem | null>(null);
+
 
 
   const loadData = async () => {
@@ -219,15 +223,22 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (item: WatchlistItem) => {
+    setItemToDelete(item);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await deleteWatchlistItem(id);
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      if (selectedItem?.id === id) setSelectedItem(null);
+      await deleteWatchlistItem(itemToDelete.id);
+      setItems((prev) => prev.filter((item) => item.id !== itemToDelete.id));
+      if (selectedItem?.id === itemToDelete.id) setSelectedItem(null);
+      setItemToDelete(null);
     } catch (err) {
       console.error(err);
     }
   };
+
 
 
   // Filter items
@@ -457,12 +468,13 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                 </div>
 
                 <button
-                  onClick={() => handleDelete(item.id)}
+                  onClick={() => handleDeleteClick(item)}
                   className="p-1 text-ink-soft hover:text-stamp-red opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Remove from list"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
+
               </div>
             );
           })}
@@ -897,7 +909,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
             <div className="flex justify-between items-center pt-2 border-t border-rule">
               <button
                 type="button"
-                onClick={() => handleDelete(selectedItem.id)}
+                onClick={() => handleDeleteClick(selectedItem)}
                 className="px-3 py-1.5 text-xs text-stamp-red hover:underline font-mono"
               >
                 Delete Title
@@ -913,7 +925,24 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
           </div>
         </Modal>
       )}
+
+      {/* Confirmation Dialog for Watchlist Item Deletion */}
+      <ConfirmDialog
+        isOpen={itemToDelete !== null}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Remove Title from Watchlist?"
+        description={
+          itemToDelete
+            ? `Are you sure you want to delete "${itemToDelete.title}" (${itemToDelete.releaseDate?.slice(0, 4) || itemToDelete.mediaType}) from your watchlist?`
+            : ''
+        }
+        confirmText="Delete Title"
+        cancelText="Keep in Watchlist"
+        variant="danger"
+      />
     </div>
   );
 };
+
 

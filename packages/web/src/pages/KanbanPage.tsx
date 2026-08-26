@@ -12,7 +12,9 @@ import {
 } from '../api';
 import { Header } from '../components/Header';
 import { Modal } from '../components/Modal';
+import { ConfirmDialog } from '../components/AlertDialog';
 import {
+
   DndContext,
   closestCorners,
   KeyboardSensor,
@@ -162,7 +164,12 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
   const [colName, setColName] = useState('');
   const [editingCol, setEditingCol] = useState<KanbanColumn | null>(null);
 
+  // Confirm delete states
+  const [colToDelete, setColToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [cardToDelete, setCardToDelete] = useState<{ id: string; title: string } | null>(null);
+
   const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -343,15 +350,21 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
     }
   };
 
-  const handleDeleteColumn = async (id: string) => {
-    if (!confirm('Delete this column and all cards inside it?')) return;
+  const handleDeleteColumn = (id: string, name: string) => {
+    setColToDelete({ id, name });
+  };
+
+  const handleConfirmDeleteColumn = async () => {
+    if (!colToDelete) return;
     try {
-      await deleteKanbanColumn(id);
+      await deleteKanbanColumn(colToDelete.id);
+      setColToDelete(null);
       loadData();
     } catch (err) {
       console.error(err);
     }
   };
+
 
   return (
     <div className="space-y-6">
@@ -422,13 +435,14 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
                       </button>
                       {columns.length > 1 && (
                         <button
-                          onClick={() => handleDeleteColumn(col.id)}
+                          onClick={() => handleDeleteColumn(col.id, col.name)}
                           className="p-1 text-ink-soft hover:text-stamp-red hover:bg-paper rounded transition-colors"
                           title="Delete column"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
+
                     </div>
                   </div>
 
@@ -600,6 +614,23 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Confirmation Dialog for Column Deletion */}
+      <ConfirmDialog
+        isOpen={colToDelete !== null}
+        onClose={() => setColToDelete(null)}
+        onConfirm={handleConfirmDeleteColumn}
+        title="Delete Kanban Column?"
+        description={
+          colToDelete
+            ? `Are you sure you want to delete the column "${colToDelete.name}" and all cards inside it? This action cannot be undone.`
+            : ''
+        }
+        confirmText="Delete Column"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };
+

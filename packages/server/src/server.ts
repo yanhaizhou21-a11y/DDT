@@ -59,14 +59,29 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
 
   let staticPath = possibleStaticPaths.find((p) => fs.existsSync(p));
   if (staticPath) {
-    app.use(express.static(staticPath));
+    app.use(
+      express.static(staticPath, {
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('.html')) {
+            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+          }
+        },
+      })
+    );
+
     app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api')) {
+      if (req.path.startsWith('/api') || req.path.startsWith('/assets/')) {
         return next();
       }
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       res.sendFile(path.join(staticPath!, 'index.html'));
     });
   }
 
   return { app, db, client, dbPath };
 }
+

@@ -44,9 +44,12 @@ export function createGamesRouter(db: AppDatabase): Router {
       }
 
       res.json({
-        totalHours: Math.round(totalHours * 10) / 10,
-        thisWeekHours: Math.round(thisWeekHours * 10) / 10,
-        topGameThisWeek,
+        totalHours: Math.round(totalHours * 100) / 100,
+        thisWeekHours: Math.round(thisWeekHours * 100) / 100,
+        topGameThisWeek: topGameThisWeek ? {
+          name: topGameThisWeek.name,
+          hours: Math.round(topGameThisWeek.hours * 100) / 100,
+        } : null,
         historyMap,
       });
     } catch (err: any) {

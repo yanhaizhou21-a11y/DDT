@@ -105,10 +105,12 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
       const total = h + m / 60;
       return Math.round(total * 100) / 100;
     } else {
-      const val = parseFloat(decimalHours) || 0;
+      const normalized = String(decimalHours).replace(',', '.');
+      const val = Math.max(0, parseFloat(normalized) || 0);
       return Math.round(val * 100) / 100;
     }
   };
+
 
   const handleOpenAddModal = (presetGame?: { name: string; coverUrl: string | null }) => {
     if (presetGame) {
@@ -669,11 +671,11 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
               <div className="space-y-2.5">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] text-ink-soft font-mono mb-1">Hours</label>
+                    <label className="block text-[11px] text-ink-soft font-mono mb-1">Hours (up to 10,000)</label>
                     <input
                       type="number"
                       min="0"
-                      max="24"
+                      max="10000"
                       value={inputHours}
                       onChange={(e) => setInputHours(e.target.value)}
                       className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-hidden"
@@ -694,7 +696,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                   </div>
                 </div>
 
-                {/* Quick Minute Increments */}
+                {/* Quick Minute & Hour Increments */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[11px] text-ink-soft font-mono mr-1">Quick Add:</span>
                   {[15, 30, 45, 60].map((m) => (
@@ -711,6 +713,19 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                       className="px-2 py-0.5 rounded bg-paper hover:bg-card border border-rule text-xs font-mono text-ink transition-colors"
                     >
                       +{m}m
+                    </button>
+                  ))}
+                  {[5, 10, 50, 100].map((h) => (
+                    <button
+                      key={`h-${h}`}
+                      type="button"
+                      onClick={() => {
+                        const curH = parseInt(inputHours, 10) || 0;
+                        setInputHours(String(curH + h));
+                      }}
+                      className="px-2 py-0.5 rounded bg-paper hover:bg-card border border-rule text-xs font-mono text-ink transition-colors"
+                    >
+                      +{h}h
                     </button>
                   ))}
                   <button
@@ -733,9 +748,10 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                 <div>
                   <input
                     type="number"
-                    step="0.05"
-                    min="0.05"
-                    max="24"
+                    step="any"
+                    min="0.01"
+                    max="10000"
+                    placeholder="e.g. 252.5"
                     value={decimalHours}
                     onChange={(e) => setDecimalHours(e.target.value)}
                     className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-hidden"
@@ -744,12 +760,13 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
 
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[11px] text-ink-soft font-mono mr-1">Quick Add:</span>
-                  {[0.25, 0.5, 1.0, 2.0].map((h) => (
+                  {[0.5, 1.0, 5.0, 10.0, 50.0, 100.0].map((h) => (
                     <button
                       key={h}
                       type="button"
                       onClick={() => {
-                        const cur = parseFloat(decimalHours) || 0;
+                        const normalized = String(decimalHours).replace(',', '.');
+                        const cur = parseFloat(normalized) || 0;
                         setDecimalHours((cur + h).toFixed(2));
                       }}
                       className="px-2 py-0.5 rounded bg-paper hover:bg-card border border-rule text-xs font-mono text-ink transition-colors"
@@ -757,9 +774,17 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                       +{h}h
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => setDecimalHours('0.0')}
+                    className="px-2 py-0.5 rounded bg-paper hover:bg-stamp-light text-stamp-red border border-rule text-xs font-mono ml-auto"
+                  >
+                    Reset
+                  </button>
                 </div>
               </div>
             )}
+
 
             {/* Calculated Output Indicator */}
             <div className="p-3 rounded-lg bg-ledger-light/60 border border-ledger-blue/20 flex items-center justify-between">

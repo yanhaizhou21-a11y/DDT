@@ -393,10 +393,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   <input
                     type="number"
                     min="0"
-                    max="24"
+                    max="10000"
                     value={quickGameHours}
                     onChange={(e) => setQuickGameHours(e.target.value)}
-                    className="w-12 px-2 py-1 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden text-center"
+                    className="w-16 px-2 py-1 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden text-center"
                     placeholder="h"
                   />
                   <span className="text-xs font-mono text-ink-soft">h</span>

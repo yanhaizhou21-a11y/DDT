@@ -23,7 +23,9 @@ import {
   CheckCircle2,
   Clock,
   RotateCcw,
+  Save,
 } from 'lucide-react';
+
 import { cn } from '../lib/utils';
 
 export interface RichTextEditorProps {
@@ -283,25 +285,8 @@ export function RichTextEditor({
           </button>
         </div>
 
-        {/* View Mode Pills & Status */}
-        <div className="flex items-center gap-2">
-          {/* Save status badge */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-ink-soft font-mono">
-            {saveStatus === 'saving' ? (
-              <span className="flex items-center gap-1 text-gold">
-                <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
-                Saving...
-              </span>
-            ) : saveStatus === 'saved' ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Saved
-              </span>
-            ) : (
-              <span className="text-ink-soft opacity-60">Unsaved</span>
-            )}
-          </div>
-
+        {/* View Mode Pills, Save Status & Action */}
+        <div className="flex items-center gap-2.5">
           {/* Mode Switcher */}
           <div className="flex items-center p-0.5 rounded-lg bg-paper border border-rule">
             <button
@@ -344,8 +329,30 @@ export function RichTextEditor({
               <span className="hidden md:inline">Preview</span>
             </button>
           </div>
+
+          {/* Prominent Save Button */}
+          {onSave && (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saveStatus === 'saving'}
+              title="Save Entry (Ctrl+S)"
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all shadow-xs active:scale-95 disabled:opacity-50',
+                saveStatus === 'saving'
+                  ? 'bg-gold-light text-ink border border-gold/40'
+                  : saveStatus === 'saved'
+                  ? 'bg-ledger-blue text-paper hover:bg-ledger-hover'
+                  : 'bg-ledger-blue text-paper hover:bg-ledger-hover ring-2 ring-gold/50'
+              )}
+            >
+              <Save className={cn('w-3.5 h-3.5', saveStatus === 'saving' && 'animate-spin')} />
+              <span>{saveStatus === 'saving' ? 'Saving...' : 'Save Entry'}</span>
+            </button>
+          )}
         </div>
       </div>
+
 
       {/* Editor Body */}
       <div className="flex-1 grid min-h-[380px]" style={{ gridTemplateColumns: viewMode === 'split' ? '1fr 1fr' : '1fr' }}>
@@ -402,12 +409,26 @@ export function RichTextEditor({
           </span>
         </div>
 
-        {lastSavedAt && (
-          <div className="text-[11px] opacity-75">
-            Last saved: {new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {lastSavedAt && (
+            <div className="text-[11px] opacity-75">
+              Saved: {new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
+          {onSave && (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saveStatus === 'saving'}
+              className="text-[11px] font-mono text-ledger-blue hover:underline flex items-center gap-1"
+            >
+              <Save className="w-3 h-3" />
+              <span>Save (Ctrl+S)</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+

@@ -380,13 +380,13 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                     <img
                       src={item.posterPath}
                       alt={item.title}
-                      onClick={() => setSelectedItem(item)}
-                      className="w-16 h-24 object-cover rounded-[4px] border border-rule flex-shrink-0 cursor-pointer shadow-xs hover:opacity-90 transition-opacity"
+                      onClick={() => handleSelectItem(item)}
+                      className="w-16 h-24 object-cover rounded-md border border-rule shrink-0 cursor-pointer shadow-xs hover:opacity-90 transition-opacity"
                     />
                   ) : (
                     <div
-                      onClick={() => setSelectedItem(item)}
-                      className="w-16 h-24 bg-paper/80 border border-rule rounded-[4px] flex flex-col items-center justify-center text-xs text-ink-soft flex-shrink-0 cursor-pointer hover:bg-paper"
+                      onClick={() => handleSelectItem(item)}
+                      className="w-16 h-24 bg-paper/80 border border-rule rounded-md flex flex-col items-center justify-center text-xs text-ink-soft shrink-0 cursor-pointer hover:bg-paper"
                     >
                       {item.mediaType === 'tv' ? <Tv className="w-5 h-5 mb-1 text-ledger-blue" /> : <Film className="w-5 h-5 mb-1 text-ledger-blue" />}
                       <span className="text-[9px] font-mono uppercase tracking-wider text-ink-soft">
@@ -398,13 +398,14 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
                       <h3
-                        onClick={() => setSelectedItem(item)}
+                        onClick={() => handleSelectItem(item)}
                         className="text-sm font-semibold text-ink leading-tight truncate cursor-pointer hover:text-ledger-blue transition-colors"
                         title={item.title}
                       >
                         {item.title}
                       </h3>
                     </div>
+
 
                     <div className="flex items-center gap-2 mt-1 text-[11px] font-mono text-ink-soft">
                       <span className="uppercase font-semibold">{item.mediaType || 'Movie'}</span>

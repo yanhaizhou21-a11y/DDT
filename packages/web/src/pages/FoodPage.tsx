@@ -23,6 +23,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 
 interface FoodPageProps {
@@ -115,7 +117,7 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
   };
 
   const jumpDay = (offset: number) => {
-    const d = new Date(selectedDate);
+    const d = new Date(selectedDate + 'T00:00:00');
     d.setDate(d.getDate() + offset);
     setSelectedDate(d.toISOString().slice(0, 10));
   };
@@ -126,6 +128,9 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
     { tag: 'dinner', label: 'Dinner', icon: Moon },
     { tag: 'snack', label: 'Snacks & Drinks', icon: Cookie },
   ];
+
+  const totalEaten = groupedFood.all.filter((f) => f.status === 'eaten').length;
+  const totalWant = groupedFood.all.filter((f) => f.status === 'want').length;
 
   return (
     <div className="space-y-6">
@@ -139,7 +144,7 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
           {selectedDate !== todayStr && (
             <button
               onClick={() => setSelectedDate(todayStr)}
-              className="px-2.5 py-1 bg-card border border-rule hover:border-ink-soft rounded text-xs font-mono text-ink transition-colors"
+              className="px-3 py-1 bg-card border border-rule hover:border-ink-soft rounded-[4px] text-xs font-mono text-ink active:scale-95 transition-all shadow-xs"
             >
               Today
             </button>
@@ -147,32 +152,37 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
         </div>
       </Header>
 
-      {/* Date Navigation Strip */}
-      <div className="ledger-card p-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => jumpDay(-1)}
-            className="p-1.5 rounded hover:bg-paper text-ink-soft hover:text-ink transition-colors"
-            title="Previous Day"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+      {/* Date Navigation & Summary Strip */}
+      <div className="ledger-card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => jumpDay(-1)}
+              className="p-2 sm:p-1.5 rounded-[4px] hover:bg-paper text-ink-soft hover:text-ink active:scale-95 transition-all border border-rule/50"
+              title="Previous Day"
+              aria-label="Previous day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => jumpDay(1)}
+              className="p-2 sm:p-1.5 rounded-[4px] hover:bg-paper text-ink-soft hover:text-ink active:scale-95 transition-all border border-rule/50"
+              title="Next Day"
+              aria-label="Next day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-2.5 py-1 bg-paper border border-rule rounded-[3px] text-xs font-mono text-ink focus:bg-card focus:outline-none"
+            className="px-3 py-1.5 bg-paper border border-rule/80 rounded-[4px] text-xs font-mono text-ink focus:bg-card focus:outline-none"
           />
-          <button
-            onClick={() => jumpDay(1)}
-            className="p-1.5 rounded hover:bg-paper text-ink-soft hover:text-ink transition-colors"
-            title="Next Day"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
 
-        <div className="font-serif text-sm font-semibold text-ink">
+        <div className="font-serif text-base font-semibold text-ink text-center">
           {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
             weekday: 'long',
             month: 'short',
@@ -180,100 +190,148 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
           })}
         </div>
 
-        <div className="text-xs font-mono text-ink-soft">
-          <span className="font-semibold text-ink">{groupedFood.all.length}</span> items logged
+        <div className="flex items-center gap-3 text-xs font-mono text-ink-soft">
+          <span className="bg-ledger-light/80 text-ledger-blue px-2 py-0.5 rounded font-semibold">
+            {totalEaten} eaten
+          </span>
+          {totalWant > 0 && (
+            <span className="bg-paper border border-rule px-2 py-0.5 rounded">
+              {totalWant} planned
+            </span>
+          )}
+          <span>• {groupedFood.all.length} total</span>
         </div>
       </div>
 
-      {/* Quick Add Form */}
-      <div className="ledger-card p-4">
-        <form onSubmit={handleAddFood} className="flex flex-col sm:flex-row gap-2.5 items-end">
-          <div className="flex-1 w-full">
-            <label className="block text-[11px] font-mono uppercase text-ink-soft mb-1">
-              Food Item / Dish
-            </label>
+      {/* Responsive Quick Add Form */}
+      <div className="ledger-card p-4 sm:p-5">
+        <h2 className="font-serif text-sm font-semibold text-ink mb-3 flex items-center gap-2">
+          <Utensils className="w-4 h-4 text-ledger-blue" />
+          <span>Log a Meal or Snack</span>
+        </h2>
+
+        <form onSubmit={handleAddFood} className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               required
-              placeholder="e.g. Oatmeal with blueberries & chia seeds"
+              placeholder="e.g. Avocado sourdough toast with poached eggs..."
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none"
+              className="flex-1 px-3.5 py-2.5 text-sm bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none"
               autoFocus
             />
-          </div>
 
-          <div className="w-full sm:w-36">
-            <label className="block text-[11px] font-mono uppercase text-ink-soft mb-1">Meal</label>
-            <select
-              value={newMealTag}
-              onChange={(e) => setNewMealTag(e.target.value as any)}
-              className="w-full px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none capitalize"
+            <button
+              type="submit"
+              disabled={isSubmitting || !newItemName.trim()}
+              className="w-full sm:w-auto px-5 py-2.5 bg-ledger-blue text-paper text-xs font-medium rounded-[4px] hover:bg-ledger-hover active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-xs flex-shrink-0"
             >
-              <option value="breakfast">Breakfast</option>
-              <option value="lunch">Lunch</option>
-              <option value="dinner">Dinner</option>
-              <option value="snack">Snack</option>
-            </select>
+              <Plus className="w-4 h-4" />
+              <span>Log Item</span>
+            </button>
           </div>
 
-          <div className="w-full sm:w-32">
-            <label className="block text-[11px] font-mono uppercase text-ink-soft mb-1">Status</label>
-            <select
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value as any)}
-              className="w-full px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none capitalize"
-            >
-              <option value="eaten">Eaten</option>
-              <option value="want">Want to Eat</option>
-            </select>
-          </div>
+          {/* Quick Select Category & Status Pills */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+            {/* Meal Category selection */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <span className="text-[11px] font-mono text-ink-soft mr-1">Meal:</span>
+              {MEAL_SECTIONS.map(({ tag, label }) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setNewMealTag(tag)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-[3px] transition-all whitespace-nowrap ${
+                    newMealTag === tag
+                      ? 'bg-ledger-light text-ledger-blue font-semibold border border-ledger-blue/40 shadow-xs'
+                      : 'bg-paper text-ink-soft hover:text-ink border border-rule'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting || !newItemName.trim()}
-            className="w-full sm:w-auto px-4 py-2 bg-ledger-blue text-paper text-xs font-medium rounded hover:bg-ledger-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Log Meal</span>
-          </button>
+            {/* Status toggle */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-mono text-ink-soft mr-1">Status:</span>
+              <button
+                type="button"
+                onClick={() => setNewStatus('eaten')}
+                className={`px-2.5 py-1 text-xs rounded-[3px] font-medium transition-all ${
+                  newStatus === 'eaten'
+                    ? 'bg-ledger-blue text-paper font-semibold shadow-xs'
+                    : 'bg-paper text-ink-soft hover:text-ink border border-rule'
+                }`}
+              >
+                Eaten
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewStatus('want')}
+                className={`px-2.5 py-1 text-xs rounded-[3px] font-medium transition-all ${
+                  newStatus === 'want'
+                    ? 'bg-ledger-blue text-paper font-semibold shadow-xs'
+                    : 'bg-paper text-ink-soft hover:text-ink border border-rule'
+                }`}
+              >
+                Want to Eat
+              </button>
+            </div>
+          </div>
         </form>
       </div>
 
-      {/* Meal Category Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Responsive Meal Category Cards Grid (1 col mobile, 2 col tablet, 4 col desktop) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {MEAL_SECTIONS.map(({ tag, label, icon: Icon }) => {
           const items = groupedFood[tag];
           return (
-            <div key={tag} className="ledger-card p-4 flex flex-col justify-between">
+            <div key={tag} className="ledger-card p-4 flex flex-col justify-between hover:border-ink-soft/60 transition-all">
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-rule mb-3">
+                <div className="flex items-center justify-between pb-3 border-b border-rule/70 mb-3">
                   <div className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-ledger-blue" />
                     <h3 className="font-serif font-semibold text-sm text-ink">{label}</h3>
                   </div>
-                  <span className="text-xs font-mono text-ink-soft bg-paper px-1.5 py-0.5 rounded border border-rule">
-                    {items.length}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-mono text-ink-soft bg-paper px-1.5 py-0.5 rounded border border-rule">
+                      {items.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewMealTag(tag);
+                        window.scrollTo({ top: 120, behavior: 'smooth' });
+                      }}
+                      className="p-1 text-ink-soft hover:text-ledger-blue rounded"
+                      title={`Quick add to ${label}`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   {items.map((item) => (
                     <div
                       key={item.id}
-                      className="p-2.5 bg-paper border border-rule rounded-[3px] flex items-center justify-between gap-3 group"
+                      className="p-2.5 bg-paper border border-rule/80 rounded-[4px] flex items-center justify-between gap-2.5 group hover:border-ink-soft transition-colors"
                     >
                       <div
                         onClick={() => handleToggleStatus(item)}
-                        className="flex items-center gap-2.5 flex-1 cursor-pointer overflow-hidden"
+                        className="flex items-center gap-2.5 flex-1 cursor-pointer overflow-hidden select-none"
                       >
                         {item.status === 'eaten' ? (
-                          <CheckCircle2 className="w-4 h-4 text-ledger-blue flex-shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-ledger-blue text-paper flex items-center justify-center flex-shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
                         ) : (
                           <Circle className="w-4 h-4 text-ink-soft flex-shrink-0" />
                         )}
                         <span
-                          className={`text-sm text-ink truncate ${
+                          className={`text-xs text-ink truncate leading-tight ${
                             item.status === 'eaten' ? '' : 'italic text-ink-soft'
                           }`}
                         >
@@ -281,25 +339,35 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-rule bg-card text-ink-soft capitalize">
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border capitalize ${
+                          item.status === 'eaten'
+                            ? 'bg-card border-rule text-ink-soft'
+                            : 'bg-gold-light border-gold/30 text-ink'
+                        }`}>
                           {item.status}
                         </span>
                         <button
                           onClick={() => handleDelete(item.id)}
                           className="p-1 text-ink-soft hover:text-stamp-red opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Delete food entry"
+                          title="Delete entry"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
                   ))}
 
                   {items.length === 0 && (
-                    <p className="text-xs text-ink-soft/70 italic py-3 text-center">
-                      No {label.toLowerCase()} logged yet.
-                    </p>
+                    <div
+                      onClick={() => {
+                        setNewMealTag(tag);
+                        window.scrollTo({ top: 120, behavior: 'smooth' });
+                      }}
+                      className="py-6 text-center text-xs text-ink-soft/70 border border-dashed border-rule/60 rounded-[4px] cursor-pointer hover:border-ink-soft hover:text-ink transition-colors"
+                    >
+                      + Add {label.toLowerCase()}
+                    </div>
                   )}
                 </div>
               </div>
@@ -310,3 +378,4 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
     </div>
   );
 };
+

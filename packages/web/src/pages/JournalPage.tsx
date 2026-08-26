@@ -16,7 +16,10 @@ import {
   ChevronRight,
   BookOpen,
   Sparkles,
+  Save,
+  CheckCircle2,
 } from 'lucide-react';
+
 
 interface JournalPageProps {
   onNavigate: (tab: RouteTab) => void;
@@ -261,17 +264,37 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
               )}
             </div>
 
-            {content && (
+            <div className="flex items-center gap-2">
+              {content && (
+                <button
+                  type="button"
+                  onClick={handleDeleteEntry}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-ink-soft hover:text-stamp-red rounded-md hover:bg-paper transition-colors"
+                  title="Clear day's entry"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Clear Entry</span>
+                </button>
+              )}
+
               <button
-                onClick={handleDeleteEntry}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-ink-soft hover:text-stamp-red rounded-md hover:bg-paper transition-colors"
-                title="Clear day's entry"
+                type="button"
+                onClick={handleManualSave}
+                disabled={saveStatus === 'saving'}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-ledger-blue text-paper text-xs font-semibold rounded-lg hover:bg-ledger-hover active:scale-95 disabled:opacity-50 transition-all shadow-subtle"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Clear Entry</span>
+                {saveStatus === 'saving' ? (
+                  <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                ) : saveStatus === 'saved' ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
+                <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Journal'}</span>
               </button>
-            )}
+            </div>
           </div>
+
 
           <RichTextEditor
             value={content}

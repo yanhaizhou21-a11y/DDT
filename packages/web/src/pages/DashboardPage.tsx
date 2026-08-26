@@ -24,7 +24,9 @@ import {
   AlertTriangle,
   Send,
   Zap,
+  Save,
 } from 'lucide-react';
+
 
 interface DashboardPageProps {
   onNavigate: (tab: RouteTab) => void;
@@ -106,7 +108,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     return () => clearTimeout(timer);
   }, [quickJournal, data]);
 
+  const handleManualSaveJournal = async () => {
+    if (!data) return;
+    try {
+      setJournalSaving(true);
+      await saveJournalEntry(data.today, quickJournal);
+      setJournalSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setData((prev) => (prev ? { ...prev, journal: { ...prev.journal, content: quickJournal, hasWritten: quickJournal.trim().length > 0 } } : prev));
+    } catch (err) {
+      console.error('Failed to manually save journal', err);
+    } finally {
+      setJournalSaving(false);
+    }
+  };
+
   const handleQuickFoodSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
     if (!quickFoodName.trim() || !data) return;
     try {
@@ -291,7 +308,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 {journalSaving ? (
                   <span className="text-xs font-mono text-gold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
@@ -303,14 +320,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                     Saved
                   </span>
                 ) : null}
+
+                <button
+                  type="button"
+                  onClick={handleManualSaveJournal}
+                  disabled={journalSaving}
+                  className="flex items-center gap-1 px-2.5 py-1 bg-ledger-blue text-paper text-xs font-semibold rounded-md hover:bg-ledger-hover active:scale-95 disabled:opacity-50 transition-all shadow-xs"
+                >
+                  <Save className="w-3 h-3" />
+                  <span>Save</span>
+                </button>
+
                 <button
                   onClick={() => onNavigate('journal')}
-                  className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                  className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ml-1"
                 >
                   Full Editor <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
+
 
             {/* Quick Journal Write Box */}
             <div className="relative">

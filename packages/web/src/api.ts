@@ -280,6 +280,40 @@ export async function deleteGameEntry(id: string): Promise<{ success: boolean }>
   return handleResponse<{ success: boolean }>(res);
 }
 
+export async function updateGameCover(gameName: string, coverUrl: string | null): Promise<{ success: boolean; gameName: string; coverUrl: string | null }> {
+  const res = await fetch(`${API_BASE}/games/cover`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gameName, coverUrl }),
+  });
+  return handleResponse<{ success: boolean; gameName: string; coverUrl: string | null }>(res);
+}
+
+// Upload Image (Max 5MB)
+export async function uploadImage(file: File): Promise<{ success: boolean; url: string; filename: string; size: number }> {
+  const maxBytes = 5 * 1024 * 1024; // 5 MB
+  if (file.size > maxBytes) {
+    throw new Error(`Ukuran file (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas maksimal 5 MB.`);
+  }
+
+  // Convert File to Base64 dataURL
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Gagal membaca file gambar'));
+    reader.readAsDataURL(file);
+  });
+
+  const res = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: dataUrl, filename: file.name }),
+  });
+
+  return handleResponse<{ success: boolean; url: string; filename: string; size: number }>(res);
+}
+
+
 // GitHub
 export async function fetchGithubContributions(force = false): Promise<GithubContributionsResponse> {
   const res = await fetch(`${API_BASE}/github/contributions${force ? '?force=true' : ''}`);

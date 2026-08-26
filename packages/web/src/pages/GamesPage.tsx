@@ -7,6 +7,8 @@ import {
   deleteGameEntry,
   fetchGameStats,
   searchRawg,
+  uploadImage,
+  updateGameCover,
 } from '../api';
 import { Header } from '../components/Header';
 import { Modal } from '../components/Modal';
@@ -29,7 +31,14 @@ import {
   History,
   Play,
   Check,
+  Upload,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Edit3,
+  Camera,
+  CheckCircle2,
 } from 'lucide-react';
+
 
 interface GamesPageProps {
   onNavigate: (tab: RouteTab) => void;
@@ -63,6 +72,18 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
   const [gameName, setGameName] = useState('');
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [loggedDate, setLoggedDate] = useState(todayStr);
+  const [coverTab, setCoverTab] = useState<'upload' | 'url'>('upload');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Edit Cover Modal (For Library cards)
+  const [isEditCoverModalOpen, setIsEditCoverModalOpen] = useState(false);
+  const [editingGame, setEditingGame] = useState<{ gameName: string; coverUrl: string | null } | null>(null);
+  const [editCoverTab, setEditCoverTab] = useState<'upload' | 'url'>('upload');
+  const [editCoverUrl, setEditCoverUrl] = useState('');
+  const [editCoverUploading, setEditCoverUploading] = useState(false);
+  const [editCoverSaving, setEditCoverSaving] = useState(false);
+  const [editCoverError, setEditCoverError] = useState<string | null>(null);
 
   // Playtime Dual-Input Mode ('detailed' with Hours & Minutes vs 'decimal')
   const [inputMode, setInputMode] = useState<'detailed' | 'decimal'>('detailed');
@@ -75,6 +96,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
   const [rawgResults, setRawgResults] = useState<RAWGSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [rawgError, setRawgError] = useState<string | null>(null);
+
 
   const loadData = async () => {
     try {
@@ -129,8 +151,66 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
     setInputMinutes('0');
     setDecimalHours('1.0');
     setInputMode('detailed');
+    setCoverTab('upload');
+    setUploadError(null);
     setIsModalOpen(true);
   };
+
+  const handleFileUpload = async (file: File, isForEditModal = false) => {
+    const maxBytes = 5 * 1024 * 1024; // 5 MB
+    if (file.size > maxBytes) {
+      const msg = `File (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas 5 MB.`;
+      if (isForEditModal) setEditCoverError(msg);
+      else setUploadError(msg);
+      return;
+    }
+
+    try {
+      if (isForEditModal) {
+        setEditCoverUploading(true);
+        setEditCoverError(null);
+        const res = await uploadImage(file);
+        setEditCoverUrl(res.url);
+      } else {
+        setIsUploading(true);
+        setUploadError(null);
+        const res = await uploadImage(file);
+        setCoverUrl(res.url);
+      }
+    } catch (err: any) {
+      const msg = err.message || 'Gagal mengunggah gambar. Pastikan file valid (maksimal 5 MB).';
+      if (isForEditModal) setEditCoverError(msg);
+      else setUploadError(msg);
+    } finally {
+      if (isForEditModal) setEditCoverUploading(false);
+      else setIsUploading(false);
+    }
+  };
+
+  const handleOpenEditCover = (game: GameLibraryItem) => {
+    setEditingGame({ gameName: game.gameName, coverUrl: game.coverUrl });
+    setEditCoverUrl(game.coverUrl || '');
+    setEditCoverTab('upload');
+    setEditCoverError(null);
+    setIsEditCoverModalOpen(true);
+  };
+
+  const handleSaveEditCover = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGame) return;
+    try {
+      setEditCoverSaving(true);
+      setEditCoverError(null);
+      await updateGameCover(editingGame.gameName, editCoverUrl.trim() || null);
+      setIsEditCoverModalOpen(false);
+      loadData();
+    } catch (err: any) {
+      setEditCoverError(err.message || 'Gagal menyimpan cover game');
+    } finally {
+      setEditCoverSaving(false);
+    }
+  };
+
 
   const handleSearchRawg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -388,8 +468,22 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                         </div>
                       )}
 
+                      {/* Change Cover Quick Action (Hover) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditCover(item);
+                        }}
+                        className="absolute top-2 left-2 px-2 py-1 rounded-md bg-ink/75 hover:bg-ledger-blue text-paper font-mono text-[10px] backdrop-blur-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shadow-subtle z-10"
+                        title="Change cover artwork"
+                      >
+                        <Camera className="w-3 h-3" />
+                        <span>Change Cover</span>
+                      </button>
+
                       {/* Status Badges */}
-                      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">
                         {isPlayedToday && (
                           <span className="px-2 py-0.5 rounded-full bg-emerald-500/90 text-white font-mono text-[10px] font-bold shadow-xs backdrop-blur-xs">
                             PLAYED TODAY
@@ -400,6 +494,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                         </span>
                       </div>
                     </div>
+
 
                     {/* Content Section */}
                     <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
@@ -628,48 +723,120 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
             </div>
           )}
 
-          {/* Custom Cover Image URL Input with Live Preview */}
-          <div className="space-y-1.5">
+          {/* Custom Cover Art: Dual Mode (Upload File PC vs Paste URL) */}
+          <div className="space-y-2 p-3 bg-paper border border-rule rounded-lg">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-mono uppercase tracking-wider text-ink-soft">
-                Custom Cover Image URL (Direct Link)
-              </label>
-              {coverUrl && (
-                <button
-                  type="button"
-                  onClick={() => setCoverUrl(null)}
-                  className="text-[11px] font-mono text-stamp-red hover:underline"
-                >
-                  Clear Image
-                </button>
-              )}
+              <span className="text-xs font-mono uppercase tracking-wider text-ink-soft flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-ledger-blue" />
+                Cover Artwork
+              </span>
+
+              {/* Mode Toggle: Upload vs URL */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center p-0.5 rounded-md bg-card border border-rule text-[11px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => setCoverTab('upload')}
+                    className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
+                      coverTab === 'upload'
+                        ? 'bg-ledger-blue text-paper font-semibold shadow-xs'
+                        : 'text-ink-soft hover:text-ink'
+                    }`}
+                  >
+                    <Upload className="w-3 h-3" />
+                    Upload PC
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverTab('url')}
+                    className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
+                      coverTab === 'url'
+                        ? 'bg-ledger-blue text-paper font-semibold shadow-xs'
+                        : 'text-ink-soft hover:text-ink'
+                    }`}
+                  >
+                    <LinkIcon className="w-3 h-3" />
+                    Image URL
+                  </button>
+                </div>
+
+                {coverUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setCoverUrl(null)}
+                    className="text-[11px] font-mono text-stamp-red hover:underline ml-1"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="flex gap-2.5 items-center">
-              {coverUrl ? (
-                <div className="w-10 h-10 rounded-md border border-rule overflow-hidden bg-card shrink-0 flex items-center justify-center">
+            {/* Tab 1: Upload File PC (Max 5MB) */}
+            {coverTab === 'upload' ? (
+              <div className="space-y-2">
+                <label className="block border-2 border-dashed border-rule hover:border-ledger-blue/70 rounded-lg p-3 text-center cursor-pointer transition-colors bg-card hover:bg-card/80">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, false);
+                    }}
+                  />
+                  {isUploading ? (
+                    <div className="flex items-center justify-center gap-2 text-xs font-mono text-ledger-blue py-2">
+                      <Sparkles className="w-4 h-4 animate-spin" />
+                      <span>Mengunggah gambar (maks 5MB)...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 text-xs text-ink-soft py-1">
+                      <Upload className="w-4 h-4 text-ledger-blue" />
+                      <span className="font-mono">
+                        Pilih atau Drag & Drop file gambar dari PC (Maks 5 MB)
+                      </span>
+                    </div>
+                  )}
+                </label>
+                {uploadError && <p className="text-xs text-stamp-red font-mono">{uploadError}</p>}
+              </div>
+            ) : (
+              /* Tab 2: Paste Image URL */
+              <div className="space-y-1">
+                <input
+                  type="url"
+                  value={coverUrl || ''}
+                  onChange={(e) => setCoverUrl(e.target.value.trim() || null)}
+                  placeholder="https://... (paste direct image URL e.g. .jpg, .png, .webp)"
+                  className="w-full px-3 py-1.5 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+                />
+              </div>
+            )}
+
+            {/* Thumbnail Preview */}
+            {coverUrl && (
+              <div className="flex items-center gap-3 pt-1 border-t border-rule/50">
+                <div className="w-12 h-12 rounded-md border border-rule overflow-hidden bg-card shrink-0">
                   <img
                     src={coverUrl}
-                    alt="Preview"
+                    alt="Cover preview"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
                 </div>
-              ) : null}
-              <input
-                type="url"
-                value={coverUrl || ''}
-                onChange={(e) => setCoverUrl(e.target.value.trim() || null)}
-                placeholder="https://... (paste direct image URL e.g. .jpg, .png, .webp)"
-                className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
-              />
-            </div>
-            <p className="text-[11px] text-ink-soft font-mono">
-              Auto-filled if searched via RAWG, or paste any custom web image link.
-            </p>
+                <div className="min-w-0 text-xs font-mono">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Cover siap digunakan
+                  </span>
+                  <span className="text-ink-soft text-[11px] truncate block max-w-xs">{coverUrl}</span>
+                </div>
+              </div>
+            )}
           </div>
+
 
           {/* Date Picker */}
           <div>
@@ -867,6 +1034,168 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
           </div>
         </form>
       </Modal>
+
+      {/* CHANGE COVER ARTWORK MODAL */}
+      <Modal
+        isOpen={isEditCoverModalOpen}
+        onClose={() => setIsEditCoverModalOpen(false)}
+        title={editingGame ? `Ganti Cover: ${editingGame.gameName}` : 'Ganti Cover Game'}
+      >
+        <form onSubmit={handleSaveEditCover} className="space-y-4">
+          <div className="space-y-3 p-3 bg-paper border border-rule rounded-lg">
+            {/* Mode Switcher */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-ink-soft flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-ledger-blue" />
+                Pilih Sumber Cover
+              </span>
+
+              <div className="flex items-center p-0.5 rounded-md bg-card border border-rule text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => setEditCoverTab('upload')}
+                  className={`px-2.5 py-1 rounded transition-all flex items-center gap-1 ${
+                    editCoverTab === 'upload'
+                      ? 'bg-ledger-blue text-paper font-semibold shadow-xs'
+                      : 'text-ink-soft hover:text-ink'
+                  }`}
+                >
+                  <Upload className="w-3 h-3" />
+                  Upload PC (Max 5MB)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditCoverTab('url')}
+                  className={`px-2.5 py-1 rounded transition-all flex items-center gap-1 ${
+                    editCoverTab === 'url'
+                      ? 'bg-ledger-blue text-paper font-semibold shadow-xs'
+                      : 'text-ink-soft hover:text-ink'
+                  }`}
+                >
+                  <LinkIcon className="w-3 h-3" />
+                  Paste URL
+                </button>
+              </div>
+            </div>
+
+            {/* Tab 1: Upload File PC */}
+            {editCoverTab === 'upload' ? (
+              <div className="space-y-2">
+                <label className="block border-2 border-dashed border-rule hover:border-ledger-blue/70 rounded-lg p-4 text-center cursor-pointer transition-colors bg-card hover:bg-card/80">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, true);
+                    }}
+                  />
+                  {editCoverUploading ? (
+                    <div className="flex items-center justify-center gap-2 text-xs font-mono text-ledger-blue py-3">
+                      <Sparkles className="w-4 h-4 animate-spin" />
+                      <span>Mengunggah file ke komputer...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-1.5 py-2 text-ink-soft">
+                      <Upload className="w-6 h-6 text-ledger-blue mb-1" />
+                      <span className="text-xs font-semibold text-ink">Klik untuk memilih gambar atau Drag & Drop</span>
+                      <span className="text-[11px] font-mono text-ink-soft">Maksimal 5 MB (.jpg, .png, .webp, .gif)</span>
+                    </div>
+                  )}
+                </label>
+                {editCoverError && <p className="text-xs text-stamp-red font-mono">{editCoverError}</p>}
+              </div>
+            ) : (
+              /* Tab 2: Paste Image URL */
+              <div className="space-y-2">
+                <label className="block text-[11px] font-mono text-ink-soft uppercase tracking-wider">
+                  Direct Web Image Link
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={editCoverUrl}
+                    onChange={(e) => setEditCoverUrl(e.target.value)}
+                    placeholder="https://... (paste direct image URL)"
+                    className="flex-1 px-3 py-2 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+                  />
+                  {editCoverUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditCoverUrl('')}
+                      className="px-2.5 py-1 text-xs font-mono text-stamp-red hover:underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Live Preview */}
+            {editCoverUrl ? (
+              <div className="space-y-1 pt-2 border-t border-rule/60">
+                <span className="text-[11px] font-mono text-ink-soft">Pratinjau Cover Baru:</span>
+                <div className="relative h-36 w-full rounded-lg overflow-hidden border border-rule bg-card">
+                  <img
+                    src={editCoverUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="py-4 text-center text-xs font-mono text-ink-soft">
+                Pilih file dari laptop atau masukkan link URL untuk melihat preview.
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center pt-2 border-t border-rule">
+            {editCoverUrl && (
+              <button
+                type="button"
+                onClick={() => setEditCoverUrl('')}
+                className="text-xs font-mono text-stamp-red hover:underline"
+              >
+                Hapus Cover
+              </button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={() => setIsEditCoverModalOpen(false)}
+                className="px-4 py-2 text-xs font-mono text-ink-soft hover:text-ink transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={editCoverSaving || editCoverUploading}
+                className="px-4 py-2 bg-ledger-blue text-paper text-xs font-semibold rounded-lg hover:bg-ledger-hover disabled:opacity-40 transition-colors shadow-subtle flex items-center gap-1.5"
+              >
+                {editCoverSaving ? (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Simpan Cover</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
+

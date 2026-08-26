@@ -210,6 +210,25 @@ export function createGamesRouter(db: AppDatabase): Router {
     }
   });
 
+  // PUT /api/games/cover - update cover for all entries with this gameName
+  router.put('/cover', async (req, res) => {
+    try {
+      const { gameName, coverUrl } = req.body;
+      if (!gameName || typeof gameName !== 'string') {
+        return res.status(400).json({ error: 'Game name is required' });
+      }
+
+      await db
+        .update(gameEntries)
+        .set({ coverUrl: coverUrl || null })
+        .where(eq(gameEntries.gameName, gameName.trim()));
+
+      res.json({ success: true, gameName: gameName.trim(), coverUrl: coverUrl || null });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to update game cover' });
+    }
+  });
+
   // DELETE /api/games/:id
   router.delete('/:id', async (req, res) => {
     try {
@@ -223,4 +242,5 @@ export function createGamesRouter(db: AppDatabase): Router {
 
   return router;
 }
+
 

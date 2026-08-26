@@ -12,6 +12,7 @@ import { createFoodRouter } from './routes/food.js';
 import { createGamesRouter } from './routes/games.js';
 import { createGithubRouter } from './routes/github.js';
 import { createDashboardRouter } from './routes/dashboard.js';
+import { createUploadRouter } from './routes/upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,9 +28,19 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
   const app = express();
   const { db, client, dbPath } = initDatabase(options.dbPath);
 
+  // Uploads directory in user DDT folder (~/.ddt/uploads)
+  const ddtDir = path.dirname(dbPath);
+  const uploadsDir = path.join(ddtDir, 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
   // Enable CORS & JSON parsing
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: '20mb' }));
+
+  // Static uploads serving
+  app.use('/uploads', express.static(uploadsDir));
 
   // API Routes
   app.use('/api/settings', createSettingsRouter(db, client, dbPath));
@@ -40,11 +51,13 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
   app.use('/api/games', createGamesRouter(db));
   app.use('/api/github', createGithubRouter(db));
   app.use('/api/dashboard', createDashboardRouter(db));
+  app.use('/api/upload', createUploadRouter(uploadsDir));
 
   // Health check
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
+
 
   // Serve static web app in production if web/dist exists
   const possibleStaticPaths = [

@@ -295,64 +295,61 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* BENTO CARD 2: DAILY JOURNAL QUICK-ENTRY (6 cols) */}
-        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between group hover:shadow-card transition-all">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between pb-3 border-b border-rule/70">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-md bg-paper flex items-center justify-center text-ledger-blue border border-rule/60">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="font-serif text-base font-bold text-ink">Daily Journal</h2>
-                  <p className="text-[11px] text-ink-soft font-mono">Today's Reflection</p>
-                </div>
+        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between group hover:shadow-card transition-all h-full">
+          <div className="flex items-center justify-between pb-3 border-b border-rule/70 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-md bg-paper flex items-center justify-center text-ledger-blue border border-rule/60">
+                <BookOpen className="w-4 h-4" />
               </div>
-
-              <div className="flex items-center gap-2.5">
-                {journalSaving ? (
-                  <span className="text-xs font-mono text-gold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
-                    Saving...
-                  </span>
-                ) : journalSavedAt ? (
-                  <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Saved
-                  </span>
-                ) : null}
-
-                <button
-                  type="button"
-                  onClick={handleManualSaveJournal}
-                  disabled={journalSaving}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-ledger-blue text-paper text-xs font-semibold rounded-md hover:bg-ledger-hover active:scale-95 disabled:opacity-50 transition-all shadow-xs"
-                >
-                  <Save className="w-3 h-3" />
-                  <span>Save</span>
-                </button>
-
-                <button
-                  onClick={() => onNavigate('journal')}
-                  className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ml-1"
-                >
-                  Full Editor <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
+              <div>
+                <h2 className="font-serif text-base font-bold text-ink">Daily Journal</h2>
+                <p className="text-[11px] text-ink-soft font-mono">Today's Reflection</p>
               </div>
             </div>
 
+            <div className="flex items-center gap-2.5">
+              {journalSaving ? (
+                <span className="text-xs font-mono text-gold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
+                  Saving...
+                </span>
+              ) : journalSavedAt ? (
+                <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Saved
+                </span>
+              ) : null}
 
-            {/* Quick Journal Write Box */}
-            <div className="relative">
-              <textarea
-                value={quickJournal}
-                onChange={(e) => setQuickJournal(e.target.value)}
-                placeholder="What happened today? Write thoughts, achievements, or notes..."
-                className="w-full min-h-[140px] p-3.5 text-sm bg-paper/70 border border-rule rounded-lg focus:bg-card focus:outline-hidden resize-none font-sans text-ink leading-relaxed placeholder:text-ink-soft/40 shadow-xs"
-              />
+              <button
+                type="button"
+                onClick={handleManualSaveJournal}
+                disabled={journalSaving}
+                className="flex items-center gap-1 px-2.5 py-1 bg-ledger-blue text-paper text-xs font-semibold rounded-md hover:bg-ledger-hover active:scale-95 disabled:opacity-50 transition-all shadow-xs"
+              >
+                <Save className="w-3 h-3" />
+                <span>Save</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('journal')}
+                className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ml-1"
+              >
+                Full Editor <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          <div className="pt-3 mt-3 border-t border-rule/60 flex items-center justify-between text-xs text-ink-soft font-mono">
+          {/* Quick Journal Write Box - Stretches to fill empty card space */}
+          <div className="flex-1 flex flex-col my-3 min-h-[190px]">
+            <textarea
+              value={quickJournal}
+              onChange={(e) => setQuickJournal(e.target.value)}
+              placeholder="What happened today? Write thoughts, achievements, or notes..."
+              className="w-full flex-1 min-h-[190px] p-3.5 text-sm bg-paper/70 border border-rule rounded-lg focus:bg-card focus:outline-hidden resize-none font-sans text-ink leading-relaxed placeholder:text-ink-soft/40 shadow-xs transition-colors"
+            />
+          </div>
+
+          <div className="pt-3 border-t border-rule/60 flex items-center justify-between text-xs text-ink-soft font-mono shrink-0">
             <span>
               <strong className="text-ink font-semibold">
                 {quickJournal.trim() ? quickJournal.trim().split(/\s+/).length : 0}
@@ -362,6 +359,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <span>Markdown enabled</span>
           </div>
         </div>
+
 
         {/* BENTO CARD 3: GAME PLAYTIME & QUICK LOG (4 cols) */}
         <div className="lg:col-span-4 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">

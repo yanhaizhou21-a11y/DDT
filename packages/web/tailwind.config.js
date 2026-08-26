@@ -4,25 +4,42 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: ['class', '[data-theme="kinetic"]'],
   theme: {
     extend: {
       colors: {
-        paper: '#F6F4EE',
+        paper: 'var(--paper)',
+        'paper-tint': 'var(--paper-tint)',
         ink: {
-          DEFAULT: '#232019',
-          soft: '#6B6455',
+          DEFAULT: 'var(--ink)',
+          soft: 'var(--ink-soft)',
+          muted: 'var(--ink-muted)',
         },
         ledger: {
-          blue: '#2F4858',
-          hover: '#233744',
-          light: '#E5EBF0',
+          blue: 'var(--ledger-blue)',
+          hover: 'var(--ledger-hover)',
+          light: 'var(--ledger-light)',
         },
         stamp: {
-          red: '#A83A34',
-          light: '#F8EAE9',
+          red: 'var(--stamp-red)',
+          light: 'var(--stamp-light)',
         },
-        rule: '#DDD7C7',
-        card: '#FFFDF8',
+        rule: {
+          DEFAULT: 'var(--rule)',
+          light: 'var(--rule-light)',
+        },
+        card: {
+          DEFAULT: 'var(--card)',
+          surface: 'var(--card-surface)',
+        },
+        gold: {
+          DEFAULT: 'var(--gold)',
+          light: 'var(--gold-light)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+        },
       },
       fontFamily: {
         serif: ['Fraunces', 'Georgia', 'serif'],
@@ -30,15 +47,20 @@ export default {
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
-        DEFAULT: '4px',
-        sm: '2px',
-        md: '4px',
-        lg: '6px',
+        DEFAULT: '6px',
+        sm: '4px',
+        md: '6px',
+        lg: '8px',
+        xl: '12px',
+        '2xl': '16px',
       },
       boxShadow: {
-        none: 'none',
+        subtle: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
+        card: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
+        lift: '0 6px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
       },
     },
   },
   plugins: [],
 }
+

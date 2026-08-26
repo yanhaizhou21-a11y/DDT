@@ -250,6 +250,12 @@ export async function fetchGames(date?: string): Promise<GameEntry[]> {
   return handleResponse<GameEntry[]>(res);
 }
 
+export async function fetchGameLibrary(): Promise<import('./types').GameLibraryItem[]> {
+  const res = await fetch(`${API_BASE}/games/library`);
+  return handleResponse<import('./types').GameLibraryItem[]>(res);
+}
+
+
 export async function fetchGameStats(): Promise<GameStatsResponse> {
   const res = await fetch(`${API_BASE}/games/stats`);
   return handleResponse<GameStatsResponse>(res);

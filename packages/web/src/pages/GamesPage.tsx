@@ -12,9 +12,11 @@ import {
 } from '../api';
 import { Header } from '../components/Header';
 import { Modal } from '../components/Modal';
+import { ConfirmDialog } from '../components/AlertDialog';
 import { EmptyState } from '../components/EmptyState';
 import { Magnetic } from '../components/Magnetic';
 import {
+
   Gamepad2,
   Plus,
   Trash2,
@@ -85,11 +87,15 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
   const [editCoverSaving, setEditCoverSaving] = useState(false);
   const [editCoverError, setEditCoverError] = useState<string | null>(null);
 
+  // Confirm delete session state
+  const [sessionToDelete, setSessionToDelete] = useState<{ id: string; name: string; date?: string } | null>(null);
+
   // Playtime Dual-Input Mode ('detailed' with Hours & Minutes vs 'decimal')
   const [inputMode, setInputMode] = useState<'detailed' | 'decimal'>('detailed');
   const [inputHours, setInputHours] = useState('1');
   const [inputMinutes, setInputMinutes] = useState('30');
   const [decimalHours, setDecimalHours] = useState('1.5');
+
 
   // RAWG search
   const [rawgQuery, setRawgQuery] = useState('');
@@ -263,15 +269,21 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
     }
   };
 
-  const handleDeleteSession = async (id: string, name: string) => {
-    if (!confirm(`Delete this session for "${name}"?`)) return;
+  const handleDeleteSession = (id: string, name: string, date?: string) => {
+    setSessionToDelete({ id, name, date });
+  };
+
+  const handleConfirmDeleteSession = async () => {
+    if (!sessionToDelete) return;
     try {
-      await deleteGameEntry(id);
+      await deleteGameEntry(sessionToDelete.id);
+      setSessionToDelete(null);
       loadData();
     } catch (err) {
       console.error(err);
     }
   };
+
 
   // Generate 30 days for DotLedger
   const dotLedgerDays: { date: string; value: number }[] = [];
@@ -1195,7 +1207,24 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Confirmation Dialog for Session Deletion */}
+      <ConfirmDialog
+        isOpen={sessionToDelete !== null}
+        onClose={() => setSessionToDelete(null)}
+        onConfirm={handleConfirmDeleteSession}
+        title="Delete Gameplay Session?"
+        description={
+          sessionToDelete
+            ? `Are you sure you want to remove this logged session for "${sessionToDelete.name}"? Total tracked library hours will update automatically.`
+            : ''
+        }
+        confirmText="Delete Session"
+        cancelText="Keep Session"
+        variant="danger"
+      />
     </div>
   );
 };
+
 

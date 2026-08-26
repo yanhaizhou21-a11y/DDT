@@ -5,27 +5,60 @@
 @layer base {
   :root {
     --paper: #F6F4EE;
+    --paper-tint: #ECE7DA;
     --ink: #232019;
     --ink-soft: #6B6455;
+    --ink-muted: #8E8675;
     --ledger-blue: #2F4858;
+    --ledger-hover: #233744;
+    --ledger-light: #E5EBF0;
     --stamp-red: #A83A34;
+    --stamp-light: #F8EAE9;
     --rule: #DDD7C7;
+    --rule-light: #EBE6DA;
     --card: #FFFDF8;
+    --card-surface: #FCFAF4;
+    --gold: #C28B38;
+    --gold-light: #FDF6E8;
+
+    /* transitions.dev motion tokens */
+    --duration-micro: 80ms;
+    --duration-quick: 150ms;
+    --duration-fast: 250ms;
+    --duration-medium: 350ms;
+    --duration-slow: 450ms;
+
+    --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: ease-in-out;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);
+
+    --distance-micro: 4px;
+    --distance-base: 8px;
+    --distance-medium: 12px;
+    --distance-large: 20px;
+
+    --scale-small: 0.98;
+    --scale-medium: 0.96;
+
+    --blur-small: 2px;
+    --blur-medium: 4px;
   }
 
   body {
     background-color: var(--paper);
     color: var(--ink);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.01em;
   }
 
-  /* Accessibility focus ring (§6 in design.md) */
+  /* Accessibility focus ring */
   :focus-visible {
     outline: 2px solid var(--ledger-blue);
     outline-offset: 2px;
   }
 
-  /* Thin scrollbar to match ledger feel */
+  /* Refined scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -35,7 +68,7 @@
   }
   ::-webkit-scrollbar-thumb {
     background: var(--rule);
-    border-radius: 3px;
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: var(--ink-soft);
@@ -43,18 +76,121 @@
 }
 
 @layer components {
+  /* High-End Ledger Card with Machined Nested Architecture */
   .ledger-card {
     background-color: var(--card);
     border: 1px solid var(--rule);
-    border-radius: 4px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(35, 32, 25, 0.03), 0 1px 2px rgba(35, 32, 25, 0.02);
+    transition: border-color var(--duration-fast) var(--ease-smooth-out),
+                box-shadow var(--duration-fast) var(--ease-smooth-out),
+                transform var(--duration-fast) var(--ease-smooth-out);
+  }
+
+  .ledger-card-interactive {
+    background-color: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(35, 32, 25, 0.03);
+    transition: all var(--duration-fast) var(--ease-smooth-out);
+  }
+
+  .ledger-card-interactive:hover {
+    border-color: var(--ink-soft);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(35, 32, 25, 0.06), 0 1px 3px rgba(35, 32, 25, 0.04);
+  }
+
+  /* Double-Bezel nested shell container */
+  .bezel-shell {
+    background-color: rgba(35, 32, 25, 0.03);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .bezel-core {
+    background-color: var(--card);
+    border: 1px solid rgba(221, 215, 199, 0.6);
+    border-radius: 5px;
   }
 
   .ledger-header {
     font-family: 'Fraunces', serif;
     font-weight: 600;
+    letter-spacing: -0.02em;
   }
 
   .ledger-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  /* Page Transition Keyframes & Utility */
+  .t-page-enter {
+    animation: pageFadeSlideIn var(--duration-fast) var(--ease-smooth-out) forwards;
+  }
+
+  @keyframes pageFadeSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(var(--distance-base));
+      filter: blur(var(--blur-small));
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  /* Shimmer effect utility */
+  .t-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(221, 215, 199, 0.2) 0%,
+      rgba(221, 215, 199, 0.6) 50%,
+      rgba(221, 215, 199, 0.2) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s infinite linear;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Pulse dot animation */
+  .t-pulse-dot {
+    animation: pulseDot 2s infinite ease-in-out;
+  }
+
+  @keyframes pulseDot {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.15);
+    }
+  }
 }
+
+/* Reduced Motion Safety Guard */
+@media (prefers-reduced-motion: reduce) {
+  .t-page-enter,
+  .t-shimmer,
+  .t-pulse-dot,
+  .ledger-card-interactive {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+

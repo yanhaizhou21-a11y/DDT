@@ -39,16 +39,18 @@ export function App() {
       {/* Left Rail Sidebar */}
       <Sidebar activeTab={activeTab} onSelectTab={handleSelectTab} />
 
-      {/* Main Content Area: max-width ~1100px, centered, 24px vertical rhythm */}
-      <main className="flex-1 md:pl-20 px-4 sm:px-8 py-8 max-w-[1180px] mx-auto w-full pb-24 md:pb-12">
-        {activeTab === 'home' && <DashboardPage onNavigate={handleSelectTab} />}
-        {activeTab === 'dev' && <DevPage onNavigate={handleSelectTab} />}
-        {activeTab === 'watchlist' && <WatchlistPage onNavigate={handleSelectTab} />}
-        {activeTab === 'kanban' && <KanbanPage onNavigate={handleSelectTab} />}
-        {activeTab === 'journal' && <JournalPage onNavigate={handleSelectTab} />}
-        {activeTab === 'food' && <FoodPage onNavigate={handleSelectTab} />}
-        {activeTab === 'games' && <GamesPage onNavigate={handleSelectTab} />}
-        {activeTab === 'settings' && <SettingsPage onNavigate={handleSelectTab} />}
+      {/* Main Content Area: max-width ~1180px, centered, responsive margins */}
+      <main className="flex-1 md:pl-20 px-3.5 sm:px-8 py-6 sm:py-8 max-w-[1240px] mx-auto w-full pb-24 md:pb-12 min-h-[100dvh]">
+        <div key={activeTab} className="t-page-enter">
+          {activeTab === 'home' && <DashboardPage onNavigate={handleSelectTab} />}
+          {activeTab === 'dev' && <DevPage onNavigate={handleSelectTab} />}
+          {activeTab === 'watchlist' && <WatchlistPage onNavigate={handleSelectTab} />}
+          {activeTab === 'kanban' && <KanbanPage onNavigate={handleSelectTab} />}
+          {activeTab === 'journal' && <JournalPage onNavigate={handleSelectTab} />}
+          {activeTab === 'food' && <FoodPage onNavigate={handleSelectTab} />}
+          {activeTab === 'games' && <GamesPage onNavigate={handleSelectTab} />}
+          {activeTab === 'settings' && <SettingsPage onNavigate={handleSelectTab} />}
+        </div>
       </main>
     </div>
   );

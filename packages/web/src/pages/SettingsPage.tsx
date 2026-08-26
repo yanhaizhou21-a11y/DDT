@@ -19,6 +19,16 @@ import {
   ShieldCheck,
   Save,
   RotateCw,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Github,
+  Film,
+  Gamepad2,
+  Check,
+  Copy,
+  ExternalLink,
+  Lock,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -33,6 +43,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [copiedDbPath, setCopiedDbPath] = useState(false);
+
+  // Show/hide tokens
+  const [showGithub, setShowGithub] = useState(false);
+  const [showTmdb, setShowTmdb] = useState(false);
+  const [showRawg, setShowRawg] = useState(false);
 
   // Test states
   const [githubTest, setGithubTest] = useState<{ testing: boolean; result?: { valid: boolean; username?: string; message?: string } }>({ testing: false });
@@ -41,7 +57,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
 
   // Import state
   const [importing, setImporting] = useState(false);
-  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [importMessage, setImportMessage] = useState<{ text: string; isError?: boolean } | null>(null);
 
   const loadSettings = async () => {
     try {
@@ -51,6 +67,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       setTmdbKey(res.settings.tmdb_api_key || '');
       setRawgKey(res.settings.rawg_api_key || '');
       setDbPath(res.dbPath);
+
+      // Auto-run non-blocking tests if tokens exist
+      if (res.settings.github_token) {
+        testGithubToken(res.settings.github_token).then((r) => setGithubTest({ testing: false, result: r })).catch(() => {});
+      }
+      if (res.settings.tmdb_api_key) {
+        testTmdbKey(res.settings.tmdb_api_key).then((r) => setTmdbTest({ testing: false, result: r })).catch(() => {});
+      }
+      if (res.settings.rawg_api_key) {
+        testRawgKey(res.settings.rawg_api_key).then((r) => setRawgTest({ testing: false, result: r })).catch(() => {});
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -72,8 +99,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
         tmdb_api_key: tmdbKey.trim(),
         rawg_api_key: rawgKey.trim(),
       });
-      setSaveMessage('Settings saved successfully.');
-      setTimeout(() => setSaveMessage(null), 3000);
+      setSaveMessage('All integration keys updated & saved to SQLite.');
+      setTimeout(() => setSaveMessage(null), 3500);
     } catch (err: any) {
       setSaveMessage(err.message || 'Failed to save settings');
     } finally {
@@ -125,249 +152,361 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       const text = await file.text();
       const parsed = JSON.parse(text);
       const res = await importData(parsed);
-      setImportMessage(res.message || 'Data imported successfully.');
+      setImportMessage({ text: res.message || 'Complete dataset restored successfully.' });
       loadSettings();
     } catch (err: any) {
-      setImportMessage(err.message || 'Import failed: Invalid JSON structure.');
+      setImportMessage({ text: err.message || 'Import failed: Invalid JSON structure.', isError: true });
     } finally {
       setImporting(false);
       e.target.value = '';
     }
   };
 
+  const copyDbPath = () => {
+    navigator.clipboard.writeText(dbPath);
+    setCopiedDbPath(true);
+    setTimeout(() => setCopiedDbPath(false), 2000);
+  };
+
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-4xl">
       <Header
-        title="Settings"
-        subtitle="Third-party API key configurations, database backup & storage info"
-      />
+        title="Settings & Integrations"
+        subtitle="Third-party API key configurations, database backup & storage security"
+      >
+        <div className="flex items-center gap-1.5 px-3 py-1 bg-card border border-rule/80 rounded-[4px] text-[11px] font-mono text-ink-soft">
+          <Lock className="w-3 h-3 text-ledger-blue" />
+          <span>Local Storage Only</span>
+        </div>
+      </Header>
 
       {loading ? (
-        <div className="py-16 text-center text-xs font-mono text-ink-soft animate-pulse">
-          Loading settings...
+        <div className="py-20 text-center text-xs font-mono text-ink-soft animate-pulse">
+          Reading system preferences...
         </div>
       ) : (
         <form onSubmit={handleSaveAll} className="space-y-6">
-          {/* API Keys Configuration Card */}
-          <div className="ledger-card p-5 space-y-5">
-            <div className="flex items-center gap-2 pb-3 border-b border-rule">
-              <Key className="w-4 h-4 text-ledger-blue" />
-              <h2 className="font-serif text-base font-semibold text-ink">
-                Third-Party Integrations
-              </h2>
-            </div>
+          {/* Third-party Integrations Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-serif text-base font-semibold text-ink flex items-center gap-2">
+                  <Key className="w-4 h-4 text-ledger-blue" />
+                  <span>API Integrations</span>
+                </h2>
+                <p className="text-xs text-ink-soft mt-0.5">
+                  Unlock automated metadata, cover posters, and GitHub contribution graphs.
+                </p>
+              </div>
 
-            <p className="text-xs text-ink-soft leading-relaxed">
-              All keys are stored locally in your SQLite database and never sent anywhere except directly to the third-party services. Each integration is completely optional.
-            </p>
-
-            {/* GitHub PAT */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-ink">
-                  GitHub Personal Access Token
-                </label>
-                <span className="text-[11px] font-mono text-ink-soft">Scopes: repo, read:user</span>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  className="flex-1 px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={handleTestGithub}
-                  disabled={githubTest.testing || !githubToken.trim()}
-                  className="px-3 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded disabled:opacity-50 flex items-center gap-1"
-                >
-                  {githubTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Test</span>
-                </button>
-              </div>
-              {githubTest.result && (
-                <div
-                  className={`text-xs font-mono flex items-center gap-1.5 mt-1 ${
-                    githubTest.result.valid ? 'text-emerald-700' : 'text-stamp-red'
-                  }`}
-                >
-                  {githubTest.result.valid ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Verified for user: @{githubTest.result.username}</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>{githubTest.result.message || 'Token verification failed'}</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* TMDB API Key */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-ink">
-                  TMDB (The Movie Database) API Key or Access Token
-                </label>
-                <a
-                  href="https://www.themoviedb.org/settings/api"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] font-mono text-ledger-blue hover:underline"
-                >
-                  Get Key →
-                </a>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="TMDB API Key (v3) or Bearer Token (v4)"
-                  value={tmdbKey}
-                  onChange={(e) => setTmdbKey(e.target.value)}
-                  className="flex-1 px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={handleTestTmdb}
-                  disabled={tmdbTest.testing || !tmdbKey.trim()}
-                  className="px-3 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded disabled:opacity-50 flex items-center gap-1"
-                >
-                  {tmdbTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Test</span>
-                </button>
-              </div>
-              {tmdbTest.result && (
-                <div
-                  className={`text-xs font-mono flex items-center gap-1.5 mt-1 ${
-                    tmdbTest.result.valid ? 'text-emerald-700' : 'text-stamp-red'
-                  }`}
-                >
-                  {tmdbTest.result.valid ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>TMDB connection verified.</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>{tmdbTest.result.message || 'Key invalid'}</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* RAWG API Key */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-ink">
-                  RAWG Video Games Database API Key
-                </label>
-                <a
-                  href="https://rawg.io/apidocs"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] font-mono text-ledger-blue hover:underline"
-                >
-                  Get Key →
-                </a>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="RAWG API Key"
-                  value={rawgKey}
-                  onChange={(e) => setRawgKey(e.target.value)}
-                  className="flex-1 px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={handleTestRawg}
-                  disabled={rawgTest.testing || !rawgKey.trim()}
-                  className="px-3 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded disabled:opacity-50 flex items-center gap-1"
-                >
-                  {rawgTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Test</span>
-                </button>
-              </div>
-              {rawgTest.result && (
-                <div
-                  className={`text-xs font-mono flex items-center gap-1.5 mt-1 ${
-                    rawgTest.result.valid ? 'text-emerald-700' : 'text-stamp-red'
-                  }`}
-                >
-                  {rawgTest.result.valid ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>RAWG connection verified.</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>{rawgTest.result.message || 'Key invalid'}</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Save Buttons */}
-            <div className="flex items-center justify-between pt-3 border-t border-rule">
-              {saveMessage ? (
-                <span className="text-xs font-mono text-emerald-700">{saveMessage}</span>
-              ) : (
-                <span className="text-xs font-mono text-ink-soft">Changes persist to SQLite</span>
-              )}
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-1.5 px-4 py-2 bg-ledger-blue text-paper text-xs font-medium rounded hover:bg-ledger-hover transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-ledger-blue text-paper text-xs font-medium rounded-[4px] hover:bg-ledger-hover active:scale-95 transition-all disabled:opacity-50 shadow-xs"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>{saving ? 'Saving...' : 'Save Keys'}</span>
               </button>
             </div>
+
+            {saveMessage && (
+              <div className="p-3 bg-ledger-light border border-ledger-blue/40 rounded-[5px] text-xs font-mono text-ledger-blue font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-ledger-blue flex-shrink-0" />
+                <span>{saveMessage}</span>
+              </div>
+            )}
+
+            {/* GitHub Card */}
+            <div className="ledger-card p-5 space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-rule/70">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-paper rounded-[4px] border border-rule">
+                    <Github className="w-4 h-4 text-ink" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-sm font-semibold text-ink">GitHub Integration</h3>
+                    <p className="text-[11px] text-ink-soft">Fetch commit history, contribution heatmaps & streak counts</p>
+                  </div>
+                </div>
+
+                {/* Status indicator */}
+                {githubTest.result?.valid ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-[4px] text-[11px] font-mono font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                    Connected: @{githubTest.result.username}
+                  </span>
+                ) : githubToken ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-paper text-ink-soft border border-rule rounded-[4px] text-[11px] font-mono">
+                    Token Entered (Click Test)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gold-light text-ink border border-gold/40 rounded-[4px] text-[11px] font-mono">
+                    Not Configured
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-ink">Personal Access Token (Classic or Fine-Grained)</label>
+                  <a
+                    href="https://github.com/settings/tokens/new?scopes=repo,read:user&description=DDT+Dashboard"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-mono text-ledger-blue hover:underline flex items-center gap-1"
+                  >
+                    <span>Generate token</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showGithub ? 'text' : 'password'}
+                      placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                      value={githubToken}
+                      onChange={(e) => setGithubToken(e.target.value)}
+                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowGithub(!showGithub)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
+                    >
+                      {showGithub ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTestGithub}
+                    disabled={githubTest.testing || !githubToken.trim()}
+                    className="px-3.5 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all flex-shrink-0"
+                  >
+                    {githubTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                    <span>Verify</span>
+                  </button>
+                </div>
+
+                {githubTest.result && !githubTest.result.valid && (
+                  <p className="text-xs font-mono text-stamp-red mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{githubTest.result.message || 'Invalid GitHub token. Check scopes (repo, read:user).'}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* TMDB Card */}
+            <div className="ledger-card p-5 space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-rule/70">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-paper rounded-[4px] border border-rule">
+                    <Film className="w-4 h-4 text-ink" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-sm font-semibold text-ink">The Movie Database (TMDB)</h3>
+                    <p className="text-[11px] text-ink-soft">Instant movie/show search, official poster artwork & release dates</p>
+                  </div>
+                </div>
+
+                {/* Status indicator */}
+                {tmdbTest.result?.valid ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-[4px] text-[11px] font-mono font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                    Connected
+                  </span>
+                ) : tmdbKey ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-paper text-ink-soft border border-rule rounded-[4px] text-[11px] font-mono">
+                    Key Entered (Click Test)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gold-light text-ink border border-gold/40 rounded-[4px] text-[11px] font-mono">
+                    Not Configured
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-ink">TMDB API Key (v3) or API Read Access Token (v4)</label>
+                  <a
+                    href="https://www.themoviedb.org/settings/api"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-mono text-ledger-blue hover:underline flex items-center gap-1"
+                  >
+                    <span>Get free TMDB key</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showTmdb ? 'text' : 'password'}
+                      placeholder="TMDB API Key (32 hex characters) or Bearer Token"
+                      value={tmdbKey}
+                      onChange={(e) => setTmdbKey(e.target.value)}
+                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowTmdb(!showTmdb)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
+                    >
+                      {showTmdb ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTestTmdb}
+                    disabled={tmdbTest.testing || !tmdbKey.trim()}
+                    className="px-3.5 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all flex-shrink-0"
+                  >
+                    {tmdbTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                    <span>Verify</span>
+                  </button>
+                </div>
+
+                {tmdbTest.result && !tmdbTest.result.valid && (
+                  <p className="text-xs font-mono text-stamp-red mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{tmdbTest.result.message || 'TMDB key validation failed.'}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* RAWG Card */}
+            <div className="ledger-card p-5 space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-rule/70">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-paper rounded-[4px] border border-rule">
+                    <Gamepad2 className="w-4 h-4 text-ink" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-sm font-semibold text-ink">RAWG Video Games Database</h3>
+                    <p className="text-[11px] text-ink-soft">Search 500,000+ video games & attach official cover art</p>
+                  </div>
+                </div>
+
+                {/* Status indicator */}
+                {rawgTest.result?.valid ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-[4px] text-[11px] font-mono font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                    Connected
+                  </span>
+                ) : rawgKey ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-paper text-ink-soft border border-rule rounded-[4px] text-[11px] font-mono">
+                    Key Entered (Click Test)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gold-light text-ink border border-gold/40 rounded-[4px] text-[11px] font-mono">
+                    Not Configured
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-ink">RAWG API Key</label>
+                  <a
+                    href="https://rawg.io/apidocs"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-mono text-ledger-blue hover:underline flex items-center gap-1"
+                  >
+                    <span>Get free RAWG key</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showRawg ? 'text' : 'password'}
+                      placeholder="RAWG API Key"
+                      value={rawgKey}
+                      onChange={(e) => setRawgKey(e.target.value)}
+                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRawg(!showRawg)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
+                    >
+                      {showRawg ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTestRawg}
+                    disabled={rawgTest.testing || !rawgKey.trim()}
+                    className="px-3.5 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all flex-shrink-0"
+                  >
+                    {rawgTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                    <span>Verify</span>
+                  </button>
+                </div>
+
+                {rawgTest.result && !rawgTest.result.valid && (
+                  <p className="text-xs font-mono text-stamp-red mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{rawgTest.result.message || 'RAWG key validation failed.'}</span>
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Data Portability & Backup Card */}
+          {/* Database & Data Backup Card */}
           <div className="ledger-card p-5 space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-rule">
+            <div className="flex items-center gap-2 pb-3 border-b border-rule/70">
               <Database className="w-4 h-4 text-ledger-blue" />
               <h2 className="font-serif text-base font-semibold text-ink">
-                Data Portability & Database
+                Database & Data Portability
               </h2>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-ink mb-1">
-                SQLite Database Location
+                SQLite Database Location (Local Disk)
               </label>
-              <div className="p-2.5 bg-paper border border-rule rounded-[3px] text-xs font-mono text-ink break-all select-all">
-                {dbPath}
+              <div className="flex items-center gap-2 p-2.5 bg-paper border border-rule rounded-[4px]">
+                <span className="text-xs font-mono text-ink break-all flex-1 select-all">
+                  {dbPath}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyDbPath}
+                  className="p-1.5 text-ink-soft hover:text-ledger-blue rounded border border-rule bg-card active:scale-95 transition-all"
+                  title="Copy path"
+                >
+                  {copiedDbPath ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
               </div>
-              <p className="text-[11px] text-ink-soft mt-1">
-                All logs, kanban cards, journal entries, food logs, and watchlist items reside in this local SQLite file.
+              <p className="text-[11px] text-ink-soft mt-1.5">
+                All daily logs, kanban boards, journals, movies, and game sessions reside safely in this local database file.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-rule">
+            <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-rule/70">
               <button
                 type="button"
                 onClick={handleExportData}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] active:scale-95 transition-all shadow-xs"
               >
                 <Download className="w-3.5 h-3.5 text-ledger-blue" />
-                <span>Export All Data (JSON)</span>
+                <span>Export Complete Backup (JSON)</span>
               </button>
 
-              <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded cursor-pointer transition-colors">
+              <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] cursor-pointer active:scale-95 transition-all shadow-xs">
                 <Upload className="w-3.5 h-3.5 text-ledger-blue" />
-                <span>{importing ? 'Importing...' : 'Restore from JSON'}</span>
+                <span>{importing ? 'Restoring...' : 'Restore from JSON File'}</span>
                 <input
                   type="file"
                   accept=".json"
@@ -379,7 +518,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
             </div>
 
             {importMessage && (
-              <p className="text-xs font-mono text-ink-soft pt-1">{importMessage}</p>
+              <div className={`p-3 rounded-[4px] text-xs font-mono border ${
+                importMessage.isError ? 'bg-stamp-light border-stamp-red/40 text-stamp-red' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+              }`}>
+                {importMessage.text}
+              </div>
             )}
           </div>
         </form>
@@ -387,3 +530,4 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
     </div>
   );
 };
+

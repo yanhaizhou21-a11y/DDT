@@ -6,85 +6,151 @@ import type { AppDatabase } from '../db/index.js';
 export function createGithubRouter(db: AppDatabase): Router {
   const router = Router();
 
-  async function getGithubToken(): Promise<string | null> {
-    const row = await db.select().from(settings).where(eq(settings.key, 'github_token')).get();
-    return row?.value?.trim() || null;
+  async function getGithubConfig(): Promise<{ token: string | null; username: string | null }> {
+    const rows = await db.select().from(settings);
+    const map: Record<string, string> = {};
+    rows.forEach((r) => {
+      map[r.key] = r.value?.trim() || '';
+    });
+    return {
+      token: map.github_token || null,
+      username: map.github_username || null,
+    };
   }
 
   // GET /api/github/contributions
   router.get('/contributions', async (req, res) => {
     try {
       const forceRefresh = req.query.force === 'true';
-      const token = await getGithubToken();
-      if (!token) {
-        return res.status(400).json({ error: 'GitHub token not configured. Please add your token in Settings.', unconfigured: true });
+      const config = await getGithubConfig();
+      const token = config.token;
+      let username = config.username || (req.query.username as string | undefined);
+
+      if (!token && !username) {
+        return res.status(400).json({
+          error: 'GitHub token or username not configured. Please add your credentials in Settings.',
+          unconfigured: true,
+        });
       }
 
-      const cacheKey = 'github:contributions:12months';
+      const cacheKey = `github:contributions:${username || 'viewer'}`;
       const cached = await db.select().from(githubCache).where(eq(githubCache.key, cacheKey)).get();
-      const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+      const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
       if (!forceRefresh && cached && (Date.now() - cached.fetchedAt.getTime() < CACHE_TTL)) {
         return res.json(JSON.parse(cached.payload));
       }
 
-      // Fetch from GitHub GraphQL
-      const graphqlQuery = `
-        query {
-          viewer {
-            login
-            name
-            avatarUrl
-            contributionsCollection {
-              contributionCalendar {
-                totalContributions
-                weeks {
-                  contributionDays {
-                    contributionCount
-                    date
-                    weekday
-                    color
+      let result: any = null;
+
+      // Tier 1: If Token is provided, try GitHub GraphQL API
+      if (token) {
+        try {
+          const graphqlQuery = `
+            query {
+              viewer {
+                login
+                name
+                avatarUrl
+                contributionsCollection {
+                  contributionCalendar {
+                    totalContributions
+                    weeks {
+                      contributionDays {
+                        contributionCount
+                        date
+                        weekday
+                        color
+                      }
+                    }
                   }
                 }
               }
             }
+          `;
+
+          const ghRes = await fetch('https://api.github.com/graphql', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'User-Agent': 'DDT-Dashboard/1.0',
+            },
+            body: JSON.stringify({ query: graphqlQuery }),
+          });
+
+          if (ghRes.ok) {
+            const data = (await ghRes.json()) as any;
+            if (data.data?.viewer) {
+              const viewer = data.data.viewer;
+              const calendar = viewer.contributionsCollection?.contributionCalendar;
+              username = viewer.login;
+
+              result = {
+                user: {
+                  login: viewer.login,
+                  name: viewer.name || viewer.login,
+                  avatarUrl: viewer.avatarUrl,
+                },
+                totalContributions: calendar?.totalContributions || 0,
+                weeks: calendar?.weeks || [],
+                fetchedAt: new Date().toISOString(),
+              };
+            }
           }
+        } catch {
+          // Fall through to public API
         }
-      `;
-
-      const response = await fetch('https://api.github.com/graphql', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'User-Agent': 'DDT-Dashboard/1.0',
-        },
-        body: JSON.stringify({ query: graphqlQuery }),
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => ({}))) as any;
-        return res.status(response.status).json({
-          error: errorData.message || 'Failed to authenticate with GitHub GraphQL. Check token scopes (repo, read:user).',
-        });
       }
 
-      const data = (await response.json()) as any;
-      if (data.errors) {
-        return res.status(400).json({ error: data.errors[0]?.message || 'GraphQL error' });
+      // Tier 2: If Tier 1 didn't succeed or only username is known, use public contributions API
+      if (!result && username) {
+        try {
+          const cleanUser = username.replace(/^@+/, '').trim();
+          const publicRes = await fetch(`https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(cleanUser)}?y=last`);
+          
+          if (publicRes.ok) {
+            const pubData = (await publicRes.json()) as any;
+            const contributions: Array<{ date: string; count: number; level: number }> = pubData.contributions || [];
+
+            // Group into 7-day calendar weeks
+            const weeksMap: Record<number, any[]> = {};
+            let total = 0;
+
+            contributions.forEach((c) => {
+              total += c.count;
+              const d = new Date(`${c.date}T00:00:00.000Z`);
+              const weekNum = Math.floor(d.getTime() / (7 * 24 * 60 * 60 * 1000));
+              if (!weeksMap[weekNum]) weeksMap[weekNum] = [];
+              weeksMap[weekNum].push({
+                date: c.date,
+                contributionCount: c.count,
+                color: c.level === 0 ? '#ebedf0' : c.level === 1 ? '#9be9a8' : c.level === 2 ? '#40c463' : c.level === 3 ? '#30a14e' : '#216e39',
+                weekday: d.getUTCDay(),
+              });
+            });
+
+            const weeks = Object.values(weeksMap).map((days) => ({ contributionDays: days }));
+
+            result = {
+              user: {
+                login: cleanUser,
+                name: cleanUser,
+                avatarUrl: `https://github.com/${cleanUser}.png`,
+              },
+              totalContributions: pubData.total?.['lastYear'] ?? total,
+              weeks,
+              fetchedAt: new Date().toISOString(),
+            };
+          }
+        } catch {
+          // Fallback
+        }
       }
 
-      const calendar = data.data?.viewer?.contributionsCollection?.contributionCalendar;
-      const result = {
-        user: {
-          login: data.data?.viewer?.login,
-          name: data.data?.viewer?.name,
-          avatarUrl: data.data?.viewer?.avatarUrl,
-        },
-        totalContributions: calendar?.totalContributions || 0,
-        weeks: calendar?.weeks || [],
-        fetchedAt: new Date().toISOString(),
-      };
+      if (!result) {
+        return res.status(500).json({ error: 'Unable to fetch GitHub contributions. Please check your token or username.' });
+      }
 
       const now = new Date();
       if (cached) {
@@ -92,6 +158,10 @@ export function createGithubRouter(db: AppDatabase): Router {
       } else {
         await db.insert(githubCache).values({ key: cacheKey, payload: JSON.stringify(result), fetchedAt: now });
       }
+
+      // Also update general key for dashboard
+      await db.delete(githubCache).where(eq(githubCache.key, 'github:contributions:12months')).catch(() => {});
+      await db.insert(githubCache).values({ key: 'github:contributions:12months', payload: JSON.stringify(result), fetchedAt: now });
 
       res.json(result);
     } catch (err: any) {
@@ -103,9 +173,12 @@ export function createGithubRouter(db: AppDatabase): Router {
   router.get('/repos', async (req, res) => {
     try {
       const forceRefresh = req.query.force === 'true';
-      const token = await getGithubToken();
-      if (!token) {
-        return res.status(400).json({ error: 'GitHub token not configured.', unconfigured: true });
+      const config = await getGithubConfig();
+      const token = config.token;
+      const username = config.username;
+
+      if (!token && !username) {
+        return res.status(400).json({ error: 'GitHub token or username not configured.', unconfigured: true });
       }
 
       const cacheKey = 'github:repos:recent';
@@ -116,16 +189,20 @@ export function createGithubRouter(db: AppDatabase): Router {
         return res.json(JSON.parse(cached.payload));
       }
 
-      const reposRes = await fetch('https://api.github.com/user/repos?sort=pushed&per_page=10&direction=desc', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github.v3+json',
-          'User-Agent': 'DDT-Dashboard/1.0',
-        },
-      });
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'DDT-Dashboard/1.0',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const endpoint = token
+        ? 'https://api.github.com/user/repos?sort=pushed&per_page=8&direction=desc'
+        : `https://api.github.com/users/${encodeURIComponent(username!)}/repos?sort=pushed&per_page=8&direction=desc`;
+
+      const reposRes = await fetch(endpoint, { headers });
 
       if (!reposRes.ok) {
-        return res.status(reposRes.status).json({ error: 'Failed to fetch user repositories from GitHub.' });
+        return res.status(reposRes.status).json({ error: 'Failed to fetch repositories from GitHub.' });
       }
 
       const repos = (await reposRes.json()) as any[];
@@ -134,11 +211,7 @@ export function createGithubRouter(db: AppDatabase): Router {
           let lastCommit: any = null;
           try {
             const commitRes = await fetch(`https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?per_page=1`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/vnd.github.v3+json',
-                'User-Agent': 'DDT-Dashboard/1.0',
-              },
+              headers,
             });
             if (commitRes.ok) {
               const commits = (await commitRes.json()) as any[];
@@ -152,19 +225,19 @@ export function createGithubRouter(db: AppDatabase): Router {
               }
             }
           } catch {
-            // Ignore individual commit failure
+            // Ignore commit error
           }
 
           return {
             id: repo.id,
             name: repo.name,
             fullName: repo.full_name,
-            private: repo.private,
+            private: repo.private || false,
             htmlUrl: repo.html_url,
             description: repo.description,
             pushedAt: repo.pushed_at,
             language: repo.language,
-            stargazersCount: repo.stargazers_count,
+            stargazersCount: repo.stargazers_count || 0,
             lastCommit,
           };
         })
@@ -200,3 +273,4 @@ export function createGithubRouter(db: AppDatabase): Router {
 
   return router;
 }
+

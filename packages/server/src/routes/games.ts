@@ -106,6 +106,57 @@ export function createGamesRouter(db: AppDatabase): Router {
     }
   });
 
+  // GET /api/games/library - distinct games consolidated with total playtime & session count
+  router.get('/library', async (_req, res) => {
+    try {
+      const all = await db.select().from(gameEntries).orderBy(desc(gameEntries.loggedAt), desc(gameEntries.createdAt));
+      const gameMap: Record<string, {
+        gameName: string;
+        coverUrl: string | null;
+        totalHours: number;
+        sessionCount: number;
+        lastPlayed: string;
+        firstPlayed: string;
+        sessions: any[];
+      }> = {};
+
+      for (const entry of all) {
+        const key = entry.gameName.trim().toLowerCase();
+        if (!gameMap[key]) {
+          gameMap[key] = {
+            gameName: entry.gameName.trim(),
+            coverUrl: entry.coverUrl || null,
+            totalHours: 0,
+            sessionCount: 0,
+            lastPlayed: entry.loggedAt,
+            firstPlayed: entry.loggedAt,
+            sessions: [],
+          };
+        }
+
+        // Update coverUrl if existing is null
+        if (!gameMap[key].coverUrl && entry.coverUrl) {
+          gameMap[key].coverUrl = entry.coverUrl;
+        }
+
+        gameMap[key].totalHours += entry.hours;
+        gameMap[key].sessionCount += 1;
+        if (entry.loggedAt > gameMap[key].lastPlayed) gameMap[key].lastPlayed = entry.loggedAt;
+        if (entry.loggedAt < gameMap[key].firstPlayed) gameMap[key].firstPlayed = entry.loggedAt;
+        gameMap[key].sessions.push(entry);
+      }
+
+      const library = Object.values(gameMap).map((g) => ({
+        ...g,
+        totalHours: Math.round(g.totalHours * 100) / 100,
+      })).sort((a, b) => b.lastPlayed.localeCompare(a.lastPlayed));
+
+      res.json(library);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to fetch game library' });
+    }
+  });
+
   // GET /api/games
   router.get('/', async (req, res) => {
     try {
@@ -132,13 +183,22 @@ export function createGamesRouter(db: AppDatabase): Router {
 
       const id = req.body.id || `game-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const dateStr = loggedAt || new Date().toISOString().slice(0, 10);
-      const parsedHours = Number(hours) || 1;
+      const parsedHours = Math.round((Number(hours) || 1) * 100) / 100;
+
+      // If coverUrl is not provided, look up if we already have a cover for this game
+      let finalCover = coverUrl || null;
+      if (!finalCover) {
+        const existing = await db.select().from(gameEntries).where(eq(gameEntries.gameName, gameName.trim())).get();
+        if (existing?.coverUrl) {
+          finalCover = existing.coverUrl;
+        }
+      }
 
       const newEntry = {
         id,
-        gameName,
+        gameName: gameName.trim(),
         hours: parsedHours,
-        coverUrl: coverUrl || null,
+        coverUrl: finalCover,
         loggedAt: dateStr,
         createdAt: new Date(),
       };
@@ -163,3 +223,4 @@ export function createGamesRouter(db: AppDatabase): Router {
 
   return router;
 }
+

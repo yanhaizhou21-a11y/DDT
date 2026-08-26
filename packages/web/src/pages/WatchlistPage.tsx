@@ -708,16 +708,42 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Poster Image URL (Optional)</label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={manualPosterUrl}
-                  onChange={(e) => setManualPosterUrl(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono text-xs"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-ink">Poster Image URL (Optional)</label>
+                  {manualPosterUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setManualPosterUrl('')}
+                      className="text-[11px] font-mono text-stamp-red hover:underline"
+                    >
+                      Clear URL
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2 items-center">
+                  {manualPosterUrl ? (
+                    <div className="w-9 h-12 rounded border border-rule overflow-hidden bg-card shrink-0 flex items-center justify-center">
+                      <img
+                        src={manualPosterUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  ) : null}
+                  <input
+                    type="url"
+                    placeholder="https://... (direct image URL)"
+                    value={manualPosterUrl}
+                    onChange={(e) => setManualPosterUrl(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-hidden font-mono"
+                  />
+                </div>
               </div>
             </div>
+
 
             <div>
               <label className="block text-xs font-medium text-ink mb-1">Synopsis / Personal Notes (Optional)</label>
@@ -795,8 +821,43 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
               </div>
             </div>
 
+            {/* Custom Poster Image URL Section */}
+            <div className="p-3 bg-paper border border-rule rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono text-ink-soft uppercase tracking-wider">
+                  Custom Poster Image URL (Direct Link)
+                </span>
+                {editPosterUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setEditPosterUrl('')}
+                    className="text-[11px] font-mono text-stamp-red hover:underline"
+                  >
+                    Clear URL
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://... (paste direct image URL e.g. .jpg, .png, .webp)"
+                  value={editPosterUrl}
+                  onChange={(e) => setEditPosterUrl(e.target.value)}
+                  className="flex-1 px-3 py-1.5 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveCustomPoster}
+                  disabled={savingPoster}
+                  className="px-3.5 py-1.5 bg-ledger-blue text-paper text-xs font-semibold rounded-md hover:bg-ledger-hover disabled:opacity-40 transition-colors shrink-0"
+                >
+                  {savingPoster ? 'Saving...' : 'Save Poster'}
+                </button>
+              </div>
+            </div>
+
             {/* Quick Status Bar */}
-            <div className="p-3 bg-paper border border-rule rounded-[4px] flex items-center justify-between">
+            <div className="p-3 bg-paper border border-rule rounded-md flex items-center justify-between">
               <span className="text-xs font-mono text-ink-soft">Change Status:</span>
               <div className="flex items-center gap-1.5">
                 <button
@@ -831,6 +892,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                 </button>
               </div>
             </div>
+
 
             <div className="flex justify-between items-center pt-2 border-t border-rule">
               <button

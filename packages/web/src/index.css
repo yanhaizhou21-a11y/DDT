@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root, [data-theme="ledger"] {
     --paper: #F6F4EE;
     --paper-tint: #ECE7DA;
     --ink: #232019;
@@ -20,6 +20,8 @@
     --card-surface: #FCFAF4;
     --gold: #C28B38;
     --gold-light: #FDF6E8;
+    --accent: #2F4858;
+    --accent-foreground: #FFFFFF;
 
     /* transitions.dev motion tokens */
     --duration-micro: 80ms;
@@ -44,6 +46,49 @@
     --blur-small: 2px;
     --blur-medium: 4px;
   }
+
+  [data-theme="kinetic"], .dark {
+    --paper: #09090B;
+    --paper-tint: #121215;
+    --ink: #FAFAFA;
+    --ink-soft: #A1A1AA;
+    --ink-muted: #71717A;
+    --ledger-blue: #DFE104;
+    --ledger-hover: #C8CA03;
+    --ledger-light: rgba(223, 225, 4, 0.15);
+    --stamp-red: #EF4444;
+    --stamp-light: rgba(239, 68, 68, 0.15);
+    --rule: #27272A;
+    --rule-light: #3F3F46;
+    --card: #18181B;
+    --card-surface: #141416;
+    --gold: #EAB308;
+    --gold-light: rgba(234, 179, 8, 0.15);
+    --accent: #DFE104;
+    --accent-foreground: #000000;
+  }
+
+  [data-theme="cyberpunk"] {
+    --paper: #07070E;
+    --paper-tint: #0D0D1A;
+    --ink: #F0F6FC;
+    --ink-soft: #94A3B8;
+    --ink-muted: #64748B;
+    --ledger-blue: #00F0FF;
+    --ledger-hover: #00D4E0;
+    --ledger-light: rgba(0, 240, 255, 0.15);
+    --stamp-red: #FF007F;
+    --stamp-light: rgba(255, 0, 127, 0.15);
+    --rule: #1E1E38;
+    --rule-light: #2D2D4D;
+    --card: #0F0F1E;
+    --card-surface: #141428;
+    --gold: #FFE600;
+    --gold-light: rgba(255, 230, 0, 0.15);
+    --accent: #00F0FF;
+    --accent-foreground: #000000;
+  }
+
 
   body {
     background-color: var(--paper);

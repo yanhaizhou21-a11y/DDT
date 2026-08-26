@@ -107,6 +107,17 @@ export interface GameEntry {
   createdAt?: string;
 }
 
+export interface GameLibraryItem {
+  gameName: string;
+  coverUrl: string | null;
+  totalHours: number;
+  sessionCount: number;
+  lastPlayed: string;
+  firstPlayed: string;
+  sessions: GameEntry[];
+}
+
+
 export interface RAWGSearchResult {
   id: number;
   name: string;
@@ -186,6 +197,10 @@ export interface DashboardResponse {
   };
   github: {
     hasToken: boolean;
+    username?: string;
+    avatarUrl?: string;
     todayCommits: number;
+    totalYearCommits?: number;
   };
 }
+

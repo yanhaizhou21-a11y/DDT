@@ -124,14 +124,19 @@ export function createDashboardRouter(db: AppDatabase): Router {
             for (const day of week.contributionDays || []) {
               githubMap[day.date] = day.contributionCount;
               if (day.date === today) {
-                todayGithubCommits = day.contributionCount;
+                todayGithubCommits = Math.max(todayGithubCommits, day.contributionCount);
               }
             }
+          }
+          if (parsed.todayCommits !== undefined) {
+            todayGithubCommits = Math.max(todayGithubCommits, parsed.todayCommits);
+            githubMap[today] = Math.max(githubMap[today] || 0, todayGithubCommits);
           }
         } catch {
           // Ignore
         }
       }
+
 
       res.json({
         today,

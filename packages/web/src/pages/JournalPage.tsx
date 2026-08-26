@@ -9,6 +9,7 @@ import {
 } from '../api';
 import { Header } from '../components/Header';
 import { RichTextEditor } from '../components/RichTextEditor';
+import { ConfirmDialog } from '../components/AlertDialog';
 import {
   Calendar as CalendarIcon,
   Trash2,
@@ -19,7 +20,6 @@ import {
   Save,
   CheckCircle2,
 } from 'lucide-react';
-
 
 interface JournalPageProps {
   onNavigate: (tab: RouteTab) => void;
@@ -34,6 +34,8 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
   const [heatmapData, setHeatmapData] = useState<{ date: string; value: number }[]>([]);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+
 
   const isInitialMount = useRef(true);
 
@@ -123,8 +125,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
     }
   };
 
-  const handleDeleteEntry = async () => {
-    if (!confirm(`Clear journal entry for ${selectedDate}?`)) return;
+  const handleConfirmDelete = async () => {
     try {
       await deleteJournalEntry(selectedDate);
       setContent('');
@@ -136,6 +137,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
       console.error(err);
     }
   };
+
 
   // Quick jump previous / next day
   const jumpDay = (offset: number) => {
@@ -268,7 +270,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
               {content && (
                 <button
                   type="button"
-                  onClick={handleDeleteEntry}
+                  onClick={() => setIsConfirmDeleteOpen(true)}
                   className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-ink-soft hover:text-stamp-red rounded-md hover:bg-paper transition-colors"
                   title="Clear day's entry"
                 >
@@ -295,7 +297,6 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
             </div>
           </div>
 
-
           <RichTextEditor
             value={content}
             onChange={setContent}
@@ -306,7 +307,20 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
           />
         </div>
       </div>
+
+      {/* Confirmation Dialog for Clearing Entry */}
+      <ConfirmDialog
+        isOpen={isConfirmDeleteOpen}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Clear Journal Entry?"
+        description={`Are you sure you want to delete your written journal entry for ${selectedDate}? This action cannot be undone.`}
+        confirmText="Clear Entry"
+        cancelText="Keep Entry"
+        variant="danger"
+      />
     </div>
   );
 };
+
 

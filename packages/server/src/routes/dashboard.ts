@@ -94,13 +94,31 @@ export function createDashboardRouter(db: AppDatabase): Router {
         gameMap[g.loggedAt] = (gameMap[g.loggedAt] || 0) + g.hours;
       });
 
-      const ghCacheRow = await db.select().from(githubCache).where(eq(githubCache.key, 'github:contributions:12months')).get();
+      const stRows = await db.select().from(settings);
+      const settingsMap: Record<string, string> = {};
+      stRows.forEach((s) => (settingsMap[s.key] = s.value));
+
+      let ghCacheRow = await db.select().from(githubCache).where(eq(githubCache.key, 'github:contributions:12months')).get();
+      if (!ghCacheRow) {
+        // Look for any cached contributions
+        const anyGh = await db.select().from(githubCache).get();
+        if (anyGh && anyGh.key.startsWith('github:contributions')) {
+          ghCacheRow = anyGh;
+        }
+      }
+
       let todayGithubCommits = 0;
+      let totalYearCommits = 0;
+      let githubUsername = settingsMap.github_username || '';
+      let githubAvatar = '';
       const githubMap: Record<string, number> = {};
 
       if (ghCacheRow) {
         try {
           const parsed = JSON.parse(ghCacheRow.payload);
+          totalYearCommits = parsed.totalContributions || 0;
+          if (parsed.user?.login) githubUsername = parsed.user.login;
+          if (parsed.user?.avatarUrl) githubAvatar = parsed.user.avatarUrl;
           const weeks = parsed.weeks || [];
           for (const week of weeks) {
             for (const day of week.contributionDays || []) {
@@ -115,21 +133,17 @@ export function createDashboardRouter(db: AppDatabase): Router {
         }
       }
 
-      const stRows = await db.select().from(settings);
-      const settingsMap: Record<string, string> = {};
-      stRows.forEach((s) => (settingsMap[s.key] = s.value));
-
       res.json({
         today,
         journal: journalData,
-        kanbanDue: cardsDue.slice(0, 2),
+        kanbanDue: cardsDue.slice(0, 4),
         inTheaterSoon,
         foodToday: {
           count: todayFood.length,
           items: todayFood.slice(0, 5),
         },
         gameToday: {
-          hours: todayGameHours,
+          hours: Math.round(todayGameHours * 100) / 100,
           items: todayGames.slice(0, 5),
         },
         dotLedgers: {
@@ -140,8 +154,11 @@ export function createDashboardRouter(db: AppDatabase): Router {
           github: days30.map((d) => ({ date: d, value: githubMap[d] || 0 })),
         },
         github: {
-          hasToken: Boolean(settingsMap.github_token?.trim()),
+          hasToken: Boolean(settingsMap.github_token?.trim() || settingsMap.github_username?.trim()),
+          username: githubUsername,
+          avatarUrl: githubAvatar,
           todayCommits: todayGithubCommits,
+          totalYearCommits,
         },
       });
     } catch (err: any) {

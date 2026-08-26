@@ -8,20 +8,14 @@ import {
   fetchJournalHeatmap,
 } from '../api';
 import { Header } from '../components/Header';
-import { DotLedger } from '../components/DotLedger';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { RichTextEditor } from '../components/RichTextEditor';
 import {
-  BookOpen,
   Calendar as CalendarIcon,
   Trash2,
-  CheckCircle2,
-  AlertCircle,
-  Eye,
-  Edit3,
-  Columns,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
+  Sparkles,
 } from 'lucide-react';
 
 interface JournalPageProps {
@@ -35,9 +29,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
   const [initialContent, setInitialContent] = useState('');
   const [entriesList, setEntriesList] = useState<JournalSummary[]>([]);
   const [heatmapData, setHeatmapData] = useState<{ date: string; value: number }[]>([]);
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('split');
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('idle');
-  const [wordCount, setWordCount] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
   const isInitialMount = useRef(true);
@@ -65,13 +57,12 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
   // Load entry for selected date
   const loadDateEntry = async (date: string) => {
     try {
-      setSaveStatus('idle');
+      setSaveStatus('saved');
       const entry = await fetchJournalEntry(date);
       setContent(entry.content || '');
       setInitialContent(entry.content || '');
-      setWordCount(entry.wordCount || 0);
       if (entry.updatedAt) {
-        setLastSavedTime(new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        setLastSavedTime(new Date(entry.updatedAt).toISOString());
       } else {
         setLastSavedTime(null);
       }
@@ -88,7 +79,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
     loadDateEntry(selectedDate);
   }, [selectedDate]);
 
-  // Debounced Autosave (~1.5s after last keystroke per PRD §2.4)
+  // Debounced Autosave (~1.2s after last keystroke)
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -97,8 +88,6 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
 
     if (content === initialContent) return;
 
-    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
-    setWordCount(words);
     setSaveStatus('saving');
 
     const timer = setTimeout(async () => {
@@ -106,25 +95,38 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
         await saveJournalEntry(selectedDate, content);
         setInitialContent(content);
         setSaveStatus('saved');
-        setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        setLastSavedTime(new Date().toISOString());
         loadSidebarData();
       } catch (err) {
         console.error('Autosave failed', err);
-        setSaveStatus('error');
+        setSaveStatus('unsaved');
       }
-    }, 1500);
+    }, 1200);
 
     return () => clearTimeout(timer);
   }, [content, selectedDate, initialContent]);
 
+  const handleManualSave = async () => {
+    try {
+      setSaveStatus('saving');
+      await saveJournalEntry(selectedDate, content);
+      setInitialContent(content);
+      setSaveStatus('saved');
+      setLastSavedTime(new Date().toISOString());
+      loadSidebarData();
+    } catch (err) {
+      console.error('Manual save failed', err);
+      setSaveStatus('unsaved');
+    }
+  };
+
   const handleDeleteEntry = async () => {
-    if (!confirm(`Delete entry for ${selectedDate}?`)) return;
+    if (!confirm(`Clear journal entry for ${selectedDate}?`)) return;
     try {
       await deleteJournalEntry(selectedDate);
       setContent('');
       setInitialContent('');
-      setWordCount(0);
-      setSaveStatus('idle');
+      setSaveStatus('saved');
       setLastSavedTime(null);
       loadSidebarData();
     } catch (err) {
@@ -143,7 +145,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
     <div className="space-y-6">
       <Header
         title="Daily Journal"
-        subtitle="One page per day with markdown autosave"
+        subtitle="One page per day with formatting toolbar & markdown autosave"
         dotLedgerData={heatmapData}
         dotLedgerUnit="entries"
       >
@@ -151,7 +153,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
           {selectedDate !== todayStr && (
             <button
               onClick={() => setSelectedDate(todayStr)}
-              className="px-2.5 py-1 bg-card border border-rule hover:border-ink-soft rounded text-xs font-mono text-ink transition-colors"
+              className="px-3 py-1.5 bg-card border border-rule hover:border-ink-soft rounded-lg text-xs font-mono text-ink transition-colors shadow-subtle"
             >
               Jump to Today
             </button>
@@ -172,14 +174,14 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => jumpDay(-1)}
-                  className="p-1 rounded hover:bg-paper text-ink-soft hover:text-ink"
+                  className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
                   title="Previous day"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => jumpDay(1)}
-                  className="p-1 rounded hover:bg-paper text-ink-soft hover:text-ink"
+                  className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
                   title="Next day"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -191,27 +193,30 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-3 py-2 bg-paper border border-rule rounded-[3px] text-sm font-mono text-ink focus:bg-card focus:outline-none"
+              className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:bg-card focus:outline-hidden"
             />
           </div>
 
           {/* Past Entries List */}
           <div className="ledger-card p-4">
-            <h3 className="font-serif font-semibold text-sm text-ink pb-2 border-b border-rule mb-3">
-              Past Entries ({entriesList.length})
+            <h3 className="font-serif font-semibold text-sm text-ink pb-2 border-b border-rule mb-3 flex items-center justify-between">
+              <span>Past Entries</span>
+              <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-paper text-ink-soft border border-rule/60">
+                {entriesList.length}
+              </span>
             </h3>
 
-            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
               {entriesList.map((entry) => {
                 const isSelected = entry.date === selectedDate;
                 return (
                   <button
                     key={entry.date}
                     onClick={() => setSelectedDate(entry.date)}
-                    className={`w-full text-left p-2.5 rounded-[3px] border transition-colors ${
+                    className={`w-full text-left p-3 rounded-lg border transition-all ${
                       isSelected
-                        ? 'bg-paper border-ledger-blue text-ink'
-                        : 'bg-card border-rule text-ink hover:border-ink-soft/60'
+                        ? 'bg-paper border-ledger-blue text-ink shadow-subtle'
+                        : 'bg-card border-rule/70 text-ink hover:border-ink-soft/60'
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs font-mono mb-1">
@@ -219,142 +224,66 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
                       <span className="text-ink-soft">{entry.wordCount} words</span>
                     </div>
                     {entry.preview ? (
-                      <p className="text-xs text-ink-soft line-clamp-1 font-sans">{entry.preview}</p>
+                      <p className="text-xs text-ink-soft line-clamp-2 font-sans leading-snug">{entry.preview}</p>
                     ) : (
-                      <p className="text-xs text-ink-soft/60 italic">Empty entry</p>
+                      <p className="text-xs text-ink-soft/50 italic">Empty entry</p>
                     )}
                   </button>
                 );
               })}
 
               {entriesList.length === 0 && (
-                <p className="text-xs text-ink-soft font-mono py-4 text-center">
-                  No previous entries logged yet.
-                </p>
+                <div className="py-8 text-center text-ink-soft">
+                  <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-xs font-mono">No previous entries logged yet.</p>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right Area: Main Journal Editor (8 cols) */}
-        <div className="lg:col-span-8 ledger-card p-5 flex flex-col min-h-[580px]">
-          {/* Header Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-rule mb-4 gap-2">
+        {/* Right Area: Rich Text & Markdown Editor (8 cols) */}
+        <div className="lg:col-span-8 space-y-4">
+          <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-3">
-              <span className="font-serif text-lg font-bold text-ink">
+              <h2 className="font-serif text-xl font-bold text-ink">
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
                 })}
-              </span>
+              </h2>
               {selectedDate === todayStr && (
-                <span className="px-2 py-0.5 bg-ledger-light text-ledger-blue font-mono text-[10px] font-semibold rounded">
+                <span className="px-2 py-0.5 bg-ledger-light text-ledger-blue font-mono text-[10px] font-bold rounded-full">
                   TODAY
                 </span>
               )}
             </div>
 
-            {/* View toggles & status */}
-            <div className="flex items-center gap-3 text-xs font-mono">
-              {/* Save Indicator */}
-              <div className="flex items-center gap-1.5">
-                {saveStatus === 'saving' && (
-                  <span className="text-ink-soft animate-pulse">Autosaving...</span>
-                )}
-                {saveStatus === 'saved' && (
-                  <span className="text-emerald-700 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Saved
-                  </span>
-                )}
-                {saveStatus === 'error' && (
-                  <span className="text-stamp-red flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" /> Not saved
-                  </span>
-                )}
-                {saveStatus === 'idle' && lastSavedTime && (
-                  <span className="text-ink-soft">Saved at {lastSavedTime}</span>
-                )}
-              </div>
-
-              {/* Editor mode toggles */}
-              <div className="flex items-center border border-rule rounded bg-paper p-0.5">
-                <button
-                  onClick={() => setViewMode('edit')}
-                  className={`p-1 rounded ${viewMode === 'edit' ? 'bg-card text-ink shadow-none font-semibold' : 'text-ink-soft hover:text-ink'}`}
-                  title="Edit Markdown"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('split')}
-                  className={`p-1 rounded hidden sm:block ${viewMode === 'split' ? 'bg-card text-ink shadow-none font-semibold' : 'text-ink-soft hover:text-ink'}`}
-                  title="Split View"
-                >
-                  <Columns className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('preview')}
-                  className={`p-1 rounded ${viewMode === 'preview' ? 'bg-card text-ink shadow-none font-semibold' : 'text-ink-soft hover:text-ink'}`}
-                  title="Preview"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {content && (
-                <button
-                  onClick={handleDeleteEntry}
-                  className="p-1 text-ink-soft hover:text-stamp-red"
-                  title="Clear day's entry"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Editor / Preview Body */}
-          <div className="flex-1 flex gap-4 min-h-[420px]">
-            {/* Markdown Text Area */}
-            {(viewMode === 'edit' || viewMode === 'split') && (
-              <div className={`flex-1 flex flex-col ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Record thoughts, achievements, tasks finished, or notes for this date..."
-                  className="w-full flex-1 p-4 bg-paper border border-rule rounded-[3px] text-sm font-sans text-ink leading-relaxed resize-none focus:bg-card focus:outline-none"
-                  autoFocus
-                />
-              </div>
-            )}
-
-            {/* Markdown Live Preview */}
-            {(viewMode === 'preview' || viewMode === 'split') && (
-              <div
-                className={`flex-1 p-4 bg-paper/60 border border-rule rounded-[3px] overflow-y-auto text-sm leading-relaxed prose prose-stone max-w-none ${
-                  viewMode === 'split' ? 'w-1/2 hidden sm:block' : 'w-full'
-                }`}
+            {content && (
+              <button
+                onClick={handleDeleteEntry}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-ink-soft hover:text-stamp-red rounded-md hover:bg-paper transition-colors"
+                title="Clear day's entry"
               >
-                {content.trim() ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-                ) : (
-                  <p className="text-ink-soft/60 italic text-xs">Preview will appear here as you write markdown...</p>
-                )}
-              </div>
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Clear Entry</span>
+              </button>
             )}
           </div>
 
-          {/* Monospace Footer: Word Count + Date */}
-          <div className="flex items-center justify-between pt-3 mt-3 border-t border-rule text-xs font-mono text-ink-soft">
-            <span>
-              <span className="font-semibold text-ink">{wordCount}</span> words
-            </span>
-            <span>Autosaves ~1.5s after last keystroke</span>
-          </div>
+          <RichTextEditor
+            value={content}
+            onChange={setContent}
+            onSave={handleManualSave}
+            saveStatus={saveStatus}
+            lastSavedAt={lastSavedTime}
+            placeholder="Write your thoughts, daily journal, achievements, ideas, or notes here..."
+          />
         </div>
       </div>
     </div>
   );
 };
+

@@ -9,6 +9,8 @@ import {
   importData,
 } from '../api';
 import { Header } from '../components/Header';
+import { ThemeToggle } from '../components/ThemeToggle';
+
 import {
   Key,
   CheckCircle2,
@@ -37,6 +39,7 @@ interface SettingsPageProps {
 
 export const SettingsPage: React.FC<SettingsPageProps> = () => {
   const [githubToken, setGithubToken] = useState('');
+  const [githubUsername, setGithubUsername] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [rawgKey, setRawgKey] = useState('');
   const [dbPath, setDbPath] = useState('');
@@ -64,6 +67,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       setLoading(true);
       const res = await fetchSettings();
       setGithubToken(res.settings.github_token || '');
+      setGithubUsername(res.settings.github_username || '');
       setTmdbKey(res.settings.tmdb_api_key || '');
       setRawgKey(res.settings.rawg_api_key || '');
       setDbPath(res.dbPath);
@@ -96,10 +100,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       setSaveMessage(null);
       await saveSettings({
         github_token: githubToken.trim(),
+        github_username: githubUsername.trim(),
         tmdb_api_key: tmdbKey.trim(),
         rawg_api_key: rawgKey.trim(),
       });
-      setSaveMessage('All integration keys updated & saved to SQLite.');
+      setSaveMessage('All integration keys and preferences saved to SQLite.');
       setTimeout(() => setSaveMessage(null), 3500);
     } catch (err: any) {
       setSaveMessage(err.message || 'Failed to save settings');
@@ -107,6 +112,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       setSaving(false);
     }
   };
+
 
   const handleTestGithub = async () => {
     setGithubTest({ testing: true });
@@ -248,57 +254,73 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-ink">Personal Access Token (Classic or Fine-Grained)</label>
-                  <a
-                    href="https://github.com/settings/tokens/new?scopes=repo,read:user&description=DDT+Dashboard"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] font-mono text-ledger-blue hover:underline flex items-center gap-1"
-                  >
-                    <span>Generate token</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+              <div className="space-y-3">
+                {/* GitHub Username */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-ink">GitHub Username (for public contribution graphs & commits)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. torvalds or octocat"
+                    value={githubUsername}
+                    onChange={(e) => setGithubUsername(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-hidden font-mono"
+                  />
                 </div>
 
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type={showGithub ? 'text' : 'password'}
-                      placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                      value={githubToken}
-                      onChange={(e) => setGithubToken(e.target.value)}
-                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
-                    />
+                {/* GitHub Token */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-ink">Personal Access Token (for private repos & GraphQL)</label>
+                    <a
+                      href="https://github.com/settings/tokens/new?scopes=repo,read:user&description=DDT+Dashboard"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-mono text-ledger-blue hover:underline flex items-center gap-1"
+                    >
+                      <span>Generate token</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showGithub ? 'text' : 'password'}
+                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                        value={githubToken}
+                        onChange={(e) => setGithubToken(e.target.value)}
+                        className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-hidden font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGithub(!showGithub)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
+                      >
+                        {showGithub ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => setShowGithub(!showGithub)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
+                      onClick={handleTestGithub}
+                      disabled={githubTest.testing || !githubToken.trim()}
+                      className="px-3.5 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-md disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all shrink-0"
                     >
-                      {showGithub ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {githubTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                      <span>Verify</span>
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleTestGithub}
-                    disabled={githubTest.testing || !githubToken.trim()}
-                    className="px-3.5 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all flex-shrink-0"
-                  >
-                    {githubTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                    <span>Verify</span>
-                  </button>
+                  {githubTest.result && !githubTest.result.valid && (
+                    <p className="text-xs font-mono text-stamp-red mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>{githubTest.result.message || 'Invalid GitHub token. Check scopes (repo, read:user).'}</span>
+                    </p>
+                  )}
                 </div>
-
-                {githubTest.result && !githubTest.result.valid && (
-                  <p className="text-xs font-mono text-stamp-red mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>{githubTest.result.message || 'Invalid GitHub token. Check scopes (repo, read:user).'}</span>
-                  </p>
-                )}
               </div>
             </div>
+
 
             {/* TMDB Card */}
             <div className="ledger-card p-5 space-y-3.5">
@@ -465,6 +487,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
             </div>
           </div>
 
+          {/* Theme & Display Preferences Card */}
+          <div className="ledger-card p-5 space-y-3.5">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-paper rounded-md border border-rule text-ledger-blue">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-sm font-semibold text-ink">Theme & Aesthetic Display</h3>
+                  <p className="text-[11px] text-ink-soft">Switch between Field Ledger, Kinetic Dark, and Cyberpunk modes</p>
+                </div>
+              </div>
+              <ThemeToggle />
+            </div>
+            <p className="text-xs text-ink-soft leading-relaxed">
+              DDT supports 3 distinctive handcrafted themes: <strong className="text-ink font-semibold">Field Ledger</strong> (warm paper & ink), <strong className="text-ink font-semibold">Kinetic Dark</strong> (high-energy brutalism with acid yellow), and <strong className="text-ink font-semibold">Cyberpunk Night</strong> (midnight glow & cyan/magenta hairlines).
+            </p>
+          </div>
+
           {/* Database & Data Backup Card */}
           <div className="ledger-card p-5 space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-rule/70">
@@ -473,6 +514,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                 Database & Data Portability
               </h2>
             </div>
+
 
             <div>
               <label className="block text-xs font-medium text-ink mb-1">

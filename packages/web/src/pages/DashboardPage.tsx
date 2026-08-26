@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Clock,
   Calendar,
+  Sparkles,
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -39,6 +40,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   // Quick game log state
   const [quickGameName, setQuickGameName] = useState('');
   const [quickGameHours, setQuickGameHours] = useState('1');
+  const [quickGameMinutes, setQuickGameMinutes] = useState('0');
   const [gameLogging, setGameLogging] = useState(false);
 
   const loadData = async () => {
@@ -110,14 +112,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const handleQuickGameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickGameName.trim() || !data) return;
+    const h = Math.max(0, parseInt(quickGameHours, 10) || 0);
+    const m = Math.max(0, parseInt(quickGameMinutes, 10) || 0);
+    const calculated = Math.round((h + m / 60) * 100) / 100;
+    const finalHours = calculated > 0 ? calculated : 0.5;
+
     try {
       setGameLogging(true);
       await addGameEntry({
         gameName: quickGameName.trim(),
-        hours: Number(quickGameHours) || 1,
+        hours: finalHours,
         loggedAt: data.today,
       });
       setQuickGameName('');
+      setQuickGameHours('1');
+      setQuickGameMinutes('0');
       loadData();
     } catch (err) {
       console.error(err);
@@ -128,7 +137,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   if (loading && !data) {
     return (
-      <div className="py-12 text-center text-ink-soft font-mono text-xs animate-pulse">
+      <div className="py-20 text-center text-ink-soft font-mono text-xs animate-pulse">
         Reading ledger entries...
       </div>
     );
@@ -140,7 +149,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <p className="text-stamp-red font-medium mb-3">{error || 'Unable to load dashboard'}</p>
         <button
           onClick={loadData}
-          className="px-3 py-1.5 bg-ledger-blue text-paper text-xs font-medium rounded hover:bg-ledger-hover transition-colors"
+          className="px-4 py-2 bg-ledger-blue text-paper text-xs font-medium rounded-[4px] hover:bg-ledger-hover active:scale-95 transition-all shadow-xs"
         >
           Retry
         </button>
@@ -151,7 +160,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       <Header title={dateStrFormatted} subtitle="Personal daily log & ledger overview">
-        <span className="text-xs font-mono text-ink-soft bg-card px-2.5 py-1 border border-rule rounded">
+        <span className="text-xs font-mono text-ink-soft bg-card px-2.5 py-1 border border-rule rounded-[4px] shadow-xs">
           {data.today}
         </span>
       </Header>
@@ -159,9 +168,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       {/* Grid Row 1: Dev Square + Daily Journal */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* GitHub / Dev Box (5 cols) */}
-        <div className="lg:col-span-5 ledger-card p-5 flex flex-col justify-between">
+        <div className="lg:col-span-5 ledger-card p-5 flex flex-col justify-between hover:border-ink-soft/70 transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-rule mb-4">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70 mb-4">
               <div className="flex items-center gap-2">
                 <GitCommit className="w-4 h-4 text-ledger-blue" />
                 <h2 className="font-serif text-base font-semibold text-ink">Dev Activity</h2>
@@ -180,13 +189,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   <span className="font-mono text-3xl font-bold text-ink">
                     {data.github.todayCommits}
                   </span>
-                  <span className="text-xs text-ink-soft">
+                  <span className="text-xs text-ink-soft font-mono">
                     {data.github.todayCommits === 1 ? 'commit today' : 'commits today'}
                   </span>
                 </div>
                 <div className="pt-2">
                   <div className="text-[11px] font-mono text-ink-soft uppercase tracking-wider mb-1.5">
-                    30-Day Activity
+                    30-Day Activity Heatmap
                   </div>
                   <DotLedger data={data.dotLedgers.github} unit="commits" />
                 </div>
@@ -196,7 +205,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <p className="text-xs text-ink-soft mb-3">No GitHub Personal Access Token configured.</p>
                 <button
                   onClick={() => onNavigate('settings')}
-                  className="px-3 py-1.5 bg-card border border-rule text-ink hover:border-ink-soft text-xs font-medium rounded transition-colors"
+                  className="px-3.5 py-1.5 bg-card border border-rule text-ink hover:border-ink-soft text-xs font-medium rounded-[4px] active:scale-95 transition-all shadow-xs"
                 >
                   Connect GitHub
                 </button>
@@ -211,8 +220,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Journal Today (7 cols) */}
-        <div className="lg:col-span-7 ledger-card p-5 flex flex-col">
-          <div className="flex items-center justify-between pb-3 border-b border-rule mb-3">
+        <div className="lg:col-span-7 ledger-card p-5 flex flex-col hover:border-ink-soft/70 transition-all">
+          <div className="flex items-center justify-between pb-3 border-b border-rule/70 mb-3">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-ledger-blue" />
               <h2 className="font-serif text-base font-semibold text-ink">Today's Journal</h2>
@@ -237,7 +246,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               value={quickJournal}
               onChange={(e) => setQuickJournal(e.target.value)}
               placeholder="What happened today? Notes, logs, reflections..."
-              className="w-full flex-1 min-h-[120px] p-3 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none resize-none font-sans text-ink leading-relaxed"
+              className="w-full flex-1 min-h-[120px] p-3 text-sm bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none resize-none font-sans text-ink leading-relaxed"
             />
             <div className="flex items-center justify-between mt-2 pt-2 text-xs font-mono text-ink-soft">
               <span>
@@ -252,9 +261,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       {/* Grid Row 2: Next 2 Kanban Due + In Theaters This Week + Quick Log (3 cols) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Next 2 Kanban Cards */}
-        <div className="ledger-card p-5 flex flex-col justify-between">
+        <div className="ledger-card p-5 flex flex-col justify-between hover:border-ink-soft/70 transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-rule mb-3">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70 mb-3">
               <div className="flex items-center gap-2">
                 <SquareKanban className="w-4 h-4 text-ledger-blue" />
                 <h2 className="font-serif text-base font-semibold text-ink">Next Due</h2>
@@ -273,7 +282,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   <div
                     key={card.id}
                     onClick={() => onNavigate('kanban')}
-                    className="p-3 bg-paper border border-rule rounded-[3px] hover:border-ink-soft cursor-pointer transition-colors"
+                    className="p-3 bg-paper border border-rule rounded-[4px] hover:border-ink-soft cursor-pointer transition-colors"
                   >
                     <div className="text-sm font-medium text-ink leading-snug line-clamp-2">
                       {card.title}
@@ -282,7 +291,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                       <span className="text-ink-soft text-[11px]">{card.tag || 'General'}</span>
                       {card.dueDate && (
                         <span
-                          className={`px-1.5 py-0.5 rounded-[2px] ${
+                          className={`px-1.5 py-0.5 rounded-[3px] text-[10px] ${
                             card.isOverdue
                               ? 'bg-stamp-light text-stamp-red font-semibold'
                               : 'bg-card border border-rule text-ink-soft'
@@ -313,9 +322,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Watchlist: In Theaters This Week */}
-        <div className="ledger-card p-5 flex flex-col justify-between">
+        <div className="ledger-card p-5 flex flex-col justify-between hover:border-ink-soft/70 transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-rule mb-3">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70 mb-3">
               <div className="flex items-center gap-2">
                 <Film className="w-4 h-4 text-ledger-blue" />
                 <h2 className="font-serif text-base font-semibold text-ink">Upcoming Watchlist</h2>
@@ -333,24 +342,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 {data.inTheaterSoon.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 p-2 bg-paper border border-rule rounded-[3px]"
+                    onClick={() => onNavigate('watchlist')}
+                    className="flex items-center gap-3 p-2 bg-paper border border-rule rounded-[4px] cursor-pointer hover:border-ink-soft transition-colors"
                   >
                     {item.posterPath ? (
                       <img
                         src={item.posterPath}
                         alt={item.title}
-                        className="w-9 h-12 object-cover rounded-[2px] border border-rule flex-shrink-0"
+                        className="w-9 h-12 object-cover rounded-[3px] border border-rule flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-9 h-12 bg-card border border-rule rounded-[2px] flex items-center justify-center text-[10px] text-ink-soft flex-shrink-0">
+                      <div className="w-9 h-12 bg-card border border-rule rounded-[3px] flex items-center justify-center text-[10px] text-ink-soft flex-shrink-0">
                         🎬
                       </div>
                     )}
                     <div className="overflow-hidden flex-1">
                       <div className="text-sm font-medium text-ink truncate">{item.title}</div>
                       {item.releaseDate && (
-                        <span className="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-stamp-light text-stamp-red border border-stamp-red/30 rounded-[2px]">
-                          Releases {item.releaseDate}
+                        <span className="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-stamp-light text-stamp-red border border-stamp-red/30 rounded-[3px]">
+                          In theaters {item.releaseDate}
                         </span>
                       )}
                     </div>
@@ -375,9 +385,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Quick Log: Food & Game */}
-        <div className="ledger-card p-5 flex flex-col justify-between">
+        <div className="ledger-card p-5 flex flex-col justify-between hover:border-ink-soft/70 transition-all">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-rule mb-3">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70 mb-3">
               <div className="flex items-center gap-2">
                 <Utensils className="w-4 h-4 text-ledger-blue" />
                 <h2 className="font-serif text-base font-semibold text-ink">Quick Log</h2>
@@ -385,7 +395,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               <div className="flex items-center gap-2 text-xs font-mono text-ink-soft">
                 <span>{data.foodToday.count} meals</span>
                 <span>•</span>
-                <span>{data.gameToday.hours}h played</span>
+                <span>{data.gameToday.hours.toFixed(2)}h played</span>
               </div>
             </div>
 
@@ -400,12 +410,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   placeholder="e.g. Sourdough sandwich"
                   value={quickFoodName}
                   onChange={(e) => setQuickFoodName(e.target.value)}
-                  className="flex-1 px-2.5 py-1.5 text-xs bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none"
+                  className="flex-1 px-2.5 py-1.5 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none"
                 />
                 <select
                   value={quickMealTag}
                   onChange={(e) => setQuickMealTag(e.target.value as any)}
-                  className="px-2 py-1.5 text-xs bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none capitalize text-ink"
+                  className="px-2 py-1.5 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none capitalize text-ink font-mono"
                 >
                   <option value="breakfast">Breakfast</option>
                   <option value="lunch">Lunch</option>
@@ -415,7 +425,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <button
                   type="submit"
                   disabled={foodLogging || !quickFoodName.trim()}
-                  className="px-2.5 py-1.5 bg-ledger-blue text-paper text-xs rounded hover:bg-ledger-hover disabled:opacity-50"
+                  className="px-2.5 py-1.5 bg-ledger-blue text-paper text-xs rounded-[4px] hover:bg-ledger-hover active:scale-95 disabled:opacity-50 transition-all shadow-xs"
                   title="Add meal"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -425,30 +435,45 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
             {/* Quick Game input */}
             <form onSubmit={handleQuickGameSubmit}>
-              <label className="block text-[11px] font-mono uppercase text-ink-soft mb-1">
-                Log Game Hours
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-mono uppercase text-ink-soft">
+                  Log Game Playtime
+                </label>
+                <span className="text-[10px] font-mono text-ledger-blue">
+                  {Math.round(((parseInt(quickGameHours, 10) || 0) + (parseInt(quickGameMinutes, 10) || 0) / 60) * 100) / 100}h decimal
+                </span>
+              </div>
               <div className="flex gap-1.5">
                 <input
                   type="text"
-                  placeholder="e.g. Elden Ring"
+                  placeholder="Game name..."
                   value={quickGameName}
                   onChange={(e) => setQuickGameName(e.target.value)}
-                  className="flex-1 px-2.5 py-1.5 text-xs bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none"
+                  className="flex-1 px-2.5 py-1.5 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none"
                 />
                 <input
                   type="number"
-                  step="0.5"
-                  min="0.5"
+                  min="0"
                   placeholder="Hrs"
                   value={quickGameHours}
                   onChange={(e) => setQuickGameHours(e.target.value)}
-                  className="w-16 px-2 py-1.5 text-xs bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none font-mono"
+                  className="w-12 px-1.5 py-1.5 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono text-center"
+                  title="Hours"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  placeholder="Min"
+                  value={quickGameMinutes}
+                  onChange={(e) => setQuickGameMinutes(e.target.value)}
+                  className="w-12 px-1.5 py-1.5 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono text-center"
+                  title="Minutes"
                 />
                 <button
                   type="submit"
                   disabled={gameLogging || !quickGameName.trim()}
-                  className="px-2.5 py-1.5 bg-ledger-blue text-paper text-xs rounded hover:bg-ledger-hover disabled:opacity-50"
+                  className="px-2.5 py-1.5 bg-ledger-blue text-paper text-xs rounded-[4px] hover:bg-ledger-hover active:scale-95 disabled:opacity-50 transition-all shadow-xs"
                   title="Log hours"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -476,3 +501,4 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     </div>
   );
 };
+

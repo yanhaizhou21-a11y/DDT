@@ -3,6 +3,8 @@ import type { GithubContributionsResponse, GithubRepo, RouteTab } from '../types
 import { fetchGithubContributions, fetchGithubRepos, refreshGithubCache } from '../api';
 import { Header } from '../components/Header';
 import { EmptyState } from '../components/EmptyState';
+import { GithubGraph } from '../components/GithubGraph';
+
 import {
   RotateCw,
   GitCommit,
@@ -133,18 +135,18 @@ export const DevPage: React.FC<DevPageProps> = ({ onNavigate }) => {
         <>
           {/* Contribution Heatmap Card */}
           {contributions && (
-            <div className="ledger-card p-5 overflow-x-auto">
-              <div className="flex items-center justify-between pb-4 border-b border-rule mb-4">
+            <div className="ledger-card p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-rule/70">
                 <div className="flex items-center gap-3">
                   {contributions.user.avatarUrl && (
                     <img
                       src={contributions.user.avatarUrl}
                       alt={contributions.user.login}
-                      className="w-8 h-8 rounded-full border border-rule"
+                      className="w-9 h-9 rounded-full border border-rule/80 shadow-xs"
                     />
                   )}
                   <div>
-                    <h2 className="font-serif text-base font-semibold text-ink">
+                    <h2 className="font-serif text-base font-bold text-ink">
                       {contributions.user.name || contributions.user.login}
                     </h2>
                     <span className="text-xs font-mono text-ink-soft">@{contributions.user.login}</span>
@@ -152,67 +154,32 @@ export const DevPage: React.FC<DevPageProps> = ({ onNavigate }) => {
                 </div>
 
                 <div className="text-right font-mono">
-                  <div className="text-lg font-bold text-ink">{contributions.totalContributions}</div>
+                  <div className="text-xl font-bold text-ink">{contributions.totalContributions}</div>
                   <div className="text-[11px] text-ink-soft uppercase tracking-wider">
-                    Contributions in the last year
+                    Total Contributions (12 Mo)
                   </div>
                 </div>
               </div>
 
-              {/* Heatmap Grid (52 weeks) */}
-              <div className="relative min-w-[760px] pb-2">
-                <div className="flex gap-[3px]">
-                  {contributions.weeks.map((week, wIdx) => (
-                    <div key={wIdx} className="flex flex-col gap-[3px]">
-                      {week.contributionDays.map((day) => (
-                        <div
-                          key={day.date}
-                          onMouseEnter={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setHoveredDay({
-                              date: day.date,
-                              count: day.contributionCount,
-                              x: rect.left + rect.width / 2,
-                              y: rect.top - 6,
-                            });
-                          }}
-                          onMouseLeave={() => setHoveredDay(null)}
-                          className={`w-[11px] h-[11px] rounded-[2px] cursor-pointer transition-colors duration-100 ${getHeatmapColorClass(
-                            day.contributionCount
-                          )} hover:ring-1 hover:ring-ink`}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
+              {/* High-End Wave Graph Component */}
+              <GithubGraph
+                account={contributions.user.login}
+                months={12}
+                cellSize={12}
+                cellGap={3}
+                cellRadius={2}
+                animation="wave"
+                variant="github"
+                showAccount={false}
+              />
 
-                {/* Monospace Tooltip */}
-                {hoveredDay && (
-                  <div
-                    className="fixed z-50 transform -translate-x-1/2 -translate-y-full px-2.5 py-1 bg-card border border-rule text-ink text-xs font-mono rounded-[3px] pointer-events-none whitespace-nowrap shadow-none"
-                    style={{ left: hoveredDay.x, top: hoveredDay.y }}
-                  >
-                    <span className="font-semibold">{hoveredDay.count}</span>{' '}
-                    {hoveredDay.count === 1 ? 'contribution' : 'contributions'} on {hoveredDay.date}
-                  </div>
-                )}
-              </div>
-
-              {/* Legend */}
-              <div className="flex items-center justify-between pt-3 border-t border-rule/60 text-[11px] font-mono text-ink-soft">
+              <div className="flex items-center justify-between pt-2 border-t border-rule/60 text-[11px] font-mono text-ink-soft">
                 <span>Last updated: {new Date(contributions.fetchedAt).toLocaleTimeString()}</span>
-                <div className="flex items-center gap-1.5">
-                  <span>Less</span>
-                  <div className="w-2.5 h-2.5 bg-rule/40 rounded-[2px]" />
-                  <div className="w-2.5 h-2.5 bg-ledger-blue/30 rounded-[2px]" />
-                  <div className="w-2.5 h-2.5 bg-ledger-blue/60 rounded-[2px]" />
-                  <div className="w-2.5 h-2.5 bg-ledger-blue/85 rounded-[2px]" />
-                  <div className="w-2.5 h-2.5 bg-ledger-blue rounded-[2px]" />
-                  <span>More</span>
-                </div>
+                <span>Live GraphQL / API sync</span>
               </div>
             </div>
           )}
+
 
           {/* Recent Repositories Grid */}
           <div>

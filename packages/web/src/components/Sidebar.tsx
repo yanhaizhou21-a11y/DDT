@@ -13,6 +13,8 @@ import {
   ChevronRight,
   BookMarked,
 } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
+
 
 interface SidebarProps {
   activeTab: RouteTab;
@@ -102,18 +104,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
           })}
         </nav>
 
-        {/* Expand / Collapse bottom toggle */}
-        {!isExpanded && (
-          <div className="p-2 border-t border-rule/70 flex justify-center bg-paper/20">
+        {/* Theme and Expand / Collapse bottom toggle */}
+        <div className="p-2 border-t border-rule/70 flex flex-col items-center gap-2 bg-paper/20">
+          <ThemeToggle compact={!isExpanded} />
+          {!isExpanded ? (
             <button
               onClick={() => setIsExpanded(true)}
-              className="p-1.5 rounded-[4px] text-ink-soft hover:text-ink hover:bg-paper/80 active:scale-95 transition-all"
+              className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 active:scale-95 transition-all"
               title="Expand sidebar"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-          </div>
-        )}
+          ) : null}
+        </div>
       </aside>
 
       {/* Mobile Bottom Bar */}

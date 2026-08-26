@@ -1,0 +1,413 @@
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import {
+  Bold,
+  Italic,
+  Strikethrough,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Minus,
+  FileCode,
+  Undo,
+  Redo,
+  Eye,
+  Edit3,
+  Columns,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  RotateCcw,
+} from 'lucide-react';
+import { cn } from '../lib/utils';
+
+export interface RichTextEditorProps {
+  value: string;
+  onChange: (content: string) => void;
+  onSave?: () => void;
+  saveStatus?: 'saved' | 'saving' | 'unsaved';
+  lastSavedAt?: string | null;
+  placeholder?: string;
+  className?: string;
+}
+
+export function RichTextEditor({
+  value,
+  onChange,
+  onSave,
+  saveStatus = 'saved',
+  lastSavedAt,
+  placeholder = 'Write your thoughts, daily ledger, achievements, or notes here...',
+  className,
+}: RichTextEditorProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview'>('edit');
+  const [history, setHistory] = useState<string[]>([value]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Stats
+  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+  const charCount = value.length;
+  const readTimeMin = Math.max(1, Math.ceil(wordCount / 200));
+
+  const updateContentWithHistory = useCallback((newText: string) => {
+    onChange(newText);
+    setHistory((prev) => [...prev.slice(0, historyIndex + 1), newText].slice(-30));
+    setHistoryIndex((prev) => Math.min(prev + 1, 29));
+  }, [onChange, historyIndex]);
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const nextIndex = historyIndex - 1;
+      setHistoryIndex(nextIndex);
+      onChange(history[nextIndex]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1;
+      setHistoryIndex(nextIndex);
+      onChange(history[nextIndex]);
+    }
+  };
+
+  const insertFormatting = (prefix: string, suffix = '', defaultText = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.slice(start, end) || defaultText;
+
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+
+    const replacement = `${prefix}${selected}${suffix}`;
+    const nextVal = before + replacement + after;
+
+    updateContentWithHistory(nextVal);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + prefix.length,
+        start + prefix.length + selected.length
+      );
+    }, 10);
+  };
+
+  const insertLinePrefix = (linePrefix: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const beforeCursor = value.slice(0, start);
+    const lastNewline = beforeCursor.lastIndexOf('\n');
+    const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+
+    const before = value.slice(0, lineStart);
+    const after = value.slice(lineStart);
+
+    const nextVal = before + linePrefix + after;
+    updateContentWithHistory(nextVal);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + linePrefix.length, start + linePrefix.length);
+    }, 10);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) handleRedo();
+      else handleUndo();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      insertFormatting('**', '**', 'bold text');
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+      e.preventDefault();
+      insertFormatting('*', '*', 'italic text');
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      onSave?.();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      insertFormatting('  ', '');
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col rounded-xl border border-rule bg-card shadow-subtle overflow-hidden transition-all duration-200',
+        className
+      )}
+    >
+      {/* Top Formatting Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-paper/60 border-b border-rule/70 backdrop-blur-xs">
+        {/* Formatting actions group */}
+        <div className="flex items-center flex-wrap gap-1">
+          {/* History */}
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={historyIndex <= 0}
+            title="Undo (Ctrl+Z)"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <Undo className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            disabled={historyIndex >= history.length - 1}
+            title="Redo (Ctrl+Shift+Z)"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <Redo className="w-3.5 h-3.5" />
+          </button>
+
+          <span className="w-px h-4 bg-rule/70 mx-1" />
+
+          {/* Typography */}
+          <button
+            type="button"
+            onClick={() => insertFormatting('**', '**', 'bold')}
+            title="Bold (Ctrl+B)"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 font-bold transition-colors"
+          >
+            <Bold className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertFormatting('*', '*', 'italic')}
+            title="Italic (Ctrl+I)"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 italic transition-colors"
+          >
+            <Italic className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertFormatting('~~', '~~', 'strikethrough')}
+            title="Strikethrough"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+          >
+            <Strikethrough className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertFormatting('`', '`', 'code')}
+            title="Inline Code"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+          >
+            <Code className="w-3.5 h-3.5" />
+          </button>
+
+          <span className="w-px h-4 bg-rule/70 mx-1" />
+
+          {/* Headings */}
+          <button
+            type="button"
+            onClick={() => insertLinePrefix('# ')}
+            title="Heading 1"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-bold text-xs"
+          >
+            <Heading1 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertLinePrefix('## ')}
+            title="Heading 2"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-semibold text-xs"
+          >
+            <Heading2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertLinePrefix('### ')}
+            title="Heading 3"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif text-xs"
+          >
+            <Heading3 className="w-3.5 h-3.5" />
+          </button>
+
+          <span className="w-px h-4 bg-rule/70 mx-1" />
+
+          {/* Structures */}
+          <button
+            type="button"
+            onClick={() => insertLinePrefix('- ')}
+            title="Bullet List"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+          >
+            <List className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertLinePrefix('1. ')}
+            title="Numbered List"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+          >
+            <ListOrdered className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertLinePrefix('> ')}
+            title="Blockquote"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+          >
+            <Quote className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertFormatting('\n```ts\n', '\n```\n', '// code here')}
+            title="Code Block"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+          >
+            <FileCode className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertLinePrefix('\n---\n\n')}
+            title="Horizontal Divider"
+            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* View Mode Pills & Status */}
+        <div className="flex items-center gap-2">
+          {/* Save status badge */}
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-ink-soft font-mono">
+            {saveStatus === 'saving' ? (
+              <span className="flex items-center gap-1 text-gold">
+                <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
+                Saving...
+              </span>
+            ) : saveStatus === 'saved' ? (
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Saved
+              </span>
+            ) : (
+              <span className="text-ink-soft opacity-60">Unsaved</span>
+            )}
+          </div>
+
+          {/* Mode Switcher */}
+          <div className="flex items-center p-0.5 rounded-lg bg-paper border border-rule">
+            <button
+              type="button"
+              onClick={() => setViewMode('edit')}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all',
+                viewMode === 'edit'
+                  ? 'bg-card text-ink shadow-xs font-semibold'
+                  : 'text-ink-soft hover:text-ink'
+              )}
+            >
+              <Edit3 className="w-3 h-3" />
+              <span className="hidden md:inline">Write</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('split')}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all',
+                viewMode === 'split'
+                  ? 'bg-card text-ink shadow-xs font-semibold'
+                  : 'text-ink-soft hover:text-ink'
+              )}
+            >
+              <Columns className="w-3 h-3" />
+              <span className="hidden md:inline">Split</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('preview')}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all',
+                viewMode === 'preview'
+                  ? 'bg-card text-ink shadow-xs font-semibold'
+                  : 'text-ink-soft hover:text-ink'
+              )}
+            >
+              <Eye className="w-3 h-3" />
+              <span className="hidden md:inline">Preview</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Editor Body */}
+      <div className="flex-1 grid min-h-[380px]" style={{ gridTemplateColumns: viewMode === 'split' ? '1fr 1fr' : '1fr' }}>
+        {/* Write pane */}
+        {(viewMode === 'edit' || viewMode === 'split') && (
+          <div className="relative flex flex-col h-full bg-card">
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => updateContentWithHistory(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              className="w-full h-full min-h-[380px] p-4 md:p-6 bg-transparent text-ink font-sans text-sm md:text-base leading-relaxed resize-none focus:outline-hidden placeholder:text-ink-soft/40 selection:bg-ledger-blue selection:text-paper"
+            />
+          </div>
+        )}
+
+        {/* Live Preview pane */}
+        {(viewMode === 'preview' || viewMode === 'split') && (
+          <div
+            className={cn(
+              'h-full min-h-[380px] p-4 md:p-6 overflow-y-auto bg-card-surface selection:bg-ledger-blue selection:text-paper',
+              viewMode === 'split' && 'border-l border-rule'
+            )}
+          >
+            {value.trim() ? (
+              <div className="prose dark:prose-invert max-w-none text-ink font-sans text-sm md:text-base leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {value}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center text-ink-soft/50 py-12">
+                <Sparkles className="w-6 h-6 mb-2 opacity-40" />
+                <p className="text-sm">Markdown live preview will appear here</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Status Bar */}
+      <div className="flex items-center justify-between px-4 py-2 bg-paper/60 border-t border-rule text-xs text-ink-soft font-mono">
+        <div className="flex items-center gap-4">
+          <span>
+            <strong className="text-ink font-semibold">{wordCount}</strong> words
+          </span>
+          <span>
+            <strong className="text-ink font-semibold">{charCount}</strong> chars
+          </span>
+          <span className="hidden sm:inline-flex items-center gap-1">
+            <Clock className="w-3 h-3 opacity-60" />
+            {readTimeMin} min read
+          </span>
+        </div>
+
+        {lastSavedAt && (
+          <div className="text-[11px] opacity-75">
+            Last saved: {new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

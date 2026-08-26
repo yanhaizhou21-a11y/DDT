@@ -36,6 +36,10 @@ export interface RichTextEditorProps {
   lastSavedAt?: string | null;
   placeholder?: string;
   className?: string;
+  compact?: boolean;
+  defaultViewMode?: 'edit' | 'split' | 'preview';
+  hideHeaderSave?: boolean;
+  minHeight?: string;
 }
 
 export function RichTextEditor({
@@ -46,11 +50,26 @@ export function RichTextEditor({
   lastSavedAt,
   placeholder = 'Write your thoughts, daily ledger, achievements, or notes here...',
   className,
+  compact = false,
+  defaultViewMode,
+  hideHeaderSave = false,
+  minHeight,
 }: RichTextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview'>('edit');
+  const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview'>(() => {
+    if (defaultViewMode) return defaultViewMode;
+    if (compact && value.trim()) return 'preview';
+    return 'edit';
+  });
   const [history, setHistory] = useState<string[]>([value]);
   const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Sync default view mode if value changes from empty on mount
+  useEffect(() => {
+    if (defaultViewMode) {
+      setViewMode(defaultViewMode);
+    }
+  }, [defaultViewMode]);
 
   // Stats
   const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
@@ -145,24 +164,32 @@ export function RichTextEditor({
     }
   };
 
+  const resolvedMinHeight = minHeight || (compact ? 'min-h-[170px]' : 'min-h-[380px]');
+
   return (
     <div
       className={cn(
         'flex flex-col rounded-xl border border-rule bg-card shadow-subtle overflow-hidden transition-all duration-200',
+        compact ? 'border-rule/80' : '',
         className
       )}
     >
       {/* Top Formatting Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-paper/60 border-b border-rule/70 backdrop-blur-xs">
+      <div
+        className={cn(
+          'flex flex-wrap items-center justify-between gap-1.5 bg-paper/60 border-b border-rule/70 backdrop-blur-xs',
+          compact ? 'px-2.5 py-1.5' : 'px-3.5 py-2.5'
+        )}
+      >
         {/* Formatting actions group */}
-        <div className="flex items-center flex-wrap gap-1">
+        <div className="flex items-center flex-wrap gap-0.5 sm:gap-1">
           {/* History */}
           <button
             type="button"
             onClick={handleUndo}
             disabled={historyIndex <= 0}
             title="Undo (Ctrl+Z)"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Undo className="w-3.5 h-3.5" />
           </button>
@@ -171,19 +198,19 @@ export function RichTextEditor({
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
             title="Redo (Ctrl+Shift+Z)"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Redo className="w-3.5 h-3.5" />
           </button>
 
-          <span className="w-px h-4 bg-rule/70 mx-1" />
+          <span className="w-px h-3.5 bg-rule/70 mx-0.5 sm:mx-1" />
 
           {/* Typography */}
           <button
             type="button"
             onClick={() => insertFormatting('**', '**', 'bold')}
             title="Bold (Ctrl+B)"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 font-bold transition-colors"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 font-bold transition-colors"
           >
             <Bold className="w-3.5 h-3.5" />
           </button>
@@ -191,63 +218,58 @@ export function RichTextEditor({
             type="button"
             onClick={() => insertFormatting('*', '*', 'italic')}
             title="Italic (Ctrl+I)"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 italic transition-colors"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 italic transition-colors"
           >
             <Italic className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
-            onClick={() => insertFormatting('~~', '~~', 'strikethrough')}
-            title="Strikethrough"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
-          >
-            <Strikethrough className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
             onClick={() => insertFormatting('`', '`', 'code')}
             title="Inline Code"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
           >
             <Code className="w-3.5 h-3.5" />
           </button>
 
-          <span className="w-px h-4 bg-rule/70 mx-1" />
+          {!compact && (
+            <>
+              <button
+                type="button"
+                onClick={() => insertFormatting('~~', '~~', 'strikethrough')}
+                title="Strikethrough"
+                className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+              >
+                <Strikethrough className="w-3.5 h-3.5" />
+              </button>
+              <span className="w-px h-4 bg-rule/70 mx-1" />
+              <button
+                type="button"
+                onClick={() => insertLinePrefix('# ')}
+                title="Heading 1"
+                className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-bold text-xs"
+              >
+                <Heading1 className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
 
-          {/* Headings */}
-          <button
-            type="button"
-            onClick={() => insertLinePrefix('# ')}
-            title="Heading 1"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-bold text-xs"
-          >
-            <Heading1 className="w-3.5 h-3.5" />
-          </button>
           <button
             type="button"
             onClick={() => insertLinePrefix('## ')}
-            title="Heading 2"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-semibold text-xs"
+            title="Heading"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-semibold text-xs"
           >
             <Heading2 className="w-3.5 h-3.5" />
           </button>
-          <button
-            type="button"
-            onClick={() => insertLinePrefix('### ')}
-            title="Heading 3"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif text-xs"
-          >
-            <Heading3 className="w-3.5 h-3.5" />
-          </button>
 
-          <span className="w-px h-4 bg-rule/70 mx-1" />
+          <span className="w-px h-3.5 bg-rule/70 mx-0.5 sm:mx-1" />
 
           {/* Structures */}
           <button
             type="button"
             onClick={() => insertLinePrefix('- ')}
             title="Bullet List"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
           >
             <List className="w-3.5 h-3.5" />
           </button>
@@ -255,90 +277,97 @@ export function RichTextEditor({
             type="button"
             onClick={() => insertLinePrefix('1. ')}
             title="Numbered List"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+            className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
           >
             <ListOrdered className="w-3.5 h-3.5" />
           </button>
-          <button
-            type="button"
-            onClick={() => insertLinePrefix('> ')}
-            title="Blockquote"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
-          >
-            <Quote className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => insertFormatting('\n```ts\n', '\n```\n', '// code here')}
-            title="Code Block"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
-          >
-            <FileCode className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => insertLinePrefix('\n---\n\n')}
-            title="Horizontal Divider"
-            className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
+
+          {!compact && (
+            <>
+              <button
+                type="button"
+                onClick={() => insertLinePrefix('> ')}
+                title="Blockquote"
+                className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+              >
+                <Quote className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('\n```ts\n', '\n```\n', '// code here')}
+                title="Code Block"
+                className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+              >
+                <FileCode className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertLinePrefix('\n---\n\n')}
+                title="Horizontal Divider"
+                className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* View Mode Pills, Save Status & Action */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           {/* Mode Switcher */}
           <div className="flex items-center p-0.5 rounded-lg bg-paper border border-rule">
             <button
               type="button"
               onClick={() => setViewMode('edit')}
               className={cn(
-                'flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all',
+                'flex items-center gap-1 px-2 py-0.5 sm:py-1 text-xs font-medium rounded-md transition-all',
                 viewMode === 'edit'
                   ? 'bg-card text-ink shadow-xs font-semibold'
                   : 'text-ink-soft hover:text-ink'
               )}
             >
               <Edit3 className="w-3 h-3" />
-              <span className="hidden md:inline">Write</span>
+              <span>Write</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('split')}
-              className={cn(
-                'flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all',
-                viewMode === 'split'
-                  ? 'bg-card text-ink shadow-xs font-semibold'
-                  : 'text-ink-soft hover:text-ink'
-              )}
-            >
-              <Columns className="w-3 h-3" />
-              <span className="hidden md:inline">Split</span>
-            </button>
+            {!compact && (
+              <button
+                type="button"
+                onClick={() => setViewMode('split')}
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all',
+                  viewMode === 'split'
+                    ? 'bg-card text-ink shadow-xs font-semibold'
+                    : 'text-ink-soft hover:text-ink'
+                )}
+              >
+                <Columns className="w-3 h-3" />
+                <span className="hidden md:inline">Split</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setViewMode('preview')}
               className={cn(
-                'flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all',
+                'flex items-center gap-1 px-2 py-0.5 sm:py-1 text-xs font-medium rounded-md transition-all',
                 viewMode === 'preview'
                   ? 'bg-card text-ink shadow-xs font-semibold'
                   : 'text-ink-soft hover:text-ink'
               )}
             >
               <Eye className="w-3 h-3" />
-              <span className="hidden md:inline">Preview</span>
+              <span>Preview</span>
             </button>
           </div>
 
-          {/* Prominent Save Button */}
-          {onSave && (
+          {/* Prominent Save Button (if not hidden) */}
+          {!hideHeaderSave && onSave && (
             <button
               type="button"
               onClick={onSave}
               disabled={saveStatus === 'saving'}
               title="Save Entry (Ctrl+S)"
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all shadow-xs active:scale-95 disabled:opacity-50',
+                'flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs font-semibold rounded-md transition-all shadow-xs active:scale-95 disabled:opacity-50',
                 saveStatus === 'saving'
                   ? 'bg-gold-light text-ink border border-gold/40'
                   : saveStatus === 'saved'
@@ -347,15 +376,17 @@ export function RichTextEditor({
               )}
             >
               <Save className={cn('w-3.5 h-3.5', saveStatus === 'saving' && 'animate-spin')} />
-              <span>{saveStatus === 'saving' ? 'Saving...' : 'Save Entry'}</span>
+              <span>{saveStatus === 'saving' ? 'Saving...' : 'Save'}</span>
             </button>
           )}
         </div>
       </div>
 
-
       {/* Editor Body */}
-      <div className="flex-1 grid min-h-[380px]" style={{ gridTemplateColumns: viewMode === 'split' ? '1fr 1fr' : '1fr' }}>
+      <div
+        className={cn('flex-1 grid', resolvedMinHeight)}
+        style={{ gridTemplateColumns: viewMode === 'split' ? '1fr 1fr' : '1fr' }}
+      >
         {/* Write pane */}
         {(viewMode === 'edit' || viewMode === 'split') && (
           <div className="relative flex flex-col h-full bg-card">
@@ -365,7 +396,11 @@ export function RichTextEditor({
               onChange={(e) => updateContentWithHistory(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              className="w-full h-full min-h-[380px] p-4 md:p-6 bg-transparent text-ink font-sans text-sm md:text-base leading-relaxed resize-none focus:outline-hidden placeholder:text-ink-soft/40 selection:bg-ledger-blue selection:text-paper"
+              className={cn(
+                'w-full h-full bg-transparent text-ink font-sans leading-relaxed resize-none focus:outline-hidden placeholder:text-ink-soft/40 selection:bg-ledger-blue selection:text-paper',
+                compact ? 'p-3.5 text-xs sm:text-sm' : 'p-4 md:p-6 text-sm md:text-base',
+                resolvedMinHeight
+              )}
             />
           </div>
         )}
@@ -373,21 +408,29 @@ export function RichTextEditor({
         {/* Live Preview pane */}
         {(viewMode === 'preview' || viewMode === 'split') && (
           <div
+            onClick={() => {
+              if (compact && !value.trim()) setViewMode('edit');
+            }}
             className={cn(
-              'h-full min-h-[380px] p-4 md:p-6 overflow-y-auto bg-card-surface selection:bg-ledger-blue selection:text-paper',
-              viewMode === 'split' && 'border-l border-rule'
+              'h-full overflow-y-auto bg-card-surface selection:bg-ledger-blue selection:text-paper',
+              compact ? 'p-3.5' : 'p-4 md:p-6',
+              viewMode === 'split' && 'border-l border-rule',
+              resolvedMinHeight
             )}
           >
             {value.trim() ? (
-              <div className="prose dark:prose-invert max-w-none text-ink font-sans text-sm md:text-base leading-relaxed">
+              <div className="prose dark:prose-invert max-w-none text-ink font-sans text-xs sm:text-sm leading-relaxed space-y-2">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {value}
                 </ReactMarkdown>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center text-ink-soft/50 py-12">
-                <Sparkles className="w-6 h-6 mb-2 opacity-40" />
-                <p className="text-sm">Markdown live preview will appear here</p>
+              <div
+                onClick={() => setViewMode('edit')}
+                className="flex flex-col items-center justify-center h-full text-center text-ink-soft/50 py-8 cursor-pointer hover:text-ink-soft transition-colors"
+              >
+                <Sparkles className="w-5 h-5 mb-1.5 opacity-40" />
+                <p className="text-xs">No entry yet. Click here or switch to Write to start journaling.</p>
               </div>
             )}
           </div>
@@ -395,27 +438,34 @@ export function RichTextEditor({
       </div>
 
       {/* Bottom Status Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-paper/60 border-t border-rule text-xs text-ink-soft font-mono">
-        <div className="flex items-center gap-4">
+      <div
+        className={cn(
+          'flex items-center justify-between bg-paper/60 border-t border-rule text-xs text-ink-soft font-mono',
+          compact ? 'px-3 py-1.5 text-[11px]' : 'px-4 py-2 text-xs'
+        )}
+      >
+        <div className="flex items-center gap-3">
           <span>
             <strong className="text-ink font-semibold">{wordCount}</strong> words
           </span>
           <span>
             <strong className="text-ink font-semibold">{charCount}</strong> chars
           </span>
-          <span className="hidden sm:inline-flex items-center gap-1">
-            <Clock className="w-3 h-3 opacity-60" />
-            {readTimeMin} min read
-          </span>
+          {!compact && (
+            <span className="hidden sm:inline-flex items-center gap-1">
+              <Clock className="w-3 h-3 opacity-60" />
+              {readTimeMin} min read
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {lastSavedAt && (
-            <div className="text-[11px] opacity-75">
+            <div className="text-[10px] sm:text-[11px] opacity-75">
               Saved: {new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
           )}
-          {onSave && (
+          {onSave && !compact && (
             <button
               type="button"
               onClick={onSave}
@@ -431,4 +481,3 @@ export function RichTextEditor({
     </div>
   );
 }
-

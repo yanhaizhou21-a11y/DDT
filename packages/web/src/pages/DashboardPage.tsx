@@ -7,6 +7,7 @@ import { GithubGraph } from '../components/GithubGraph';
 import { TextEffect } from '../components/TextEffect';
 import { Magnetic } from '../components/Magnetic';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { RichTextEditor } from '../components/RichTextEditor';
 import {
   GitCommit,
   BookOpen,
@@ -321,44 +322,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               ) : null}
 
               <button
-                type="button"
-                onClick={handleManualSaveJournal}
-                disabled={journalSaving}
-                className="flex items-center gap-1 px-2.5 py-1 bg-ledger-blue text-paper text-xs font-semibold rounded-md hover:bg-ledger-hover active:scale-95 disabled:opacity-50 transition-all shadow-xs"
-              >
-                <Save className="w-3 h-3" />
-                <span>Save</span>
-              </button>
-
-              <button
                 onClick={() => onNavigate('journal')}
-                className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ml-1"
+                className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
               >
-                Full Editor <ArrowUpRight className="w-3.5 h-3.5" />
+                Full Page <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Quick Journal Write Box - Stretches to fill empty card space */}
-          <div className="flex-1 flex flex-col my-3 min-h-[190px]">
-            <textarea
+          {/* Compact Rich Text Editor with rendered markdown preview & formatting toolbar */}
+          <div className="flex-1 flex flex-col pt-3 min-h-[220px]">
+            <RichTextEditor
               value={quickJournal}
-              onChange={(e) => setQuickJournal(e.target.value)}
+              onChange={setQuickJournal}
+              onSave={handleManualSaveJournal}
+              saveStatus={journalSaving ? 'saving' : journalSavedAt ? 'saved' : 'unsaved'}
+              lastSavedAt={journalSavedAt}
+              compact={true}
+              minHeight="min-h-[165px]"
+              className="flex-1 h-full shadow-none border-rule/70"
               placeholder="What happened today? Write thoughts, achievements, or notes..."
-              className="w-full flex-1 min-h-[190px] p-3.5 text-sm bg-paper/70 border border-rule rounded-lg focus:bg-card focus:outline-hidden resize-none font-sans text-ink leading-relaxed placeholder:text-ink-soft/40 shadow-xs transition-colors"
             />
           </div>
-
-          <div className="pt-3 border-t border-rule/60 flex items-center justify-between text-xs text-ink-soft font-mono shrink-0">
-            <span>
-              <strong className="text-ink font-semibold">
-                {quickJournal.trim() ? quickJournal.trim().split(/\s+/).length : 0}
-              </strong>{' '}
-              words written today
-            </span>
-            <span>Markdown enabled</span>
-          </div>
         </div>
+
 
 
         {/* BENTO CARD 3: GAME PLAYTIME & QUICK LOG (4 cols) */}

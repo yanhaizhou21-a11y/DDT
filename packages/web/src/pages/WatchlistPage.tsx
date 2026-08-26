@@ -95,6 +95,9 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
 
   // Item Detail Modal
   const [selectedItem, setSelectedItem] = useState<WatchlistItem | null>(null);
+  const [editPosterUrl, setEditPosterUrl] = useState('');
+  const [savingPoster, setSavingPoster] = useState(false);
+
 
   const loadData = async () => {
     try {
@@ -194,6 +197,28 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleSelectItem = (item: WatchlistItem) => {
+    setSelectedItem(item);
+    setEditPosterUrl(item.posterPath || '');
+  };
+
+  const handleSaveCustomPoster = async () => {
+    if (!selectedItem) return;
+    try {
+      setSavingPoster(true);
+      const newPath = editPosterUrl.trim() || null;
+      await updateWatchlistItem(selectedItem.id, { posterPath: newPath });
+      setItems((prev) =>
+        prev.map((item) => (item.id === selectedItem.id ? { ...item, posterPath: newPath } : item))
+      );
+      setSelectedItem((prev) => (prev ? { ...prev, posterPath: newPath } : null));
+    } catch (err) {
+      console.error('Failed to update poster', err);
+    } finally {
+      setSavingPoster(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await deleteWatchlistItem(id);
@@ -203,6 +228,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
       console.error(err);
     }
   };
+
 
   // Filter items
   const filteredItems = items.filter((item) => {

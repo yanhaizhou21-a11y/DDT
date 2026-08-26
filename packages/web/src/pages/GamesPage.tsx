@@ -599,12 +599,19 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
           {gameName && (
             <div className="p-3 rounded-lg bg-paper border border-rule flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                {coverUrl && (
+                {coverUrl ? (
                   <img
                     src={coverUrl}
                     alt={gameName}
-                    className="w-10 h-10 object-cover rounded-md border border-rule shrink-0"
+                    className="w-12 h-12 object-cover rounded-md border border-rule shrink-0 shadow-xs"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
                   />
+                ) : (
+                  <div className="w-12 h-12 rounded-md bg-card border border-rule flex items-center justify-center text-ink-soft shrink-0">
+                    <Gamepad2 className="w-5 h-5 opacity-50" />
+                  </div>
                 )}
                 <div className="min-w-0">
                   <div className="text-xs font-mono text-ink-soft">Target Game:</div>
@@ -614,12 +621,55 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
               <button
                 type="button"
                 onClick={() => setGameName('')}
-                className="text-xs font-mono text-ledger-blue hover:underline"
+                className="text-xs font-mono text-ledger-blue hover:underline shrink-0"
               >
-                Change
+                Change Title
               </button>
             </div>
           )}
+
+          {/* Custom Cover Image URL Input with Live Preview */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-mono uppercase tracking-wider text-ink-soft">
+                Custom Cover Image URL (Direct Link)
+              </label>
+              {coverUrl && (
+                <button
+                  type="button"
+                  onClick={() => setCoverUrl(null)}
+                  className="text-[11px] font-mono text-stamp-red hover:underline"
+                >
+                  Clear Image
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2.5 items-center">
+              {coverUrl ? (
+                <div className="w-10 h-10 rounded-md border border-rule overflow-hidden bg-card shrink-0 flex items-center justify-center">
+                  <img
+                    src={coverUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              ) : null}
+              <input
+                type="url"
+                value={coverUrl || ''}
+                onChange={(e) => setCoverUrl(e.target.value.trim() || null)}
+                placeholder="https://... (paste direct image URL e.g. .jpg, .png, .webp)"
+                className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+              />
+            </div>
+            <p className="text-[11px] text-ink-soft font-mono">
+              Auto-filled if searched via RAWG, or paste any custom web image link.
+            </p>
+          </div>
 
           {/* Date Picker */}
           <div>

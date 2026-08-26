@@ -39,7 +39,7 @@ export function createGithubRouter(db: AppDatabase): Router {
         headers,
       })
         .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
+        .then((data: any) => {
           if (data?.items && Array.isArray(data.items)) {
             data.items.forEach((item: any) => {
               if (item.sha) commitShas.add(item.sha);
@@ -48,6 +48,7 @@ export function createGithubRouter(db: AppDatabase): Router {
         })
         .catch(() => {})
     );
+
 
     // 2. User Public / Authenticated Events (PushEvents)
     tasks.push(
@@ -344,9 +345,10 @@ export function createGithubRouter(db: AppDatabase): Router {
         try {
           const uRes = await fetch('https://api.github.com/user', { headers });
           if (uRes.ok) {
-            const uData = await uRes.json();
+            const uData = (await uRes.json()) as any;
             username = uData.login;
           }
+
         } catch {}
       }
 

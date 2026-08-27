@@ -190,14 +190,20 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
   };
 
   const handleStatusChange = async (id: string, newStatus: 'want' | 'watching' | 'watched') => {
+    const previousItems = items;
+    const previousSelected = selectedItem;
+    // Optimistic update
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item)));
+    if (selectedItem?.id === id) {
+      setSelectedItem((prev) => (prev ? { ...prev, status: newStatus } : null));
+    }
     try {
       await updateWatchlistItem(id, { status: newStatus });
-      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item)));
-      if (selectedItem?.id === id) {
-        setSelectedItem((prev) => prev ? { ...prev, status: newStatus } : null);
-      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to update status', err);
+      // Rollback on failure
+      setItems(previousItems);
+      setSelectedItem(previousSelected);
     }
   };
 
@@ -471,6 +477,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                   onClick={() => handleDeleteClick(item)}
                   className="p-1 text-ink-soft hover:text-stamp-red opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Remove from list"
+                  aria-label={`Remove "${item.title}" from watchlist`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

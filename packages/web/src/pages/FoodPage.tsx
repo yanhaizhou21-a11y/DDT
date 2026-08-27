@@ -317,6 +317,7 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
                       }}
                       className="p-1 text-ink-soft hover:text-ledger-blue rounded"
                       title={`Quick add to ${label}`}
+                      aria-label={`Quick add to ${label}`}
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -329,9 +330,13 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
                       key={item.id}
                       className="p-2.5 bg-paper border border-rule/80 rounded-[4px] flex items-center justify-between gap-2.5 group hover:border-ink-soft transition-colors"
                     >
-                      <div
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={item.status === 'eaten'}
+                        aria-label={`Mark "${item.itemName}" as ${item.status === 'eaten' ? 'want to eat' : 'eaten'}`}
                         onClick={() => handleToggleStatus(item)}
-                        className="flex items-center gap-2.5 flex-1 cursor-pointer overflow-hidden select-none"
+                        className="flex items-center gap-2.5 flex-1 cursor-pointer overflow-hidden select-none text-left focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ledger-blue rounded-xs"
                       >
                         {item.status === 'eaten' ? (
                           <div className="w-4 h-4 rounded-full bg-ledger-blue text-paper flex items-center justify-center flex-shrink-0">
@@ -347,7 +352,7 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
                         >
                           {item.itemName}
                         </span>
-                      </div>
+                      </button>
 
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border capitalize ${
@@ -358,9 +363,11 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
                           {item.status}
                         </span>
                         <button
+                          type="button"
                           onClick={() => handleDeleteClick(item)}
                           className="p-1 text-ink-soft hover:text-stamp-red opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Delete entry"
+                          aria-label={`Delete food entry "${item.itemName}"`}
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -369,15 +376,17 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
                   ))}
 
                   {items.length === 0 && (
-                    <div
+                    <button
+                      type="button"
                       onClick={() => {
                         setNewMealTag(tag);
                         window.scrollTo({ top: 120, behavior: 'smooth' });
                       }}
-                      className="py-6 text-center text-xs text-ink-soft/70 border border-dashed border-rule/60 rounded-[4px] cursor-pointer hover:border-ink-soft hover:text-ink transition-colors"
+                      className="w-full py-6 text-center text-xs text-ink-soft/70 border border-dashed border-rule/60 rounded-[4px] cursor-pointer hover:border-ink-soft hover:text-ink transition-colors block"
+                      aria-label={`Add item to ${label}`}
                     >
                       + Add {label.toLowerCase()}
-                    </div>
+                    </button>
                   )}
                 </div>
               </div>

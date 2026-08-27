@@ -53,7 +53,7 @@ interface KanbanPageProps {
 const SortableCard: React.FC<{
   card: KanbanCard;
   onEdit: (card: KanbanCard) => void;
-  onDelete: (id: string) => void;
+  onDelete: (card: KanbanCard) => void;
 }> = ({ card, onEdit, onDelete }) => {
   const {
     attributes,
@@ -99,14 +99,16 @@ const SortableCard: React.FC<{
             onClick={() => onEdit(card)}
             className="p-1 text-ink-soft hover:text-ink"
             title="Edit card"
+            aria-label={`Edit task "${card.title}"`}
           >
             <Edit2 className="w-3 h-3" />
           </button>
           <button
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => onDelete(card.id)}
+            onClick={() => onDelete(card)}
             className="p-1 text-ink-soft hover:text-stamp-red"
             title="Delete card"
+            aria-label={`Delete task "${card.title}"`}
           >
             <Trash2 className="w-3 h-3" />
           </button>
@@ -322,10 +324,16 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
     }
   };
 
-  const handleDeleteCard = async (id: string) => {
+  const handleDeleteCard = (card: KanbanCard) => {
+    setCardToDelete({ id: card.id, title: card.title });
+  };
+
+  const handleConfirmDeleteCard = async () => {
+    if (!cardToDelete) return;
     try {
-      await deleteKanbanCard(id);
-      setCards((prev) => prev.filter((c) => c.id !== id));
+      await deleteKanbanCard(cardToDelete.id);
+      setCards((prev) => prev.filter((c) => c.id !== cardToDelete.id));
+      setCardToDelete(null);
     } catch (err) {
       console.error(err);
     }
@@ -419,6 +427,7 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
                         onClick={() => openAddCardModal(col.id)}
                         className="p-1 text-ink-soft hover:text-ink hover:bg-paper rounded transition-colors"
                         title="Add card to column"
+                        aria-label={`Add task to "${col.name}" column`}
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -430,6 +439,7 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
                         }}
                         className="p-1 text-ink-soft hover:text-ink hover:bg-paper rounded transition-colors"
                         title="Rename column"
+                        aria-label={`Rename "${col.name}" column`}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -438,6 +448,7 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
                           onClick={() => handleDeleteColumn(col.id, col.name)}
                           className="p-1 text-ink-soft hover:text-stamp-red hover:bg-paper rounded transition-colors"
                           title="Delete column"
+                          aria-label={`Delete "${col.name}" column`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -627,6 +638,22 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
             : ''
         }
         confirmText="Delete Column"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Confirmation Dialog for Card Deletion */}
+      <ConfirmDialog
+        isOpen={cardToDelete !== null}
+        onClose={() => setCardToDelete(null)}
+        onConfirm={handleConfirmDeleteCard}
+        title="Delete Task Card?"
+        description={
+          cardToDelete
+            ? `Are you sure you want to delete the task "${cardToDelete.title}"? This action cannot be undone.`
+            : ''
+        }
+        confirmText="Delete Task"
         cancelText="Cancel"
         variant="danger"
       />

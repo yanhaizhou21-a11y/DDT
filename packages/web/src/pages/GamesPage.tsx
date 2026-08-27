@@ -162,10 +162,12 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
     setIsModalOpen(true);
   };
 
+  const [saveGameError, setSaveGameError] = useState<string | null>(null);
+
   const handleFileUpload = async (file: File, isForEditModal = false) => {
     const maxBytes = 5 * 1024 * 1024; // 5 MB
     if (file.size > maxBytes) {
-      const msg = `File (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas 5 MB.`;
+      const msg = `File size (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds 5 MB limit.`;
       if (isForEditModal) setEditCoverError(msg);
       else setUploadError(msg);
       return;
@@ -184,7 +186,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
         setCoverUrl(res.url);
       }
     } catch (err: any) {
-      const msg = err.message || 'Gagal mengunggah gambar. Pastikan file valid (maksimal 5 MB).';
+      const msg = err.message || 'Failed to upload image. Please ensure the file is valid (max 5 MB).';
       if (isForEditModal) setEditCoverError(msg);
       else setUploadError(msg);
     } finally {
@@ -211,7 +213,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
       setIsEditCoverModalOpen(false);
       loadData();
     } catch (err: any) {
-      setEditCoverError(err.message || 'Gagal menyimpan cover game');
+      setEditCoverError(err.message || 'Failed to save game cover.');
     } finally {
       setEditCoverSaving(false);
     }
@@ -249,11 +251,12 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
 
     const calculatedHours = getCalculatedDecimalHours();
     if (calculatedHours <= 0) {
-      alert('Please enter at least 1 minute or 0.05 hours of playtime.');
+      setSaveGameError('Please enter at least 1 minute or 0.05 hours of playtime.');
       return;
     }
 
     try {
+      setSaveGameError(null);
       await addGameEntry({
         gameName: gameName.trim(),
         hours: calculatedHours,
@@ -263,9 +266,9 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
 
       setIsModalOpen(false);
       loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to log game session');
+      setSaveGameError(err.message || 'Failed to log game session. Please try again.');
     }
   };
 
@@ -489,6 +492,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                         }}
                         className="absolute top-2 left-2 px-2 py-1 rounded-md bg-ink/75 hover:bg-ledger-blue text-paper font-mono text-[10px] backdrop-blur-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shadow-subtle z-10"
                         title="Change cover artwork"
+                        aria-label={`Change cover artwork for ${item.gameName}`}
                       >
                         <Camera className="w-3 h-3" />
                         <span>Change Cover</span>
@@ -608,6 +612,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                     onClick={() => handleDeleteSession(entry.id, entry.gameName)}
                     className="p-1.5 text-ink-soft hover:text-stamp-red rounded-md hover:bg-paper transition-colors"
                     title="Delete this session"
+                    aria-label={`Delete game session for ${entry.gameName}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -800,13 +805,13 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                   {isUploading ? (
                     <div className="flex items-center justify-center gap-2 text-xs font-mono text-ledger-blue py-2">
                       <Sparkles className="w-4 h-4 animate-spin" />
-                      <span>Mengunggah gambar (maks 5MB)...</span>
+                      <span>Uploading image (max 5 MB)...</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2 text-xs text-ink-soft py-1">
                       <Upload className="w-4 h-4 text-ledger-blue" />
                       <span className="font-mono">
-                        Pilih atau Drag & Drop file gambar dari PC (Maks 5 MB)
+                        Choose or drag & drop an image file from your PC (Max 5 MB)
                       </span>
                     </div>
                   )}
@@ -841,7 +846,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                 </div>
                 <div className="min-w-0 text-xs font-mono">
                   <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Cover siap digunakan
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Cover ready to use
                   </span>
                   <span className="text-ink-soft text-[11px] truncate block max-w-xs">{coverUrl}</span>
                 </div>
@@ -1027,6 +1032,10 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
             </div>
           </div>
 
+          {saveGameError && (
+            <p className="text-xs text-stamp-red font-mono px-1">{saveGameError}</p>
+          )}
+
           {/* Submit CTA */}
           <div className="flex justify-end gap-2 pt-3 border-t border-rule">
             <button
@@ -1051,7 +1060,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
       <Modal
         isOpen={isEditCoverModalOpen}
         onClose={() => setIsEditCoverModalOpen(false)}
-        title={editingGame ? `Ganti Cover: ${editingGame.gameName}` : 'Ganti Cover Game'}
+        title={editingGame ? `Change Cover: ${editingGame.gameName}` : 'Change Game Cover'}
       >
         <form onSubmit={handleSaveEditCover} className="space-y-4">
           <div className="space-y-3 p-3 bg-paper border border-rule rounded-lg">
@@ -1059,7 +1068,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono uppercase tracking-wider text-ink-soft flex items-center gap-1.5">
                 <Camera className="w-3.5 h-3.5 text-ledger-blue" />
-                Pilih Sumber Cover
+                Choose Cover Source
               </span>
 
               <div className="flex items-center p-0.5 rounded-md bg-card border border-rule text-xs font-mono">
@@ -1106,13 +1115,13 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                   {editCoverUploading ? (
                     <div className="flex items-center justify-center gap-2 text-xs font-mono text-ledger-blue py-3">
                       <Sparkles className="w-4 h-4 animate-spin" />
-                      <span>Mengunggah file ke komputer...</span>
+                      <span>Uploading image...</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center gap-1.5 py-2 text-ink-soft">
                       <Upload className="w-6 h-6 text-ledger-blue mb-1" />
-                      <span className="text-xs font-semibold text-ink">Klik untuk memilih gambar atau Drag & Drop</span>
-                      <span className="text-[11px] font-mono text-ink-soft">Maksimal 5 MB (.jpg, .png, .webp, .gif)</span>
+                      <span className="text-xs font-semibold text-ink">Click to select image or drag & drop</span>
+                      <span className="text-[11px] font-mono text-ink-soft">Maximum 5 MB (.jpg, .png, .webp, .gif)</span>
                     </div>
                   )}
                 </label>
@@ -1148,7 +1157,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
             {/* Live Preview */}
             {editCoverUrl ? (
               <div className="space-y-1 pt-2 border-t border-rule/60">
-                <span className="text-[11px] font-mono text-ink-soft">Pratinjau Cover Baru:</span>
+                <span className="text-[11px] font-mono text-ink-soft">New Cover Preview:</span>
                 <div className="relative h-36 w-full rounded-lg overflow-hidden border border-rule bg-card">
                   <img
                     src={editCoverUrl}
@@ -1162,7 +1171,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
               </div>
             ) : (
               <div className="py-4 text-center text-xs font-mono text-ink-soft">
-                Pilih file dari laptop atau masukkan link URL untuk melihat preview.
+                Choose an image file or enter an image URL to preview.
               </div>
             )}
           </div>
@@ -1175,7 +1184,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                 onClick={() => setEditCoverUrl('')}
                 className="text-xs font-mono text-stamp-red hover:underline"
               >
-                Hapus Cover
+                Remove Cover
               </button>
             )}
             <div className="flex gap-2 ml-auto">
@@ -1184,7 +1193,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                 onClick={() => setIsEditCoverModalOpen(false)}
                 className="px-4 py-2 text-xs font-mono text-ink-soft hover:text-ink transition-colors"
               >
-                Batal
+                Cancel
               </button>
               <button
                 type="submit"
@@ -1194,12 +1203,12 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                 {editCoverSaving ? (
                   <>
                     <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                    <span>Menyimpan...</span>
+                    <span>Saving...</span>
                   </>
                 ) : (
                   <>
                     <Check className="w-3.5 h-3.5" />
-                    <span>Simpan Cover</span>
+                    <span>Save Cover</span>
                   </>
                 )}
               </button>

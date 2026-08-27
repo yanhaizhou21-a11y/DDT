@@ -241,6 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
         <div className="h-16 flex items-center justify-between px-3.5 border-b border-rule/70 bg-paper/40">
           <button
             onClick={() => onSelectTab('home')}
+            aria-label="Daily Dashboard Tracker Home"
             className="flex items-center gap-3 text-left focus-visible:outline-hidden group"
           >
             <div className="bezel-shell p-0.5 rounded-[7px]">
@@ -269,6 +270,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
               onClick={() => setIsExpanded(false)}
               className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 active:scale-95 transition-all"
               title="Collapse sidebar"
+              aria-label="Collapse sidebar"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -302,6 +304,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
               onClick={() => setIsExpanded(true)}
               className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper active:scale-95 transition-all"
               title="Expand sidebar"
+              aria-label="Expand sidebar"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -310,31 +313,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
       </aside>
 
       {/* Mobile Animated Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-rule/80 flex items-center justify-around py-1.5 px-1 shadow-lg">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              className={cn(
-                'flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-md text-xs transition-all relative',
-                isActive ? 'text-ledger-blue font-bold scale-105' : 'text-ink-soft hover:text-ink'
-              )}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="text-[9px] font-mono tracking-tight truncate max-w-[42px]">{item.label}</span>
-              {isActive && (
-                <motion.span
-                  layoutId="mobile-nav-dot"
-                  className="w-1.5 h-1.5 rounded-full bg-ledger-blue absolute -bottom-0.5"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-            </button>
-          );
-        })}
+      <nav
+        aria-label="Mobile Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-rule/80 py-1.5 px-2 shadow-lg overflow-x-auto no-scrollbar"
+      >
+        <div className="flex items-center justify-between min-w-full gap-1">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelectTab(item.id)}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-lg min-h-[44px] min-w-[40px] text-xs transition-all relative shrink-0 active:scale-95',
+                  isActive
+                    ? 'text-ledger-blue font-bold bg-ledger-light/50'
+                    : 'text-ink-soft hover:text-ink hover:bg-paper/60'
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-[9px] font-mono tracking-tight">{item.label}</span>
+                {isActive && (
+                  <motion.span
+                    layoutId="mobile-nav-dot"
+                    className="w-1.5 h-1.5 rounded-full bg-ledger-blue absolute bottom-0.5"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </nav>
     </>
   );

@@ -207,7 +207,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             </span>
           </div>
           <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink">
-            <TextEffect preset="fade-in-blur" speedReveal={1.2}>
+            <TextEffect as="span" preset="fade-in-blur" speedReveal={1.2}>
               {dateFormatted}
             </TextEffect>
           </h1>

@@ -32,22 +32,34 @@ export const DotLedger: React.FC<DotLedgerProps> = ({
     <div className={`relative inline-flex items-center gap-1.5 ${className}`}>
       <div className="flex items-center gap-1">
         {data.map((day) => {
+          const showTooltip = (el: HTMLElement) => {
+            const rect = el.getBoundingClientRect();
+            setHoveredDay({
+              date: day.date,
+              value: day.value,
+              x: rect.left + rect.width / 2,
+              y: rect.top - 8,
+            });
+          };
+
           return (
             <div
               key={day.date}
-              onMouseEnter={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setHoveredDay({
-                  date: day.date,
-                  value: day.value,
-                  x: rect.left + rect.width / 2,
-                  y: rect.top - 8,
-                });
-              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`${day.value} ${unit} on ${day.date}`}
+              onMouseEnter={(e) => showTooltip(e.currentTarget)}
               onMouseLeave={() => setHoveredDay(null)}
+              onFocus={(e) => showTooltip(e.currentTarget)}
+              onBlur={() => setHoveredDay(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  showTooltip(e.currentTarget);
+                }
+              }}
               className={`w-3 h-3 rounded-[2px] cursor-pointer transition-colors duration-150 ${getIntensityClass(
                 day.value
-              )} hover:ring-1 hover:ring-ink`}
+              )} hover:ring-1 hover:ring-ink focus-visible:ring-2 focus-visible:ring-ledger-blue focus-visible:outline-hidden`}
             />
           );
         })}

@@ -24,10 +24,16 @@ export const Header: React.FC<HeaderProps> = ({
             {title}
           </h1>
           {dotLedgerData && dotLedgerData.length > 0 && (
-            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-rule">
-              <span className="text-[11px] font-mono uppercase text-ink-soft">30d</span>
-              <DotLedger data={dotLedgerData} unit={dotLedgerUnit} />
-            </div>
+            <>
+              <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-rule">
+                <span className="text-[11px] font-mono uppercase text-ink-soft">30d</span>
+                <DotLedger data={dotLedgerData} unit={dotLedgerUnit} />
+              </div>
+              <div className="flex sm:hidden items-center gap-1.5 pt-1">
+                <span className="text-[10px] font-mono uppercase text-ink-soft">14d</span>
+                <DotLedger data={dotLedgerData.slice(-14)} unit={dotLedgerUnit} />
+              </div>
+            </>
           )}
         </div>
         {subtitle && <p className="text-sm text-ink-soft mt-1">{subtitle}</p>}

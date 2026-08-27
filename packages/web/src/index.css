@@ -45,6 +45,12 @@
 
     --blur-small: 2px;
     --blur-medium: 4px;
+
+    --dropdown-open-dur: 200ms;
+    --dropdown-close-dur: 150ms;
+    --dropdown-pre-scale: 0.96;
+    --dropdown-closing-scale: 0.98;
+    --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   [data-theme="kinetic"], .dark {
@@ -86,6 +92,69 @@
     --gold: #FFE600;
     --gold-light: rgba(255, 230, 0, 0.15);
     --accent: #00F0FF;
+    --accent-foreground: #000000;
+  }
+
+  [data-theme="matcha"] {
+    --paper: #111915;
+    --paper-tint: #17221C;
+    --ink: #ECF5EE;
+    --ink-soft: #94A89C;
+    --ink-muted: #64786C;
+    --ledger-blue: #4ADE80;
+    --ledger-hover: #22C55E;
+    --ledger-light: rgba(74, 222, 128, 0.15);
+    --stamp-red: #F87171;
+    --stamp-light: rgba(248, 113, 113, 0.15);
+    --rule: #23352B;
+    --rule-light: #2F473A;
+    --card: #18241E;
+    --card-surface: #1E2E26;
+    --gold: #FBBF24;
+    --gold-light: rgba(251, 191, 36, 0.15);
+    --accent: #4ADE80;
+    --accent-foreground: #000000;
+  }
+
+  [data-theme="sepia"] {
+    --paper: #F4EEDA;
+    --paper-tint: #E8DECA;
+    --ink: #2C2114;
+    --ink-soft: #7A6953;
+    --ink-muted: #9C8A73;
+    --ledger-blue: #8C4A2F;
+    --ledger-hover: #753B23;
+    --ledger-light: rgba(140, 74, 47, 0.12);
+    --stamp-red: #B91C1C;
+    --stamp-light: rgba(185, 28, 28, 0.12);
+    --rule: #D8CBB6;
+    --rule-light: #E8DECA;
+    --card: #FCF8EE;
+    --card-surface: #FFFFFF;
+    --gold: #C27803;
+    --gold-light: rgba(194, 120, 3, 0.12);
+    --accent: #8C4A2F;
+    --accent-foreground: #FFFFFF;
+  }
+
+  [data-theme="nord"] {
+    --paper: #1E222A;
+    --paper-tint: #242933;
+    --ink: #ECEFF4;
+    --ink-soft: #9AA5B8;
+    --ink-muted: #6B778D;
+    --ledger-blue: #88C0D0;
+    --ledger-hover: #81A1C1;
+    --ledger-light: rgba(136, 192, 208, 0.15);
+    --stamp-red: #BF616A;
+    --stamp-light: rgba(191, 97, 106, 0.15);
+    --rule: #2E3440;
+    --rule-light: #3B4252;
+    --card: #282E39;
+    --card-surface: #2E3542;
+    --gold: #EBCB8B;
+    --gold-light: rgba(235, 203, 139, 0.15);
+    --accent: #88C0D0;
     --accent-foreground: #000000;
   }
 

@@ -214,7 +214,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          <ThemeToggle placement="bottom-end" />
           <span className="text-xs font-mono text-ink-soft bg-card/80 px-3 py-1.5 border border-rule rounded-lg shadow-subtle">
             {data.today}
           </span>

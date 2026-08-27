@@ -297,7 +297,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
 
         {/* Footer: Theme Toggle & Expand Button */}
         <div className="p-2.5 border-t border-rule/70 flex flex-col items-center gap-2 bg-paper/30">
-          <ThemeToggle compact={!isExpanded} />
+          <ThemeToggle
+            compact={!isExpanded}
+            placement="top-start"
+            className={isExpanded ? 'w-full' : ''}
+          />
 
           {!isExpanded && (
             <button

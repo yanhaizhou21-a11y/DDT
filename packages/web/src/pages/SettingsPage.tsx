@@ -499,13 +499,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                 </div>
                 <div>
                   <h3 className="font-serif text-sm font-semibold text-ink">Theme & Aesthetic Display</h3>
-                  <p className="text-[11px] text-ink-soft">Switch between Field Ledger, Kinetic Dark, and Cyberpunk modes</p>
+                  <p className="text-[11px] text-ink-soft">Switch between Field Ledger, Vintage Sepia, Kinetic Dark, Cyberpunk, Matcha, and Nordic modes</p>
                 </div>
               </div>
-              <ThemeToggle />
+              <ThemeToggle placement="bottom-end" />
             </div>
             <p className="text-xs text-ink-soft leading-relaxed">
-              DDT supports 3 distinctive handcrafted themes: <strong className="text-ink font-semibold">Field Ledger</strong> (warm paper & ink), <strong className="text-ink font-semibold">Kinetic Dark</strong> (high-energy brutalism with acid yellow), and <strong className="text-ink font-semibold">Cyberpunk Night</strong> (midnight glow & cyan/magenta hairlines).
+              DDT supports 6 distinctive handcrafted themes: <strong className="text-ink font-semibold">Field Ledger</strong> (warm paper & ink), <strong className="text-ink font-semibold">Vintage Sepia</strong> (antique parchment & leather), <strong className="text-ink font-semibold">Kinetic Dark</strong> (high-energy brutalism & acid yellow), <strong className="text-ink font-semibold">Cyberpunk Night</strong> (midnight glow & cyan/magenta), <strong className="text-ink font-semibold">Matcha Forest</strong> (earthy botanical green), and <strong className="text-ink font-semibold">Nordic Frost</strong> (arctic slate chill).
             </p>
           </div>
 

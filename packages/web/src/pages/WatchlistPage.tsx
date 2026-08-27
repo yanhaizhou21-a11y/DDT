@@ -12,6 +12,7 @@ import { Header } from '../components/Header';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/AlertDialog';
 import { EmptyState } from '../components/EmptyState';
+import { DatePicker } from '../components/DatePicker';
 
 import {
   Film,
@@ -715,14 +716,14 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Theatrical / Release Date (Optional)</label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Theatrical / Release Date (Optional)"
                   value={manualReleaseDate}
-                  onChange={(e) => setManualReleaseDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
+                  onChange={(str) => setManualReleaseDate(str)}
+                  isClearable
+                  aria-label="Release date"
                 />
               </div>
 

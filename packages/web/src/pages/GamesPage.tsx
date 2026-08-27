@@ -15,6 +15,7 @@ import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/AlertDialog';
 import { EmptyState } from '../components/EmptyState';
 import { Magnetic } from '../components/Magnetic';
+import { DatePicker } from '../components/DatePicker';
 import {
 
   Gamepad2,
@@ -857,14 +858,13 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
 
           {/* Date Picker */}
           <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-ink-soft mb-1">
-              Date Logged
-            </label>
-            <input
-              type="date"
+            <DatePicker
+              label="Date Logged"
               value={loggedDate}
-              onChange={(e) => setLoggedDate(e.target.value)}
-              className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-hidden"
+              onChange={(str) => {
+                if (str) setLoggedDate(str);
+              }}
+              aria-label="Date logged"
             />
           </div>
 

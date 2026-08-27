@@ -13,6 +13,7 @@ import {
 import { Header } from '../components/Header';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/AlertDialog';
+import { DatePicker } from '../components/DatePicker';
 import {
 
   DndContext,
@@ -533,24 +534,24 @@ export const KanbanPage: React.FC<KanbanPageProps> = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 items-start">
             <div>
-              <label className="block text-xs font-medium text-ink mb-1">Due Date</label>
-              <input
-                type="date"
+              <DatePicker
+                label="Due Date"
                 value={cardDueDate}
-                onChange={(e) => setCardDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none font-mono"
+                onChange={(str) => setCardDueDate(str)}
+                isClearable
+                aria-label="Card due date"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-ink mb-1">Tag / Label</label>
+              <label className="block text-xs font-mono uppercase tracking-wider text-ink-soft mb-1">Tag / Label</label>
               <input
                 type="text"
                 placeholder="e.g. Work, Urgent, Bug"
                 value={cardTag}
                 onChange={(e) => setCardTag(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-paper border border-rule rounded-[3px] focus:bg-card focus:outline-none font-mono"
+                className="w-full px-3 py-2 text-sm bg-paper border border-rule/90 rounded-md focus:bg-card focus:border-ledger-blue focus:outline-none font-mono"
               />
             </div>
           </div>

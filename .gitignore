@@ -152,5 +152,4 @@ dist/
 *.db-shm
 .agents/
 icon svg/
-
-
+.impeccable/

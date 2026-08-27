@@ -294,6 +294,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                       <button
                         type="button"
                         onClick={() => setShowGithub(!showGithub)}
+                        aria-label={showGithub ? 'Hide GitHub token' : 'Show GitHub token'}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
                       >
                         {showGithub ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -378,6 +379,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                     <button
                       type="button"
                       onClick={() => setShowTmdb(!showTmdb)}
+                      aria-label={showTmdb ? 'Hide TMDB key' : 'Show TMDB key'}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
                     >
                       {showTmdb ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -460,6 +462,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                     <button
                       type="button"
                       onClick={() => setShowRawg(!showRawg)}
+                      aria-label={showRawg ? 'Hide RAWG key' : 'Show RAWG key'}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
                     >
                       {showRawg ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -527,6 +530,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                 <button
                   type="button"
                   onClick={copyDbPath}
+                  aria-label="Copy database path"
                   className="p-1.5 text-ink-soft hover:text-ledger-blue rounded border border-rule bg-card active:scale-95 transition-all"
                   title="Copy path"
                 >

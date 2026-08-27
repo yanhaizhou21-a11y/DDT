@@ -244,10 +244,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
             aria-label="Daily Dashboard Tracker Home"
             className="flex items-center gap-3 text-left focus-visible:outline-hidden group"
           >
-            <div className="bezel-shell p-0.5 rounded-[7px]">
-              <div className="w-8 h-8 rounded-[5px] bg-ledger-blue text-paper flex items-center justify-center font-serif font-bold text-sm tracking-tighter shadow-sm group-hover:bg-ledger-hover transition-colors">
-                D
-              </div>
+            <div className="bezel-shell p-0.5 rounded-[9px] group-hover:scale-105 transition-transform">
+              <img
+                src="/logo.png"
+                alt="DDT Logo"
+                className="w-8 h-8 rounded-[7px] object-cover shadow-sm border border-rule/60"
+              />
             </div>
             {isExpanded && (
               <motion.div

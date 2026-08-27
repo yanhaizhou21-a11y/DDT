@@ -19,7 +19,7 @@ import {
 import { parseDate, today, getLocalTimeZone } from '@internationalized/date';
 import type { DateValue } from '@internationalized/date';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { cn } from '../types';
+import { cn } from '../lib/utils';
 
 export interface DatePickerProps
   extends Omit<AriaDatePickerProps<DateValue>, 'value' | 'onChange' | 'defaultValue'> {
@@ -78,8 +78,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       } catch (e) {
         return undefined;
       }
+      return undefined;
     }
-    return defaultValue;
+    return defaultValue as DateValue;
   }, [defaultValue]);
 
   const minValue = useMemo(() => {

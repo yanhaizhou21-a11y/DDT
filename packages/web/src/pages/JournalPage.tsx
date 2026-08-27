@@ -10,6 +10,7 @@ import {
 import { Header } from '../components/Header';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { ConfirmDialog } from '../components/AlertDialog';
+import { DatePicker } from '../components/DatePicker';
 import {
   Calendar as CalendarIcon,
   Trash2,
@@ -194,11 +195,12 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
               </div>
             </div>
 
-            <input
-              type="date"
+            <DatePicker
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:bg-card focus:outline-hidden"
+              onChange={(str) => {
+                if (str) setSelectedDate(str);
+              }}
+              aria-label="Select journal date"
             />
           </div>
 

@@ -11,6 +11,7 @@ import { Header } from '../components/Header';
 import { DotLedger } from '../components/DotLedger';
 import { EmptyState } from '../components/EmptyState';
 import { ConfirmDialog } from '../components/AlertDialog';
+import { DatePicker } from '../components/DatePicker';
 import {
   Utensils,
   Plus,
@@ -184,11 +185,14 @@ export const FoodPage: React.FC<FoodPageProps> = () => {
             </button>
           </div>
 
-          <input
-            type="date"
+          <DatePicker
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3 py-1.5 bg-paper border border-rule/80 rounded-[4px] text-xs font-mono text-ink focus:bg-card focus:outline-none"
+            onChange={(str) => {
+              if (str) setSelectedDate(str);
+            }}
+            size="sm"
+            className="w-40 sm:w-44"
+            aria-label="Select food log date"
           />
         </div>
 

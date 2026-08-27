@@ -293,14 +293,14 @@ export async function updateGameCover(gameName: string, coverUrl: string | null)
 export async function uploadImage(file: File): Promise<{ success: boolean; url: string; filename: string; size: number }> {
   const maxBytes = 5 * 1024 * 1024; // 5 MB
   if (file.size > maxBytes) {
-    throw new Error(`Ukuran file (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas maksimal 5 MB.`);
+    throw new Error(`File size (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds maximum 5 MB limit.`);
   }
 
   // Convert File to Base64 dataURL
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Gagal membaca file gambar'));
+    reader.onerror = () => reject(new Error('Failed to read image file.'));
     reader.readAsDataURL(file);
   });
 

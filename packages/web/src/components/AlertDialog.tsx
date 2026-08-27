@@ -108,11 +108,58 @@ export function AlertDialogContent({
 }: AlertDialogContentProps) {
   const { open, setOpen } = useAlertDialogContext();
   const contentRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      prevFocusRef.current = document.activeElement as HTMLElement | null;
+      const timer = setTimeout(() => {
+        if (contentRef.current) {
+          const focusable = contentRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length > 0) {
+            focusable[0].focus();
+          } else {
+            contentRef.current.focus();
+          }
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    } else if (prevFocusRef.current) {
+      prevFocusRef.current.focus();
+    }
+  }, [open]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
+      if (!open) return;
+
+      if (e.key === 'Escape') {
         setOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab' && contentRef.current) {
+        const focusables = contentRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+
+        const firstElement = focusables[0];
+        const lastElement = focusables[focusables.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
       }
     };
     if (open) {
@@ -143,18 +190,22 @@ export function AlertDialogContent({
             transition={{ duration: 0.18, ease: 'easeOut' }}
             onClick={() => setOpen(false)}
             className="fixed inset-0 bg-ink/40 backdrop-blur-[4px]"
+            aria-hidden="true"
           />
 
           {/* Dialog Card */}
           <motion.div
             ref={contentRef}
             key="alert-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.94, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 4 }}
             transition={{ type: 'spring', stiffness: 450, damping: 30 }}
             className={cn(
-              'relative z-10 w-full max-w-md bg-paper border border-rule/90 rounded-xl p-1.5 shadow-2xl overflow-hidden',
+              'relative z-10 w-full max-w-md bg-paper border border-rule/90 rounded-xl p-1.5 shadow-2xl overflow-hidden focus:outline-hidden',
               className
             )}
           >

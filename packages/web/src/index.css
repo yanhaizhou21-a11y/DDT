@@ -33,7 +33,7 @@
     --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-in-out: ease-in-out;
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);
+    --ease-bounce: cubic-bezier(0.22, 1, 0.36, 1);
 
     --distance-micro: 4px;
     --distance-base: 8px;
@@ -224,6 +224,27 @@
       transform: scale(1.15);
     }
   }
+
+  /* Modal Dialog Transitions */
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes modalScaleIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.96) translateY(6px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
 }
 
 /* Reduced Motion Safety Guard */
@@ -231,7 +252,9 @@
   .t-page-enter,
   .t-shimmer,
   .t-pulse-dot,
-  .ledger-card-interactive {
+  .ledger-card-interactive,
+  [class*="animate-[modalScaleIn"],
+  [class*="animate-[fadeIn"] {
     animation: none !important;
     transition: none !important;
     transform: none !important;

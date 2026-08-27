@@ -189,6 +189,7 @@ export function RichTextEditor({
             onClick={handleUndo}
             disabled={historyIndex <= 0}
             title="Undo (Ctrl+Z)"
+            aria-label="Undo"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Undo className="w-3.5 h-3.5" />
@@ -198,6 +199,7 @@ export function RichTextEditor({
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
             title="Redo (Ctrl+Shift+Z)"
+            aria-label="Redo"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Redo className="w-3.5 h-3.5" />
@@ -210,6 +212,7 @@ export function RichTextEditor({
             type="button"
             onClick={() => insertFormatting('**', '**', 'bold')}
             title="Bold (Ctrl+B)"
+            aria-label="Bold text"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 font-bold transition-colors"
           >
             <Bold className="w-3.5 h-3.5" />
@@ -218,6 +221,7 @@ export function RichTextEditor({
             type="button"
             onClick={() => insertFormatting('*', '*', 'italic')}
             title="Italic (Ctrl+I)"
+            aria-label="Italic text"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 italic transition-colors"
           >
             <Italic className="w-3.5 h-3.5" />
@@ -226,6 +230,7 @@ export function RichTextEditor({
             type="button"
             onClick={() => insertFormatting('`', '`', 'code')}
             title="Inline Code"
+            aria-label="Inline code"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
           >
             <Code className="w-3.5 h-3.5" />
@@ -237,6 +242,7 @@ export function RichTextEditor({
                 type="button"
                 onClick={() => insertFormatting('~~', '~~', 'strikethrough')}
                 title="Strikethrough"
+                aria-label="Strikethrough text"
                 className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
               >
                 <Strikethrough className="w-3.5 h-3.5" />
@@ -246,6 +252,7 @@ export function RichTextEditor({
                 type="button"
                 onClick={() => insertLinePrefix('# ')}
                 title="Heading 1"
+                aria-label="Heading 1"
                 className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-bold text-xs"
               >
                 <Heading1 className="w-3.5 h-3.5" />
@@ -256,7 +263,8 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => insertLinePrefix('## ')}
-            title="Heading"
+            title="Heading 2"
+            aria-label="Heading 2"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors font-serif font-semibold text-xs"
           >
             <Heading2 className="w-3.5 h-3.5" />
@@ -269,6 +277,7 @@ export function RichTextEditor({
             type="button"
             onClick={() => insertLinePrefix('- ')}
             title="Bullet List"
+            aria-label="Bullet list"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
           >
             <List className="w-3.5 h-3.5" />
@@ -277,6 +286,7 @@ export function RichTextEditor({
             type="button"
             onClick={() => insertLinePrefix('1. ')}
             title="Numbered List"
+            aria-label="Numbered list"
             className="p-1 sm:p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
           >
             <ListOrdered className="w-3.5 h-3.5" />
@@ -288,6 +298,7 @@ export function RichTextEditor({
                 type="button"
                 onClick={() => insertLinePrefix('> ')}
                 title="Blockquote"
+                aria-label="Blockquote"
                 className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
               >
                 <Quote className="w-3.5 h-3.5" />
@@ -296,6 +307,7 @@ export function RichTextEditor({
                 type="button"
                 onClick={() => insertFormatting('\n```ts\n', '\n```\n', '// code here')}
                 title="Code Block"
+                aria-label="Code block"
                 className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
               >
                 <FileCode className="w-3.5 h-3.5" />
@@ -304,6 +316,7 @@ export function RichTextEditor({
                 type="button"
                 onClick={() => insertLinePrefix('\n---\n\n')}
                 title="Horizontal Divider"
+                aria-label="Horizontal divider"
                 className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 transition-colors"
               >
                 <Minus className="w-3.5 h-3.5" />

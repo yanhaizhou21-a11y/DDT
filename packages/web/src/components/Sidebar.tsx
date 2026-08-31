@@ -12,6 +12,7 @@ import type { RouteTab } from '../types';
 import {
   LayoutDashboard,
   GitPullRequest,
+  FolderKanban,
   Film,
   SquareKanban,
   BookOpen,
@@ -38,6 +39,7 @@ interface NavItemConfig {
 const NAV_ITEMS: NavItemConfig[] = [
   { id: 'home', label: 'Dashboard', category: 'core', icon: LayoutDashboard },
   { id: 'dev', label: 'Dev Tracker', category: 'core', icon: GitPullRequest, badge: 'Live' },
+  { id: 'projects', label: 'Projects', category: 'core', icon: FolderKanban },
   { id: 'kanban', label: 'Kanban Board', category: 'core', icon: SquareKanban },
   { id: 'journal', label: 'Daily Journal', category: 'tracking', icon: BookOpen },
   { id: 'food', label: 'Food Ledger', category: 'tracking', icon: Utensils },

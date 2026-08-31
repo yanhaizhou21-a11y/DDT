@@ -3,6 +3,7 @@ import type { RouteTab } from './types';
 import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { DevPage } from './pages/DevPage';
+import { ProjectsPage } from './pages/ProjectsPage';
 import { WatchlistPage } from './pages/WatchlistPage';
 import { KanbanPage } from './pages/KanbanPage';
 import { JournalPage } from './pages/JournalPage';
@@ -13,7 +14,7 @@ import { SettingsPage } from './pages/SettingsPage';
 export function App() {
   const [activeTab, setActiveTab] = useState<RouteTab>(() => {
     const hash = window.location.hash.replace('#', '') as RouteTab;
-    const validTabs: RouteTab[] = ['home', 'dev', 'watchlist', 'kanban', 'journal', 'food', 'games', 'settings'];
+    const validTabs: RouteTab[] = ['home', 'dev', 'projects', 'watchlist', 'kanban', 'journal', 'food', 'games', 'settings'];
     return validTabs.includes(hash) ? hash : 'home';
   });
 
@@ -25,7 +26,7 @@ export function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '') as RouteTab;
-      const validTabs: RouteTab[] = ['home', 'dev', 'watchlist', 'kanban', 'journal', 'food', 'games', 'settings'];
+      const validTabs: RouteTab[] = ['home', 'dev', 'projects', 'watchlist', 'kanban', 'journal', 'food', 'games', 'settings'];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -44,6 +45,7 @@ export function App() {
         <div key={activeTab} className="t-page-enter">
           {activeTab === 'home' && <DashboardPage onNavigate={handleSelectTab} />}
           {activeTab === 'dev' && <DevPage onNavigate={handleSelectTab} />}
+          {activeTab === 'projects' && <ProjectsPage onNavigate={handleSelectTab} />}
           {activeTab === 'watchlist' && <WatchlistPage onNavigate={handleSelectTab} />}
           {activeTab === 'kanban' && <KanbanPage onNavigate={handleSelectTab} />}
           {activeTab === 'journal' && <JournalPage onNavigate={handleSelectTab} />}

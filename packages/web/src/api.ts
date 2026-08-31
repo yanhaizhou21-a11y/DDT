@@ -14,6 +14,10 @@ import type {
   GameStatsResponse,
   GithubContributionsResponse,
   GithubRepo,
+  Project,
+  ProjectWithStats,
+  ProjectDetailResponse,
+  ProjectActivity,
 } from './types';
 
 const API_BASE = '/api';
@@ -327,5 +331,70 @@ export async function fetchGithubRepos(force = false): Promise<{ repos: GithubRe
 
 export async function refreshGithubCache(): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/github/refresh`, { method: 'POST' });
+  return handleResponse<{ success: boolean }>(res);
+}
+
+// Projects
+export async function fetchProjects(force = false): Promise<ProjectWithStats[]> {
+  const res = await fetch(`${API_BASE}/projects${force ? '?force=true' : ''}`);
+  return handleResponse<ProjectWithStats[]>(res);
+}
+
+export async function fetchProject(id: string, force = false): Promise<ProjectDetailResponse> {
+  const res = await fetch(`${API_BASE}/projects/${id}${force ? '?force=true' : ''}`);
+  return handleResponse<ProjectDetailResponse>(res);
+}
+
+export async function createProject(project: {
+  name: string;
+  domainType: string;
+  status?: string;
+  linkedRepo?: string | null;
+}): Promise<Project> {
+  const res = await fetch(`${API_BASE}/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(project),
+  });
+  return handleResponse<Project>(res);
+}
+
+export async function updateProject(
+  id: string,
+  updates: Partial<Project>
+): Promise<Project> {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  return handleResponse<Project>(res);
+}
+
+export async function deleteProject(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' });
+  return handleResponse<{ success: boolean }>(res);
+}
+
+export async function logProjectActivity(
+  id: string,
+  count: number,
+  date?: string
+): Promise<{ success: boolean; id: string; date: string; count: number; isNew: boolean }> {
+  const res = await fetch(`${API_BASE}/projects/${id}/activity`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ count, date }),
+  });
+  return handleResponse<{ success: boolean; id: string; date: string; count: number; isNew: boolean }>(res);
+}
+
+export async function deleteProjectActivity(
+  projectId: string,
+  activityId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/activity/${activityId}`, {
+    method: 'DELETE',
+  });
   return handleResponse<{ success: boolean }>(res);
 }

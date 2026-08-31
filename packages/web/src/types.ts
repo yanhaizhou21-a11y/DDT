@@ -1,12 +1,60 @@
 export type RouteTab =
   | 'home'
   | 'dev'
+  | 'projects'
   | 'watchlist'
   | 'kanban'
   | 'journal'
   | 'food'
   | 'games'
   | 'settings';
+
+export type ProjectDomainType = 'software' | 'graphic_design' | 'game_dev' | 'video_photo';
+export type ProjectStatus = 'not_started' | 'in_progress' | 'ready';
+
+export interface Project {
+  id: string;
+  name: string;
+  domainType: ProjectDomainType;
+  status: ProjectStatus;
+  linkedRepo: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectActivity {
+  id: string;
+  projectId: string;
+  date: string; // YYYY-MM-DD
+  count: number;
+  source: 'github' | 'manual';
+  createdAt?: string;
+}
+
+export interface ProjectWithStats extends Project {
+  isRepoLinked: boolean;
+  recentActivity: { date: string; value: number }[];
+  totalActivity: number;
+  lastActiveDate: string | null;
+  repoError?: string;
+}
+
+export interface ProjectDetailResponse extends Project {
+  isRepoLinked: boolean;
+  activity: { date: string; count: number; level: number }[];
+  recentActivity: { date: string; value: number }[];
+  totalActivity: number;
+  todayCount: number;
+  lastCommit?: {
+    sha: string;
+    message: string;
+    author: string;
+    date: string;
+    htmlUrl?: string;
+  } | null;
+  repoError?: string;
+  entries?: ProjectActivity[];
+}
 
 export interface SettingsMap {
   github_token?: string;

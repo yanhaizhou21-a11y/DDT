@@ -20,6 +20,7 @@ export type GithubContributionWeek = GithubContributionCell[];
 
 export interface GithubGraphProps {
   account?: string;
+  projectId?: string;
   months?: number;
   variant?: GithubGraphVariant;
   animation?: GithubGraphAnimation;
@@ -30,6 +31,9 @@ export interface GithubGraphProps {
   showAccount?: boolean;
   ambientEffect?: GithubGraphAmbientEffect;
   data?: GithubContribution[];
+  unit?: string;
+  unitPlural?: string;
+  metricLabel?: string;
   className?: string;
 }
 
@@ -58,6 +62,7 @@ function addDays(date: Date, days: number): Date {
 
 export function GithubGraph({
   account = '',
+  projectId,
   months = 6,
   variant = 'github',
   animation = 'wave',
@@ -68,6 +73,9 @@ export function GithubGraph({
   showAccount = true,
   ambientEffect = 'twinkle',
   data,
+  unit = 'commit',
+  unitPlural = 'commits',
+  metricLabel = 'in the last year',
   className,
 }: GithubGraphProps) {
   const [hoveredCell, setHoveredCell] = React.useState<GithubContributionCell | null>(null);
@@ -87,11 +95,18 @@ export function GithubGraph({
     let isMounted = true;
     setIsLoading(true);
 
-    fetch('/api/github/contributions')
+    const endpoint = projectId ? `/api/projects/${projectId}` : '/api/github/contributions';
+
+    fetch(endpoint)
       .then((res) => (res.ok ? res.json() : null))
       .then((resData) => {
         if (!isMounted) return;
-        if (resData && resData.weeks) {
+        if (!resData) return;
+
+        if (projectId && resData.activity) {
+          setFetchedData(resData.activity);
+          setTotalCommits(resData.totalActivity || 0);
+        } else if (resData.weeks) {
           const list: GithubContribution[] = [];
           for (const w of resData.weeks) {
             for (const d of w.contributionDays || []) {
@@ -112,7 +127,7 @@ export function GithubGraph({
     return () => {
       isMounted = false;
     };
-  }, [data]);
+  }, [data, projectId]);
 
   const palette = VARIANTS[variant] || VARIANTS.github;
 
@@ -158,9 +173,9 @@ export function GithubGraph({
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-medium text-ink">
-              {totalCommits.toLocaleString()} commits
+              {totalCommits.toLocaleString()} {totalCommits === 1 ? unit : unitPlural}
             </span>
-            <span className="text-ink-soft opacity-75">in the last year</span>
+            <span className="text-ink-soft opacity-75">{metricLabel}</span>
           </div>
           {account && <span className="font-mono text-[11px] opacity-75">@{account}</span>}
         </div>
@@ -219,7 +234,7 @@ export function GithubGraph({
           style={{ left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px` }}
         >
           <span className="font-semibold text-emerald-400">
-            {hoveredCell.count} {hoveredCell.count === 1 ? 'commit' : 'commits'}
+            {hoveredCell.count} {hoveredCell.count === 1 ? unit : unitPlural}
           </span>{' '}
           on {hoveredCell.date}
         </div>

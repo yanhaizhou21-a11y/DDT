@@ -13,6 +13,7 @@ import { createGamesRouter } from './routes/games.js';
 import { createGithubRouter } from './routes/github.js';
 import { createDashboardRouter } from './routes/dashboard.js';
 import { createUploadRouter } from './routes/upload.js';
+import { createProjectsRouter } from './routes/projects.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,6 +53,7 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
   app.use('/api/github', createGithubRouter(db));
   app.use('/api/dashboard', createDashboardRouter(db));
   app.use('/api/upload', createUploadRouter(uploadsDir));
+  app.use('/api/projects', createProjectsRouter(db));
 
   // Health check
   app.get('/api/health', (_req, res) => {

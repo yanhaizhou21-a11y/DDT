@@ -110,6 +110,24 @@ export function initDatabase(dbPath?: string): InitDatabaseResult {
       key TEXT PRIMARY KEY,
       payload TEXT NOT NULL,
       fetched_at INTEGER NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      domain_type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'not_started',
+      linked_repo TEXT,
+      created_at INTEGER,
+      updated_at INTEGER
+    );`,
+    `CREATE TABLE IF NOT EXISTS project_activity (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      count INTEGER NOT NULL DEFAULT 1,
+      source TEXT NOT NULL DEFAULT 'manual',
+      created_at INTEGER,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );`
   ]).then(async () => {
     // Seed default kanban columns if none exist

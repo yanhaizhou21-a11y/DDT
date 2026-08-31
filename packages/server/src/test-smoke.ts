@@ -102,21 +102,66 @@ async function runSmokeTest() {
     });
     console.log('[Test] Watchlist item logged');
 
-    // 7. Verify Database counts
+    // 7. Test Projects & Project Activity
+    await client.execute({
+      sql: 'INSERT INTO projects (id, name, domain_type, status, linked_repo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      args: [
+        'proj-test-1',
+        'DDT Mobile Companion',
+        'software',
+        'in_progress',
+        'owner/ddt-mobile',
+        now,
+        now,
+      ],
+    });
+
+    await client.execute({
+      sql: 'INSERT INTO projects (id, name, domain_type, status, linked_repo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      args: [
+        'proj-test-2',
+        'Brand Identity & UI Kit',
+        'graphic_design',
+        'not_started',
+        null,
+        now,
+        now,
+      ],
+    });
+    console.log('[Test] Projects inserted successfully');
+
+    await client.execute({
+      sql: 'INSERT INTO project_activity (id, project_id, date, count, source, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      args: [
+        'act-test-1',
+        'proj-test-2',
+        today,
+        3,
+        'manual',
+        now,
+      ],
+    });
+    console.log('[Test] Project activity logged successfully');
+
+    // 8. Verify Database counts
     const jCount = await client.execute('SELECT count(*) as count FROM journal_entries');
     const fCount = await client.execute('SELECT count(*) as count FROM food_entries');
     const gCount = await client.execute('SELECT count(*) as count FROM game_entries');
     const wCount = await client.execute('SELECT count(*) as count FROM watchlist_items');
     const cCount = await client.execute('SELECT count(*) as count FROM kanban_cards');
+    const pCount = await client.execute('SELECT count(*) as count FROM projects');
+    const paCount = await client.execute('SELECT count(*) as count FROM project_activity');
 
-    console.log(`[Test] Counts: Journal=${jCount.rows[0]?.count}, Food=${fCount.rows[0]?.count}, Games=${gCount.rows[0]?.count}, Watchlist=${wCount.rows[0]?.count}, Cards=${cCount.rows[0]?.count}`);
+    console.log(`[Test] Counts: Journal=${jCount.rows[0]?.count}, Food=${fCount.rows[0]?.count}, Games=${gCount.rows[0]?.count}, Watchlist=${wCount.rows[0]?.count}, Cards=${cCount.rows[0]?.count}, Projects=${pCount.rows[0]?.count}, ProjectActivity=${paCount.rows[0]?.count}`);
 
     if (
       Number(jCount.rows[0]?.count) !== 1 ||
       Number(fCount.rows[0]?.count) !== 1 ||
       Number(gCount.rows[0]?.count) !== 1 ||
       Number(wCount.rows[0]?.count) !== 1 ||
-      Number(cCount.rows[0]?.count) !== 1
+      Number(cCount.rows[0]?.count) !== 1 ||
+      Number(pCount.rows[0]?.count) !== 2 ||
+      Number(paCount.rows[0]?.count) !== 1
     ) {
       throw new Error('Database count assertion failed');
     }

@@ -74,3 +74,28 @@ export const githubCache = sqliteTable('github_cache', {
   payload: text('payload').notNull(),
   fetchedAt: integer('fetched_at', { mode: 'timestamp' }).notNull(),
 });
+
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  domainType: text('domain_type', {
+    enum: ['software', 'graphic_design', 'game_dev', 'video_photo'],
+  }).notNull(),
+  status: text('status', {
+    enum: ['not_started', 'in_progress', 'ready'],
+  }).notNull().default('not_started'),
+  linkedRepo: text('linked_repo'), // e.g. "owner/repo"
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
+
+export const projectActivity = sqliteTable('project_activity', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(), // YYYY-MM-DD
+  count: integer('count').notNull().default(1),
+  source: text('source', { enum: ['github', 'manual'] }).notNull().default('manual'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});

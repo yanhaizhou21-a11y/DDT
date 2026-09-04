@@ -276,7 +276,7 @@ The backend constructs an authentic Discord Embed adhering to Discord API v10 we
 \`\`\`json
 {
   "username": "DDT Daily Journal",
-  "avatar_url": "https://raw.githubusercontent.com/yanhaizhou21-a11y/DDT/main/assets/ddt-icon.png",
+  "avatar_url": "https://raw.githubusercontent.com/yanhaizhou21-a11y/DDT/main/assets/bot-avatar.jpg",
   "embeds": [
     {
       "title": "📋 DDT Activity Recap — Friday, Sep 4, 2026",
@@ -301,7 +301,7 @@ The backend constructs an authentic Discord Embed adhering to Discord API v10 we
       ],
       "footer": {
         "text": "DDT • Daily Dashboard Tracker • Local-first Ledger",
-        "icon_url": "https://raw.githubusercontent.com/yanhaizhou21-a11y/DDT/main/assets/ddt-icon.png"
+        "icon_url": "https://raw.githubusercontent.com/yanhaizhou21-a11y/DDT/main/assets/bot-avatar.jpg"
       },
       "timestamp": "2026-09-04T14:30:00.000Z"
     }

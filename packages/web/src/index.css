@@ -331,3 +331,204 @@
   }
 }
 
+/* ─── Markdown Typography for RichTextEditor / ReactMarkdown ─── */
+.journal-prose,
+.prose {
+  color: var(--ink);
+  line-height: 1.65;
+}
+
+.journal-prose h1,
+.prose h1 {
+  font-family: var(--font-serif, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--rule);
+  letter-spacing: -0.015em;
+}
+
+.journal-prose h2,
+.prose h2 {
+  font-family: var(--font-serif, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 1.15rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.journal-prose h3,
+.prose h3 {
+  font-family: var(--font-serif, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.journal-prose p,
+.prose p {
+  margin-top: 0;
+  margin-bottom: 0.65rem;
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.journal-prose strong,
+.journal-prose b,
+.prose strong,
+.prose b {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.journal-prose em,
+.journal-prose i,
+.prose em,
+.prose i {
+  font-style: italic;
+}
+
+.journal-prose s,
+.journal-prose del,
+.prose s,
+.prose del {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+
+.journal-prose ul,
+.prose ul {
+  list-style-type: disc;
+  margin-top: 0.4rem;
+  margin-bottom: 0.65rem;
+  padding-left: 1.35rem;
+  font-size: 0.875rem;
+}
+
+.journal-prose ol,
+.prose ol {
+  list-style-type: decimal;
+  margin-top: 0.4rem;
+  margin-bottom: 0.65rem;
+  padding-left: 1.35rem;
+  font-size: 0.875rem;
+}
+
+.journal-prose li,
+.prose li {
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
+}
+
+.journal-prose li::marker,
+.prose li::marker {
+  color: var(--ledger-blue);
+}
+
+.journal-prose blockquote,
+.prose blockquote {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  border-left: 3px solid var(--ledger-blue);
+  background-color: var(--paper-tint);
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+.journal-prose code,
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8125rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+}
+
+.journal-prose pre,
+.prose pre {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  overflow-x: auto;
+}
+
+.journal-prose pre code,
+.prose pre code {
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  font-size: 0.8125rem;
+}
+
+.journal-prose hr,
+.prose hr {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  border: none;
+  border-top: 1px solid var(--rule);
+}
+
+.journal-prose a,
+.prose a {
+  color: var(--ledger-blue);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 2px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.journal-prose a:hover,
+.prose a:hover {
+  text-decoration-color: var(--ledger-blue);
+}
+
+.journal-prose table,
+.prose table {
+  width: 100%;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.journal-prose th,
+.prose th {
+  padding: 0.45rem 0.65rem;
+  font-weight: 600;
+  border-bottom: 2px solid var(--rule);
+  background-color: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+
+.journal-prose td,
+.prose td {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-soft);
+}
+
+.journal-prose input[type="checkbox"],
+.prose input[type="checkbox"] {
+  margin-right: 0.5rem;
+  accent-color: var(--ledger-blue);
+}
+
+

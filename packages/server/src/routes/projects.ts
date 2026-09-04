@@ -404,7 +404,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
   router.post('/:id/activity', async (req, res) => {
     try {
       const { id } = req.params;
-      const { count = 1, date } = req.body;
+      const { count = 1, date, note } = req.body;
 
       const project = await db.select().from(projects).where(eq(projects.id, id)).get();
       if (!project) {
@@ -427,8 +427,33 @@ export function createProjectsRouter(db: AppDatabase): Router {
       }
 
       const entryDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : formatDate(new Date());
+      const trimmedNote = typeof note === 'string' && note.trim() ? note.trim() : null;
+      const now = new Date();
 
-      // Check if entry exists for this project on this date with manual source
+      // If a specific note/action is specified, insert as a distinct item so history tracks what was done
+      if (trimmedNote) {
+        const actId = `act-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        await db.insert(projectActivity).values({
+          id: actId,
+          projectId: id,
+          date: entryDate,
+          count: numCount,
+          note: trimmedNote,
+          source: 'manual',
+          createdAt: now,
+        });
+
+        return res.status(201).json({
+          success: true,
+          id: actId,
+          date: entryDate,
+          count: numCount,
+          note: trimmedNote,
+          isNew: true,
+        });
+      }
+
+      // Check if general un-noted entry exists for this project on this date
       const existing = await db
         .select()
         .from(projectActivity)
@@ -436,12 +461,11 @@ export function createProjectsRouter(db: AppDatabase): Router {
           and(
             eq(projectActivity.projectId, id),
             eq(projectActivity.date, entryDate),
-            eq(projectActivity.source, 'manual')
+            eq(projectActivity.source, 'manual'),
+            isNull(projectActivity.note)
           )
         )
         .get();
-
-      const now = new Date();
 
       if (existing) {
         const newCount = existing.count + numCount;
@@ -458,6 +482,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
           projectId: id,
           date: entryDate,
           count: numCount,
+          note: null,
           source: 'manual',
           createdAt: now,
         });

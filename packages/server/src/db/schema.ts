@@ -96,6 +96,7 @@ export const projectActivity = sqliteTable('project_activity', {
     .references(() => projects.id, { onDelete: 'cascade' }),
   date: text('date').notNull(), // YYYY-MM-DD
   count: integer('count').notNull().default(1),
+  note: text('note'),
   source: text('source', { enum: ['github', 'manual'] }).notNull().default('manual'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });

@@ -125,11 +125,19 @@ export function initDatabase(dbPath?: string): InitDatabaseResult {
       project_id TEXT NOT NULL,
       date TEXT NOT NULL,
       count INTEGER NOT NULL DEFAULT 1,
+      note TEXT,
       source TEXT NOT NULL DEFAULT 'manual',
       created_at INTEGER,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );`
   ]).then(async () => {
+    // Migration: add note column to project_activity if it doesn't exist
+    try {
+      await client.execute('ALTER TABLE project_activity ADD COLUMN note TEXT');
+    } catch {
+      // Column already exists or freshly created
+    }
+
     // Seed default kanban columns if none exist
     try {
       const existing = await client.execute('SELECT count(*) as count FROM kanban_columns');
@@ -143,10 +151,10 @@ export function initDatabase(dbPath?: string): InitDatabaseResult {
         ]);
       }
     } catch (e) {
-      console.error('Seeding kanban columns error:', e);
+      console.error('Failed to seed default kanban columns', e);
     }
   }).catch((e) => {
-    console.error('DB Migration error:', e);
+    console.error('Failed to initialize database tables', e);
   });
 
   const db = drizzle(client, { schema });

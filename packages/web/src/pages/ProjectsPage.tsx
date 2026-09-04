@@ -23,6 +23,7 @@ import { DotLedger } from '../components/DotLedger';
 import { GithubGraph } from '../components/GithubGraph';
 import { ProjectActivityChart } from '../components/ProjectActivityChart';
 import { EmptyState } from '../components/EmptyState';
+import { cn } from '../lib/utils';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/AlertDialog';
 import {

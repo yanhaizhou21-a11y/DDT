@@ -23,6 +23,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { JournalTemplatesModal } from '../components/JournalTemplatesModal';
+import { DiscordRecapModal, DiscordIcon } from '../components/DiscordRecapModal';
 
 interface JournalPageProps {
   onNavigate: (tab: RouteTab) => void;

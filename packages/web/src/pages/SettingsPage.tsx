@@ -75,6 +75,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       setGithubUsername(res.settings.github_username || '');
       setTmdbKey(res.settings.tmdb_api_key || '');
       setRawgKey(res.settings.rawg_api_key || '');
+      setDiscordWebhookUrl(res.settings.discord_webhook_url || '');
       setDbPath(res.dbPath);
 
       // Auto-run non-blocking tests if tokens exist
@@ -86,6 +87,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       }
       if (res.settings.rawg_api_key) {
         testRawgKey(res.settings.rawg_api_key).then((r) => setRawgTest({ testing: false, result: r })).catch(() => {});
+      }
+      if (res.settings.discord_webhook_url) {
+        testDiscordWebhook(res.settings.discord_webhook_url).then((r) => setDiscordTest({ testing: false, result: r })).catch(() => {});
       }
     } catch (err) {
       console.error(err);
@@ -108,6 +112,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
         github_username: githubUsername.trim(),
         tmdb_api_key: tmdbKey.trim(),
         rawg_api_key: rawgKey.trim(),
+        discord_webhook_url: discordWebhookUrl.trim(),
       });
       setSaveMessage('All integration keys and preferences saved to SQLite.');
       setTimeout(() => setSaveMessage(null), 3500);
@@ -146,6 +151,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
       setRawgTest({ testing: false, result: res });
     } catch (err: any) {
       setRawgTest({ testing: false, result: { valid: false, message: err.message } });
+    }
+  };
+
+  const handleTestDiscord = async () => {
+    if (!discordWebhookUrl.trim()) return;
+    setDiscordTest({ testing: true });
+    try {
+      const res = await testDiscordWebhook(discordWebhookUrl.trim());
+      setDiscordTest({ testing: false, result: res });
+    } catch (err: any) {
+      setDiscordTest({ testing: false, result: { valid: false, message: err.message || 'Verification failed.' } });
     }
   };
 
@@ -489,6 +505,97 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                   <p className="text-xs font-mono text-stamp-red mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3.5 h-3.5" />
                     <span>{rawgTest.result.message || 'RAWG key validation failed.'}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Discord Daily Recap Webhook Card */}
+            <div className="ledger-card p-5 space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-rule/70">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-paper rounded-[4px] border border-rule text-[#5865F2]">
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-sm font-semibold text-ink">Discord Activity Recap Webhook</h3>
+                    <p className="text-[11px] text-ink-soft">Broadcast your daily productivity and media summary to Discord channels</p>
+                  </div>
+                </div>
+
+                {/* Status indicator */}
+                {discordTest.result?.valid ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-[4px] text-[11px] font-mono font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                    {discordTest.result.name ? `${discordTest.result.name}` : 'Connected'}
+                  </span>
+                ) : discordWebhookUrl ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-paper text-ink-soft border border-rule rounded-[4px] text-[11px] font-mono">
+                    URL Entered (Click Verify)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gold-light text-ink border border-gold/40 rounded-[4px] text-[11px] font-mono">
+                    Not Configured
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-ink">Discord Webhook URL</label>
+                  <a
+                    href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-mono text-ledger-blue hover:underline flex items-center gap-1"
+                  >
+                    <span>How to create webhook</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showDiscord ? 'text' : 'password'}
+                      placeholder="https://discord.com/api/webhooks/..."
+                      value={discordWebhookUrl}
+                      onChange={(e) => setDiscordWebhookUrl(e.target.value)}
+                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDiscord(!showDiscord)}
+                      aria-label={showDiscord ? 'Hide Webhook URL' : 'Show Webhook URL'}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
+                    >
+                      {showDiscord ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTestDiscord}
+                    disabled={discordTest.testing || !discordWebhookUrl.trim()}
+                    className="px-3.5 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all flex-shrink-0"
+                  >
+                    {discordTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                    <span>Verify</span>
+                  </button>
+                </div>
+
+                {discordTest.result && !discordTest.result.valid && (
+                  <p className="text-xs font-mono text-stamp-red mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{discordTest.result.message || 'Discord webhook validation failed.'}</span>
+                  </p>
+                )}
+                {discordTest.result?.valid && (
+                  <p className="text-xs font-mono text-emerald-600 mt-1 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{discordTest.result.message || 'Webhook verified successfully!'}</span>
                   </p>
                 )}
               </div>

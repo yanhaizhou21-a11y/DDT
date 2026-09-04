@@ -14,6 +14,7 @@ import { createGithubRouter } from './routes/github.js';
 import { createDashboardRouter } from './routes/dashboard.js';
 import { createUploadRouter } from './routes/upload.js';
 import { createProjectsRouter } from './routes/projects.js';
+import { createRecapRouter } from './routes/recap.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

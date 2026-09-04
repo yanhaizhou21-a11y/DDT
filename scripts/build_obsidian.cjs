@@ -218,6 +218,12 @@ DDT is built on the following foundational tenets:
 - \`PUT /api/journal/:date\`: Upsert journal content with autosave timestamp.
 - \`DELETE /api/journal/:date\`: Delete entry for a specific date.
 
+### Daily Activity Recap & Discord Webhook (\`/api/recap\`)
+- \`GET /api/recap?date=YYYY-MM-DD\`: Aggregates activity across 6 modules (Projects, Journal, Nutrition, Games, Media, Kanban) and pre-computes an authentic Discord Rich Embed payload.
+- \`POST /api/recap/discord\`: Validates webhook URL, dispatches rich embed to Discord via Node native \`fetch\`, handles rate limits (\`429\`), and optionally persists webhook URL in SQLite \`settings\`.
+- \`GET /api/recap/settings\`: Fetches the stored Discord webhook configuration (with masked token).
+- \`POST /api/recap/settings\`: Updates and stores the Discord webhook URL safely in SQLite.
+
 ---
 
 ## 3. Technology Stack Reference
@@ -226,6 +232,105 @@ DDT is built on the following foundational tenets:
 - **Frontend**: React 18, Vite 6, Tailwind CSS 3.4, Motion 13, Lucide React, React Markdown, Remark GFM
 - **Backend**: Node.js, Express, Drizzle ORM, better-sqlite3
 - **Styling**: Theme-aware CSS variables (\`ledger\`, \`kinetic\`, \`cyberpunk\`, \`matcha\`)
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3b. Discord-Daily-Recap-Webhook.md
+// ─────────────────────────────────────────────────────────────────────────────
+const discordRecapMd = `# Discord Daily Activity Recap — Webhook Integration
+
+## 1. Overview & Vision
+
+The **Discord Daily Recap** integration allows DDT users to broadcast a comprehensive, editorial summary of their daily productivity and leisure across Discord with one click. Whether keeping an accountability channel updated or archiving personal milestones in a private server, DDT formats the entire day's output into a pixel-perfect, rich Discord Embed.
+
+---
+
+## 2. Multi-Module Aggregation Pipeline
+
+When a user selects a date (defaults to today, with previous/next day and calendar jumps), DDT's backend aggregates activity across 6 core modules:
+
+1. **Projects Tracker**:
+   - Total commits or output count per active project.
+   - Domain-specific units (\`commits\`, \`revisions\`, \`clips\`, \`levels\`, etc.).
+   - Discrete activity notes (e.g., *"Exported trailer cut v2"*).
+2. **Daily Journal**:
+   - Word count & estimated reading time.
+   - First 280 characters excerpt / morning intentions.
+3. **Nutrition & Food**:
+   - Total meals logged.
+   - Calorie & macro summaries (Protein, Carbs, Fat) if tracked.
+4. **Gaming & Leisure**:
+   - Games played and hours spent.
+   - Platform & status tags.
+5. **Watchlist & Media**:
+   - Movies, TV episodes, or anime watched with ratings.
+6. **Kanban Tasks**:
+   - Tasks completed on the selected date.
+
+---
+
+## 3. Discord Rich Embed Specification
+
+The backend constructs an authentic Discord Embed adhering to Discord API v10 webhook specifications:
+
+\`\`\`json
+{
+  "username": "DDT Daily Journal",
+  "avatar_url": "https://raw.githubusercontent.com/yanhaizhou21-a11y/DDT/main/assets/ddt-icon.png",
+  "embeds": [
+    {
+      "title": "📋 DDT Activity Recap — Friday, Sep 4, 2026",
+      "description": "Daily productivity & leisure dispatch from DDT Ledger.\\n\\n> 💡 *\\"Shipped project tracker charts and refined morning writing.*\\"",
+      "color": 3098712,
+      "fields": [
+        {
+          "name": "🚀 Projects & Output (2 active)",
+          "value": "• **Botani Seed Website**: 5 commits (*\"Implemented bar chart toggles\"*)\\n• **Brand Identity**: 3 revisions",
+          "inline": false
+        },
+        {
+          "name": "📓 Daily Journal",
+          "value": "• **Words**: 482 words (~2 min read)\\n• **Preview**: *Focus was sharp today after early workout...*",
+          "inline": true
+        },
+        {
+          "name": "🍱 Nutrition & Calories",
+          "value": "• **Meals**: 3 logged\\n• **Total**: 2,150 kcal",
+          "inline": true
+        }
+      ],
+      "footer": {
+        "text": "DDT • Daily Dashboard Tracker • Local-first Ledger",
+        "icon_url": "https://raw.githubusercontent.com/yanhaizhou21-a11y/DDT/main/assets/ddt-icon.png"
+      },
+      "timestamp": "2026-09-04T14:30:00.000Z"
+    }
+  ]
+}
+\`\`\`
+
+- **Embed Color**: Integer \`3098712\` (\`0x2F4858\`), perfectly matching DDT's Financial Ledger blue accent.
+- **Custom Quote Note**: If the user inputs an optional intro quote or note, it is rendered in Discord markdown blockquote format (\`> 💡 ...\`).
+
+---
+
+## 4. Frontend Discord Chat Simulation
+
+To deliver an exceptional developer and user experience (\`/impeccable\`), the \`DiscordRecapModal\` features an authentic Discord Dark Mode interface:
+- Background: \`#313338\` with message hover highlight \`#2b2d31\`.
+- Identity: Bot avatar, bold username \`DDT Daily Journal\`, and blurple \`BOT\` badge (\`#5865F2\`).
+- Embed Container: Left vertical colored border (\`#2F4858\`), dark embed card background (\`#2B2D31\`), and title link.
+- Field Layout: 2-column inline grid for compact metrics, full-width fields for rich multi-item lists.
+- Interactive Toolbar: Date picker, previous/next day buttons, custom intro note input, copy payload JSON button, and dispatch button with live loading & status states.
+
+---
+
+## 5. Security & Privacy Safeguards
+
+- **Local Storage**: Webhook URLs can be securely persisted in DDT's local SQLite \`settings\` table without cloud transmission.
+- **Masked Token Presentation**: The UI masks sensitive webhook tokens (\`https://discord.com/api/webhooks/123456789/••••••••\`) with an unmask toggle.
+- **Strict Protocol Validation**: Only official Discord webhook domains are permitted (\`discord.com/api/webhooks\` or \`discordapp.com/api/webhooks\`).
+- **Zero Third-Party SDKs**: Uses Node.js native \`fetch\` per the \`/ponytail\` standard for maximum efficiency and zero dependency bloat.
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -304,13 +409,23 @@ const ddtArchitectureCanvas = {
       color: "6"
     },
     {
+      id: "node-discord",
+      type: "text",
+      text: "### 💬 Discord Webhook Recap (`/api/recap`)\n- **Daily Aggregator:** Projects, Journal, Food, Games, Media, Kanban\n- **Live Discord Preview:** Pixel-perfect `#313338` chat simulation\n- **Embed Payload:** Rich embed with color `0x2F4858`, custom quote & activity badges\n- **Security:** Masked SQLite token storage, zero client leaks",
+      x: 1200,
+      y: 330,
+      width: 400,
+      height: 260,
+      color: "3"
+    },
+    {
       id: "node-external",
       type: "text",
-      text: "### 🌐 External Services & APIs\n- **GitHub API:** Fetches live repository commits\n- **Local Filesystem:** `data/ddt.db` SQLite storage",
+      text: "### 🌐 External Services & APIs\n- **GitHub API:** Fetches live repository commits\n- **Discord API:** Webhook POST dispatches (`discord.com/api/webhooks`)\n- **Local Filesystem:** `data/ddt.db` SQLite storage",
       x: 470,
       y: 670,
       width: 420,
-      height: 140,
+      height: 150,
       color: "6"
     }
   ],
@@ -364,12 +479,20 @@ const ddtArchitectureCanvas = {
       label: "Drizzle Queries"
     },
     {
+      id: "edge-backend-to-discord",
+      fromNode: "node-backend",
+      fromSide: "right",
+      toNode: "node-discord",
+      toSide: "left",
+      label: "Dispatches Recap"
+    },
+    {
       id: "edge-backend-to-external",
       fromNode: "node-backend",
       fromSide: "bottom",
       toNode: "node-external",
       toSide: "top",
-      label: "GitHub Sync"
+      label: "External APIs"
     }
   ]
 };
@@ -533,6 +656,7 @@ const projectWorkflowCanvas = {
 // ─────────────────────────────────────────────────────────────────────────────
 fs.writeFileSync(path.join(obsidianDir, 'Project-Tracker-Visual-Analytics.md'), projectTrackerMd, 'utf8');
 fs.writeFileSync(path.join(obsidianDir, 'Journal-Templates-and-Rich-Text.md'), journalMd, 'utf8');
+fs.writeFileSync(path.join(obsidianDir, 'Discord-Daily-Recap-Webhook.md'), discordRecapMd, 'utf8');
 fs.writeFileSync(path.join(obsidianDir, 'System-Architecture.md'), architectureMd, 'utf8');
 fs.writeFileSync(path.join(obsidianDir, 'DDT-Architecture.canvas'), JSON.stringify(ddtArchitectureCanvas, null, 2), 'utf8');
 fs.writeFileSync(path.join(obsidianDir, 'Project-Tracker-Workflow.canvas'), JSON.stringify(projectWorkflowCanvas, null, 2), 'utf8');

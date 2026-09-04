@@ -145,6 +145,7 @@ vite.config.ts.timestamp-*
 # DDT custom ignores
 DDT/
 .obsidian/
+obsidian/
 dist/
 *.db
 *.db-journal

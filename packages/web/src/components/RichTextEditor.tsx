@@ -40,6 +40,7 @@ export interface RichTextEditorProps {
   defaultViewMode?: 'edit' | 'split' | 'preview';
   hideHeaderSave?: boolean;
   minHeight?: string;
+  onOpenTemplates?: () => void;
 }
 
 export function RichTextEditor({
@@ -54,6 +55,7 @@ export function RichTextEditor({
   defaultViewMode,
   hideHeaderSave = false,
   minHeight,
+  onOpenTemplates,
 }: RichTextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview'>(() => {

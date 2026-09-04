@@ -27,6 +27,7 @@ export interface ProjectActivity {
   projectId: string;
   date: string; // YYYY-MM-DD
   count: number;
+  note?: string | null;
   source: 'github' | 'manual';
   createdAt?: string;
 }

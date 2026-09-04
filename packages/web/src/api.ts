@@ -379,14 +379,15 @@ export async function deleteProject(id: string): Promise<{ success: boolean }> {
 export async function logProjectActivity(
   id: string,
   count: number,
-  date?: string
-): Promise<{ success: boolean; id: string; date: string; count: number; isNew: boolean }> {
+  date?: string,
+  note?: string
+): Promise<{ success: boolean; id: string; date: string; count: number; note?: string | null; isNew: boolean }> {
   const res = await fetch(`${API_BASE}/projects/${id}/activity`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ count, date }),
+    body: JSON.stringify({ count, date, note }),
   });
-  return handleResponse<{ success: boolean; id: string; date: string; count: number; isNew: boolean }>(res);
+  return handleResponse<{ success: boolean; id: string; date: string; count: number; note?: string | null; isNew: boolean }>(res);
 }
 
 export async function deleteProjectActivity(

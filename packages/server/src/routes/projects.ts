@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, isNull } from 'drizzle-orm';
 import { projects, projectActivity, settings, githubCache } from '../db/schema.js';
 import type { AppDatabase } from '../db/index.js';
 

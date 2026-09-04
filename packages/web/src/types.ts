@@ -253,3 +253,86 @@ export interface DashboardResponse {
   };
 }
 
+// ─── Discord Daily Recap & Webhook Types ─────────────────────────────────────
+
+export interface DiscordEmbedField {
+  name: string;
+  value: string;
+  inline?: boolean;
+}
+
+export interface DiscordEmbed {
+  title: string;
+  description?: string;
+  color?: number;
+  fields: DiscordEmbedField[];
+  footer?: {
+    text: string;
+    icon_url?: string;
+  };
+  timestamp?: string;
+}
+
+export interface DiscordWebhookPayload {
+  username?: string;
+  avatar_url?: string;
+  content?: string;
+  embeds: DiscordEmbed[];
+}
+
+export interface DailyRecapActivity {
+  projectsActivity: {
+    projectName: string;
+    domainType: string;
+    count: number;
+    notes: string[];
+  }[];
+  journal: {
+    hasEntry: boolean;
+    wordCount: number;
+    preview: string | null;
+    excerpt: string | null;
+  } | null;
+  food: {
+    tag: string;
+    items: string[];
+  }[];
+  games: {
+    title: string;
+    hours: number;
+  }[];
+  watchlist: {
+    title: string;
+    status: string;
+    mediaType: string;
+  }[];
+  kanban: {
+    title: string;
+    columnName: string;
+  }[];
+}
+
+export interface DailyRecapResponse {
+  date: string;
+  formattedDate: string;
+  activity: DailyRecapActivity;
+  discordPayload: DiscordWebhookPayload;
+  hasSavedWebhook: boolean;
+  savedWebhookUrl: string | null;
+}
+
+export interface SendDiscordRecapParams {
+  webhookUrl?: string;
+  date?: string;
+  customNote?: string;
+  saveWebhook?: boolean;
+}
+
+export interface SendDiscordRecapResponse {
+  success: boolean;
+  date: string;
+  dispatchedAt: string;
+  message: string;
+}
+
+

@@ -81,6 +81,17 @@ export async function testRawgKey(apiKey?: string): Promise<{ valid: boolean; me
   return res.json();
 }
 
+export async function testDiscordWebhook(
+  webhookUrl?: string
+): Promise<{ valid: boolean; name?: string; channelId?: string; message?: string }> {
+  const res = await fetch(`${API_BASE}/settings/test-discord`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ webhookUrl }),
+  });
+  return res.json();
+}
+
 export async function importData(payload: any): Promise<{ success: boolean; message: string }> {
   const res = await fetch(`${API_BASE}/settings/import`, {
     method: 'POST',

@@ -21,6 +21,7 @@ export function createSettingsRouter(db: AppDatabase, client: SqliteClient, dbPa
           hasGithubKey: Boolean(settingsMap.github_token?.trim()),
           hasTmdbKey: Boolean(settingsMap.tmdb_api_key?.trim() || settingsMap.tmdb_access_token?.trim()),
           hasRawgKey: Boolean(settingsMap.rawg_api_key?.trim()),
+          hasDiscordWebhook: Boolean(settingsMap.discord_webhook_url?.trim()),
         },
         dbPath,
       });
@@ -133,6 +134,54 @@ export function createSettingsRouter(db: AppDatabase, client: SqliteClient, dbPa
       }
     } catch (err: any) {
       return res.status(500).json({ valid: false, message: err.message || 'Network error verifying RAWG key.' });
+    }
+  });
+
+  // POST /api/settings/test-discord
+  router.post('/test-discord', async (req, res) => {
+    try {
+      let webhookUrl = req.body?.webhookUrl;
+      if (!webhookUrl) {
+        const rows = await db.select().from(settings).where(eq(settings.key, 'discord_webhook_url'));
+        webhookUrl = rows[0]?.value;
+      }
+      if (!webhookUrl || typeof webhookUrl !== 'string') {
+        return res.status(400).json({ valid: false, message: 'No Discord Webhook URL provided.' });
+      }
+
+      const trimmed = webhookUrl.trim();
+      if (
+        !trimmed.startsWith('https://discord.com/api/webhooks/') &&
+        !trimmed.startsWith('https://discordapp.com/api/webhooks/')
+      ) {
+        return res.status(400).json({
+          valid: false,
+          message: 'Invalid Discord Webhook URL. Must begin with https://discord.com/api/webhooks/',
+        });
+      }
+
+      // Check webhook metadata via Discord API (GET on webhook URL returns webhook object)
+      const response = await fetch(trimmed, { method: 'GET' });
+      if (response.ok) {
+        const data = (await response.json().catch(() => ({}))) as any;
+        return res.json({
+          valid: true,
+          name: data.name || 'Discord Webhook',
+          channelId: data.channel_id,
+          message: 'Discord Webhook is active and reachable.',
+        });
+      } else {
+        const err = await response.text().catch(() => '');
+        return res.status(400).json({
+          valid: false,
+          message: `Discord Webhook invalid or revoked (${response.status}): ${err}`,
+        });
+      }
+    } catch (err: any) {
+      return res.status(500).json({
+        valid: false,
+        message: err.message || 'Network error verifying Discord Webhook.',
+      });
     }
   });
 

@@ -55,6 +55,7 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
   app.use('/api/dashboard', createDashboardRouter(db));
   app.use('/api/upload', createUploadRouter(uploadsDir));
   app.use('/api/projects', createProjectsRouter(db));
+  app.use('/api/recap', createRecapRouter(db));
 
   // Health check
   app.get('/api/health', (_req, res) => {

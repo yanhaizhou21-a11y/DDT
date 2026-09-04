@@ -24,6 +24,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { DiscordRecapModal, DiscordIcon } from './DiscordRecapModal';
 import { cn } from '../lib/utils';
 
 // ─── Types & Nav Structure ──────────────────────────────────────────────────

@@ -18,6 +18,9 @@ import type {
   ProjectWithStats,
   ProjectDetailResponse,
   ProjectActivity,
+  DailyRecapResponse,
+  SendDiscordRecapParams,
+  SendDiscordRecapResponse,
 } from './types';
 
 const API_BASE = '/api';
@@ -399,3 +402,37 @@ export async function deleteProjectActivity(
   });
   return handleResponse<{ success: boolean }>(res);
 }
+
+// ─── Daily Activity Recap & Discord Webhook ─────────────────────────────────
+
+export async function fetchDailyRecap(date?: string): Promise<DailyRecapResponse> {
+  const url = date ? `${API_BASE}/recap?date=${encodeURIComponent(date)}` : `${API_BASE}/recap`;
+  const res = await fetch(url);
+  return handleResponse<DailyRecapResponse>(res);
+}
+
+export async function sendDiscordRecap(params: SendDiscordRecapParams): Promise<SendDiscordRecapResponse> {
+  const res = await fetch(`${API_BASE}/recap/discord`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return handleResponse<SendDiscordRecapResponse>(res);
+}
+
+export async function fetchDiscordWebhookSettings(): Promise<{ hasWebhook: boolean; maskedUrl: string | null }> {
+  const res = await fetch(`${API_BASE}/recap/settings`);
+  return handleResponse<{ hasWebhook: boolean; maskedUrl: string | null }>(res);
+}
+
+export async function saveDiscordWebhookSettings(
+  webhookUrl: string
+): Promise<{ success: boolean; hasWebhook: boolean; maskedUrl: string | null }> {
+  const res = await fetch(`${API_BASE}/recap/settings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ webhookUrl }),
+  });
+  return handleResponse<{ success: boolean; hasWebhook: boolean; maskedUrl: string | null }>(res);
+}
+

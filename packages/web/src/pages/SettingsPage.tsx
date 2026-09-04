@@ -6,6 +6,7 @@ import {
   testGithubToken,
   testTmdbKey,
   testRawgKey,
+  testDiscordWebhook,
   importData,
 } from '../api';
 import { Header } from '../components/Header';
@@ -31,6 +32,7 @@ import {
   Copy,
   ExternalLink,
   Lock,
+  Send,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -42,6 +44,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
   const [githubUsername, setGithubUsername] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [rawgKey, setRawgKey] = useState('');
+  const [discordWebhookUrl, setDiscordWebhookUrl] = useState('');
   const [dbPath, setDbPath] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,11 +55,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
   const [showGithub, setShowGithub] = useState(false);
   const [showTmdb, setShowTmdb] = useState(false);
   const [showRawg, setShowRawg] = useState(false);
+  const [showDiscord, setShowDiscord] = useState(false);
 
   // Test states
   const [githubTest, setGithubTest] = useState<{ testing: boolean; result?: { valid: boolean; username?: string; message?: string } }>({ testing: false });
   const [tmdbTest, setTmdbTest] = useState<{ testing: boolean; result?: { valid: boolean; message?: string } }>({ testing: false });
   const [rawgTest, setRawgTest] = useState<{ testing: boolean; result?: { valid: boolean; message?: string } }>({ testing: false });
+  const [discordTest, setDiscordTest] = useState<{ testing: boolean; result?: { valid: boolean; name?: string; channelId?: string; message?: string } }>({ testing: false });
 
   // Import state
   const [importing, setImporting] = useState(false);

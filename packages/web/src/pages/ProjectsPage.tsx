@@ -21,6 +21,7 @@ import {
 import { Header } from '../components/Header';
 import { DotLedger } from '../components/DotLedger';
 import { GithubGraph } from '../components/GithubGraph';
+import { ProjectActivityChart } from '../components/ProjectActivityChart';
 import { EmptyState } from '../components/EmptyState';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/AlertDialog';
@@ -48,6 +49,8 @@ import {
   Layers,
   Activity,
   Check,
+  BarChart2,
+  Grid,
 } from 'lucide-react';
 
 interface ProjectsPageProps {

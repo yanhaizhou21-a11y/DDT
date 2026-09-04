@@ -24,6 +24,7 @@ import {
   Clock,
   RotateCcw,
   Save,
+  FileText,
 } from 'lucide-react';
 
 import { cn } from '../lib/utils';
@@ -325,6 +326,22 @@ export function RichTextEditor({
               </button>
             </>
           )}
+
+          {onOpenTemplates && (
+            <>
+              <span className="w-px h-3.5 bg-rule/70 mx-0.5 sm:mx-1" />
+              <button
+                type="button"
+                onClick={onOpenTemplates}
+                title="Insert Journal Template"
+                aria-label="Insert Journal Template"
+                className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold rounded-md text-ledger-blue bg-paper border border-rule hover:border-ledger-blue hover:bg-card transition-all shadow-xs group"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-gold group-hover:rotate-12 transition-transform" />
+                <span className="font-mono text-[11px]">Templates</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* View Mode Pills, Save Status & Action */}
@@ -434,8 +451,61 @@ export function RichTextEditor({
             )}
           >
             {value.trim() ? (
-              <div className="prose dark:prose-invert max-w-none text-ink font-sans text-xs sm:text-sm leading-relaxed space-y-2">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <div className="journal-prose prose max-w-none text-ink font-sans text-xs sm:text-sm leading-relaxed space-y-2">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({ node, ...props }) => (
+                      <h1 className="text-xl md:text-2xl font-serif font-bold text-ink border-b border-rule/70 pb-2 mt-4 mb-3 tracking-tight" {...props} />
+                    ),
+                    h2: ({ node, ...props }) => (
+                      <h2 className="text-lg md:text-xl font-serif font-bold text-ink mt-4 mb-2 tracking-tight" {...props} />
+                    ),
+                    h3: ({ node, ...props }) => (
+                      <h3 className="text-sm md:text-base font-serif font-semibold text-ink mt-3 mb-1.5" {...props} />
+                    ),
+                    p: ({ node, ...props }) => (
+                      <p className="text-xs md:text-sm text-ink leading-relaxed mb-2.5 font-sans" {...props} />
+                    ),
+                    strong: ({ node, ...props }) => <strong className="font-bold text-ink" {...props} />,
+                    em: ({ node, ...props }) => <em className="italic text-ink" {...props} />,
+                    ul: ({ node, ...props }) => (
+                      <ul className="list-disc pl-5 my-2 space-y-1 text-xs md:text-sm text-ink marker:text-ledger-blue" {...props} />
+                    ),
+                    ol: ({ node, ...props }) => (
+                      <ol className="list-decimal pl-5 my-2 space-y-1 text-xs md:text-sm text-ink marker:text-ledger-blue font-mono" {...props} />
+                    ),
+                    li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
+                    blockquote: ({ node, ...props }) => (
+                      <blockquote className="border-l-4 border-ledger-blue bg-paper/60 pl-3.5 py-1.5 my-3 italic text-ink-soft text-xs md:text-sm rounded-r" {...props} />
+                    ),
+                    code: ({ node, inline, className, children, ...props }: any) => {
+                      return inline ? (
+                        <code className="px-1.5 py-0.5 rounded bg-paper text-ink font-mono text-[11px] border border-rule" {...props}>
+                          {children}
+                        </code>
+                      ) : (
+                        <pre className="p-3 my-2 rounded-lg bg-paper text-ink font-mono text-xs overflow-x-auto border border-rule">
+                          <code {...props}>{children}</code>
+                        </pre>
+                      );
+                    },
+                    hr: ({ node, ...props }) => <hr className="my-4 border-rule" {...props} />,
+                    input: ({ node, ...props }) => (
+                      <input type="checkbox" className="mr-2 rounded border-rule text-ledger-blue focus:ring-ledger-blue accent-ledger-blue" {...props} />
+                    ),
+                    a: ({ node, ...props }) => (
+                      <a className="text-ledger-blue underline decoration-ledger-blue/40 hover:decoration-ledger-blue hover:text-ledger-hover transition-colors" target="_blank" rel="noopener noreferrer" {...props} />
+                    ),
+                    table: ({ node, ...props }) => (
+                      <div className="overflow-x-auto my-3 border border-rule rounded-lg">
+                        <table className="w-full text-left border-collapse text-xs font-mono" {...props} />
+                      </div>
+                    ),
+                    th: ({ node, ...props }) => <th className="bg-paper p-2 font-bold border-b border-rule text-ink" {...props} />,
+                    td: ({ node, ...props }) => <td className="p-2 border-b border-rule/60 text-ink-soft" {...props} />,
+                  }}
+                >
                   {value}
                 </ReactMarkdown>
               </div>

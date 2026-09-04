@@ -20,7 +20,9 @@ import {
   Sparkles,
   Save,
   CheckCircle2,
+  FileText,
 } from 'lucide-react';
+import { JournalTemplatesModal } from '../components/JournalTemplatesModal';
 
 interface JournalPageProps {
   onNavigate: (tab: RouteTab) => void;
@@ -36,6 +38,15 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+
+  const handleSelectTemplate = (templateContent: string, mode: 'replace' | 'append') => {
+    if (mode === 'append' && content.trim()) {
+      setContent((prev) => `${prev.trim()}\n\n---\n\n${templateContent}`);
+    } else {
+      setContent(templateContent);
+    }
+  };
 
 
   const isInitialMount = useRef(true);
@@ -269,6 +280,16 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsTemplateModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-paper border border-rule hover:border-ledger-blue rounded-lg text-xs font-semibold text-ledger-blue transition-all shadow-xs group"
+                title="Choose a journal template"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-gold group-hover:rotate-12 transition-transform" />
+                <span>Templates</span>
+              </button>
+
               {content && (
                 <button
                   type="button"
@@ -277,7 +298,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
                   title="Clear day's entry"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Clear Entry</span>
+                  <span className="hidden sm:inline">Clear</span>
                 </button>
               )}
 
@@ -303,12 +324,22 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
             value={content}
             onChange={setContent}
             onSave={handleManualSave}
+            onOpenTemplates={() => setIsTemplateModalOpen(true)}
             saveStatus={saveStatus}
             lastSavedAt={lastSavedTime}
             placeholder="Write your thoughts, daily journal, achievements, ideas, or notes here..."
           />
         </div>
       </div>
+
+      {/* Journal Templates Picker Modal */}
+      <JournalTemplatesModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
+        hasExistingContent={Boolean(content.trim())}
+        selectedDate={selectedDate}
+      />
 
       {/* Confirmation Dialog for Clearing Entry */}
       <ConfirmDialog

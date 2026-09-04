@@ -103,7 +103,8 @@ export function createRecapRouter(db: AppDatabase): Router {
         columnName: string;
       }[];
     },
-    customNote?: string
+    customNote?: string,
+    avatarUrl?: string
   ) {
     const formattedDate = formatHumanDate(targetDate);
     const fields: { name: string; value: string; inline?: boolean }[] = [];
@@ -212,9 +213,13 @@ export function createRecapRouter(db: AppDatabase): Router {
     }
     description += `📊 **Day Summary:** ${activeModules}/6 active modules logged on **${formattedDate}**.`;
 
+    const finalAvatar =
+      avatarUrl?.trim() ||
+      'https://raw.githubusercontent.com/yanhaizhou21-a11y/DDT/main/assets/bot-avatar.jpg';
+
     return {
       username: 'DDT Daily Ledger',
-      avatar_url: 'https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/www/public/favicon.ico',
+      avatar_url: finalAvatar,
       content: `📅 **Daily Ledger Dispatch** — **${formattedDate}**`,
       embeds: [
         {
@@ -224,6 +229,7 @@ export function createRecapRouter(db: AppDatabase): Router {
           fields,
           footer: {
             text: 'DDT (Daily Dashboard Tracker) • Local-First Personal Ledger',
+            icon_url: finalAvatar,
           },
           timestamp: new Date().toISOString(),
         },
@@ -355,11 +361,17 @@ export function createRecapRouter(db: AppDatabase): Router {
           columnName: colMap.get(c.columnId) || 'Task',
         }));
 
-      // Check saved webhook
+      // Check saved webhook and avatar
       const webhookSetting = await db
         .select()
         .from(settings)
         .where(eq(settings.key, 'discord_webhook_url'))
+        .get();
+
+      const avatarSetting = await db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, 'discord_bot_avatar_url'))
         .get();
 
       const activitySummary = {
@@ -371,7 +383,12 @@ export function createRecapRouter(db: AppDatabase): Router {
         kanban,
       };
 
-      const discordPayload = buildDiscordPayload(targetDate, activitySummary);
+      const discordPayload = buildDiscordPayload(
+        targetDate,
+        activitySummary,
+        undefined,
+        avatarSetting?.value
+      );
 
       res.json({
         date: targetDate,
@@ -524,7 +541,18 @@ export function createRecapRouter(db: AppDatabase): Router {
         kanban,
       };
 
-      const payload = buildDiscordPayload(targetDate, activitySummary, customNote);
+      const avatarSetting = await db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, 'discord_bot_avatar_url'))
+        .get();
+
+      const payload = buildDiscordPayload(
+        targetDate,
+        activitySummary,
+        customNote,
+        avatarSetting?.value
+      );
 
       // Dispatch to Discord via native fetch
       const discordResponse = await fetch(resolvedUrl, {

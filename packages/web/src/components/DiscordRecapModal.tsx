@@ -390,8 +390,16 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
             {/* Discord Bot Message Row */}
             <div className="flex items-start gap-3">
               {/* Bot Avatar */}
-              <div className="w-10 h-10 rounded-full bg-[#5865F2] flex items-center justify-center shrink-0 text-white shadow-xs">
-                <DiscordIcon className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-[#2b2d31] border border-[#5865F2]/40 flex items-center justify-center shrink-0 shadow-xs relative">
+                <img
+                  src="/bot-avatar.jpg"
+                  alt="DDT Daily Ledger Bot"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to Discord icon if image fails to load
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
               </div>
 
               {/* Bot Message Body */}
@@ -423,6 +431,12 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
                         {embed.title}
                       </div>
 
+                      {embed.description && (
+                        <div className="text-xs text-[#dbdee1] leading-relaxed whitespace-pre-wrap">
+                          {embed.description}
+                        </div>
+                      )}
+
                       {customNote.trim() && (
                         <div className="text-xs text-[#b5bac1] italic border-l-2 border-[#5865F2]/60 pl-2 mb-2">
                           💬 <strong>Dispatch Note:</strong> &ldquo;{customNote.trim()}&rdquo;
@@ -436,7 +450,7 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
 
                     {/* Embed Fields Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-[#3f4147]/50">
-                      {embed.fields.map((field, idx) => (
+                      {embed.fields?.map((field, idx) => (
                         <div
                           key={`field-${idx}`}
                           className={cn(
@@ -456,7 +470,11 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
 
                     {/* Embed Footer */}
                     <div className="pt-2 border-t border-[#3f4147]/40 flex items-center gap-1.5 text-[10px] text-[#949ba4]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <img
+                        src="/bot-avatar.jpg"
+                        alt=""
+                        className="w-3.5 h-3.5 rounded-full object-cover"
+                      />
                       <span>{embed.footer?.text || 'DDT • Local-First Personal Ledger'}</span>
                       <span>•</span>
                       <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

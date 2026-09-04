@@ -577,20 +577,45 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* 12-Month Heatmap Card */}
+            {/* 12-Month Heatmap & Chart Card */}
             <div className="ledger-card p-5 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-rule/70">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-rule/70">
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-ledger-blue" />
                   <h3 className="font-serif text-base font-bold text-ink">
-                    12-Month Activity Heatmap
+                    Activity & Progress Analytics
                   </h3>
                 </div>
-                <span className="text-xs font-mono text-ink-soft">
-                  {projectDetail.isRepoLinked
-                    ? `Commits per day (${projectDetail.linkedRepo})`
-                    : 'Daily logged output'}
-                </span>
+
+                {/* Radio Button / Segmented Control for Heatmap vs. Charts */}
+                <div className="flex items-center gap-1 p-1 bg-paper border border-rule/70 rounded-lg self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setVisualizationType('heatmap')}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1 text-xs font-mono rounded transition-all',
+                      visualizationType === 'heatmap'
+                        ? 'bg-card text-ink font-bold shadow-xs border border-rule/80'
+                        : 'text-ink-soft hover:text-ink'
+                    )}
+                  >
+                    <Grid className="w-3.5 h-3.5" />
+                    <span>Heatmap</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVisualizationType('chart')}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1 text-xs font-mono rounded transition-all',
+                      visualizationType === 'chart'
+                        ? 'bg-card text-ink font-bold shadow-xs border border-rule/80'
+                        : 'text-ink-soft hover:text-ink'
+                    )}
+                  >
+                    <BarChart2 className="w-3.5 h-3.5" />
+                    <span>Charts & Bars</span>
+                  </button>
+                </div>
               </div>
 
               {projectDetail.repoError && (
@@ -599,22 +624,33 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                 </div>
               )}
 
-              {/* Reused Dot-Ledger Heatmap Component */}
-              <GithubGraph
-                months={12}
-                cellSize={12}
-                cellGap={3}
-                cellRadius={2}
-                animation="wave"
-                variant="github"
-                showAccount={false}
-                data={projectDetail.activity}
-                unit={projectDetail.isRepoLinked ? 'commit' : 'item'}
-                unitPlural={projectDetail.isRepoLinked ? 'commits' : 'items'}
-                metricLabel={
-                  projectDetail.isRepoLinked ? 'commits in the last year' : 'items logged in the last year'
-                }
-              />
+              {visualizationType === 'heatmap' ? (
+                /* Reused Dot-Ledger Heatmap Component */
+                <GithubGraph
+                  months={12}
+                  cellSize={12}
+                  cellGap={3}
+                  cellRadius={2}
+                  animation="wave"
+                  variant="github"
+                  showAccount={false}
+                  data={projectDetail.activity}
+                  unit={projectDetail.isRepoLinked ? 'commit' : 'item'}
+                  unitPlural={projectDetail.isRepoLinked ? 'commits' : 'items'}
+                  metricLabel={
+                    projectDetail.isRepoLinked ? 'commits in the last year' : 'items logged in the last year'
+                  }
+                />
+              ) : (
+                /* Domain-calibrated BarSquares or Pattern Timeline Chart */
+                <ProjectActivityChart
+                  domainType={projectDetail.domainType}
+                  activity={projectDetail.activity}
+                  isRepoLinked={projectDetail.isRepoLinked}
+                  unit={projectDetail.isRepoLinked ? 'commit' : 'item'}
+                  unitPlural={projectDetail.isRepoLinked ? 'commits' : 'items'}
+                />
+              )}
             </div>
 
             {/* Activity Logging Section — Swapped dynamically based on repo-linked vs manual */}
@@ -699,44 +735,74 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                   </div>
                 )}
 
-                {/* Quick Add Buttons */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono text-ink-soft mr-1">Quick Add:</span>
-                  {[1, 2, 3, 5].map((amt) => (
-                    <button
-                      key={amt}
-                      type="button"
-                      disabled={loggingActivity}
-                      onClick={() => handleLogManualActivity(amt)}
-                      className="px-3 py-1.5 bg-card border border-rule hover:border-ledger-blue hover:text-ledger-blue text-xs font-mono font-semibold rounded transition-all active:scale-95 disabled:opacity-50"
-                    >
-                      +{amt} today
-                    </button>
-                  ))}
+                {/* Domain Progress Quick Action Buttons */}
+                <div className="space-y-2">
+                  <span className="text-xs font-mono text-ink-soft block">
+                    Quick Progress Log for {getProjectDomainLabel(projectDetail.domainType)}:
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {(DOMAIN_PROGRESS_ACTIONS[projectDetail.domainType] || DOMAIN_PROGRESS_ACTIONS.software).map(
+                      (action) => {
+                        const Icon = action.icon;
+                        return (
+                          <button
+                            key={action.label}
+                            type="button"
+                            disabled={loggingActivity}
+                            onClick={() => handleLogManualActivity(action.count, action.label)}
+                            className="p-2.5 bg-paper/70 hover:bg-card border border-rule hover:border-ledger-blue rounded-lg text-left transition-all active:scale-95 disabled:opacity-50 group flex items-start gap-2 shadow-xs"
+                          >
+                            <Icon className="w-4 h-4 mt-0.5 text-ledger-blue shrink-0 group-hover:scale-110 transition-transform" />
+                            <div>
+                              <div className="text-xs font-semibold text-ink leading-tight">
+                                +{action.count} {action.label}
+                              </div>
+                              <div className="text-[10px] font-mono text-ink-soft">
+                                Log output
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
                 </div>
 
-                {/* Custom Amount Form */}
+                {/* Custom Amount Form with Note Input */}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     const n = parseInt(manualCount, 10);
-                    if (n > 0) handleLogManualActivity(n);
+                    if (n > 0) handleLogManualActivity(n, manualNote.trim() || undefined);
                   }}
-                  className="flex items-center gap-2 pt-2 border-t border-rule/60"
+                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-3 border-t border-rule/60"
                 >
-                  <label className="text-xs font-mono text-ink-soft shrink-0">Custom Count:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="999"
-                    value={manualCount}
-                    onChange={(e) => setManualCount(e.target.value)}
-                    className="w-20 px-2.5 py-1.5 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue text-center"
-                  />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <label className="text-xs font-mono text-ink-soft shrink-0">Count:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="999"
+                      value={manualCount}
+                      onChange={(e) => setManualCount(e.target.value)}
+                      className="w-16 px-2.5 py-1.5 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue text-center"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={manualNote}
+                      onChange={(e) => setManualNote(e.target.value)}
+                      placeholder="Optional note: e.g. Logo v2 SVG, 50 photos culled, boss fight level"
+                      className="w-full px-3 py-1.5 bg-paper border border-rule rounded text-xs font-sans text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+                    />
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loggingActivity || !manualCount || parseInt(manualCount, 10) <= 0}
-                    className="px-4 py-1.5 bg-ledger-blue text-paper text-xs font-semibold rounded hover:bg-ledger-hover disabled:opacity-40 transition-colors"
+                    className="px-4 py-1.5 bg-ledger-blue text-paper text-xs font-semibold rounded hover:bg-ledger-hover disabled:opacity-40 transition-colors shrink-0 shadow-xs"
                   >
                     {loggingActivity ? 'Logging...' : 'Log Activity'}
                   </button>
@@ -754,14 +820,19 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                           key={entry.id}
                           className="flex items-center justify-between p-2 rounded bg-paper/60 border border-rule/60 text-xs font-mono"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-ink-soft">{entry.date}</span>
                             <span className="font-bold text-ledger-blue">+{entry.count} items</span>
+                            {entry.note && (
+                              <span className="text-[11px] font-sans font-medium text-ink bg-card px-2 py-0.5 rounded border border-rule/70">
+                                {entry.note}
+                              </span>
+                            )}
                           </div>
                           <button
                             type="button"
                             onClick={() => handleDeleteActivityEntry(entry.id)}
-                            className="text-ink-soft hover:text-stamp-red p-1 transition-colors"
+                            className="text-ink-soft hover:text-stamp-red p-1 transition-colors shrink-0"
                             title="Delete entry"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

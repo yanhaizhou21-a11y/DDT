@@ -301,8 +301,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
           </div>
         </HoverContext.Provider>
 
-        {/* Footer: Theme Toggle & Expand Button */}
+        {/* Footer: Discord Recap, Theme Toggle & Expand Button */}
         <div className="p-2.5 border-t border-rule/70 flex flex-col items-center gap-2 bg-paper/30">
+          <button
+            type="button"
+            onClick={() => setIsDiscordModalOpen(true)}
+            className={cn(
+              'flex items-center gap-2 rounded-lg text-xs font-mono font-semibold transition-all shadow-xs active:scale-95 group',
+              isExpanded
+                ? 'w-full px-2.5 py-1.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#5865F2] border border-[#5865F2]/30'
+                : 'p-2 text-[#5865F2] bg-[#5865F2]/10 hover:bg-[#5865F2]/20'
+            )}
+            title="Discord Daily Recap Dispatcher"
+            aria-label="Discord Daily Recap"
+          >
+            <DiscordIcon className="w-4 h-4 text-[#5865F2] group-hover:scale-110 transition-transform shrink-0" />
+            {isExpanded && <span className="truncate">Discord Recap</span>}
+          </button>
+
           <ThemeToggle
             compact={!isExpanded}
             placement="top-start"
@@ -320,6 +336,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
             </button>
           )}
         </div>
+
+        {/* Discord Recap Modal */}
+        <DiscordRecapModal
+          isOpen={isDiscordModalOpen}
+          onClose={() => setIsDiscordModalOpen(false)}
+        />
       </aside>
 
       {/* Mobile Animated Bottom Navigation Bar */}

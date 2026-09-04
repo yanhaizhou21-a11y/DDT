@@ -8,6 +8,7 @@ import { TextEffect } from '../components/TextEffect';
 import { Magnetic } from '../components/Magnetic';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { RichTextEditor } from '../components/RichTextEditor';
+import { DiscordRecapModal, DiscordIcon } from '../components/DiscordRecapModal';
 import {
   GitCommit,
   BookOpen,
@@ -62,6 +63,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [quickGameHours, setQuickGameHours] = useState('1');
   const [quickGameMinutes, setQuickGameMinutes] = useState('0');
   const [gameLogging, setGameLogging] = useState(false);
+  const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
 
   const loadData = async () => {
     try {

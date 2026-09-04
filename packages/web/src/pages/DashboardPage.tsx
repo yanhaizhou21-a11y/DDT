@@ -215,7 +215,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsDiscordModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 border border-[#5865F2]/30 text-[#5865F2] rounded-lg text-xs font-mono font-semibold transition-all shadow-xs group active:scale-95"
+            title="Dispatch Discord Daily Activity Recap"
+          >
+            <DiscordIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+            <span className="hidden sm:inline">Discord Recap</span>
+          </button>
           <ThemeToggle placement="bottom-end" />
           <span className="text-xs font-mono text-ink-soft bg-card/80 px-3 py-1.5 border border-rule rounded-lg shadow-subtle">
             {data.today}
@@ -645,6 +654,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Discord Daily Activity Recap Modal */}
+      <DiscordRecapModal
+        isOpen={isDiscordModalOpen}
+        onClose={() => setIsDiscordModalOpen(false)}
+        initialDate={data.today}
+      />
     </div>
   );
 };

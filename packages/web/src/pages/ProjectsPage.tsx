@@ -71,6 +71,36 @@ const DOMAIN_OPTIONS: { value: ProjectDomainType; label: string; desc: string }[
   { value: 'video_photo', label: 'Video/Photo', desc: 'Editing, color grading, shoots, culling' },
 ];
 
+const DOMAIN_PROGRESS_ACTIONS: Record<
+  ProjectDomainType,
+  { label: string; count: number; icon: React.ComponentType<{ className?: string }> }[]
+> = {
+  graphic_design: [
+    { label: 'Design Revision', count: 1, icon: Edit3 },
+    { label: 'Asset Export', count: 1, icon: Layers },
+    { label: 'Concept / Mockup', count: 1, icon: Sparkles },
+    { label: 'Final Delivery', count: 1, icon: Check },
+  ],
+  video_photo: [
+    { label: 'Clip Edited', count: 1, icon: Video },
+    { label: 'Photo Culled', count: 1, icon: CheckCircle2 },
+    { label: 'Color Grade', count: 1, icon: Palette },
+    { label: 'Render / Export', count: 1, icon: Layers },
+  ],
+  game_dev: [
+    { label: 'Level Built', count: 1, icon: Gamepad2 },
+    { label: 'Asset Imported', count: 1, icon: Layers },
+    { label: 'Bug Fixed', count: 1, icon: CheckCircle2 },
+    { label: 'Build Compiled', count: 1, icon: Code2 },
+  ],
+  software: [
+    { label: 'Feature Shipped', count: 1, icon: Sparkles },
+    { label: 'PR Merged', count: 1, icon: GitBranch },
+    { label: 'Bug Fixed', count: 1, icon: CheckCircle2 },
+    { label: 'Test Written', count: 1, icon: Code2 },
+  ],
+};
+
 const STATUS_VALUES: ProjectStatus[] = ['not_started', 'in_progress', 'ready'];
 
 export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
@@ -83,6 +113,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
   const [projectDetail, setProjectDetail] = useState<ProjectDetailResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [refreshingDetail, setRefreshingDetail] = useState(false);
+
+  // Visualization mode toggle (Heatmap vs Charts & Bars)
+  const [visualizationType, setVisualizationType] = useState<'heatmap' | 'chart'>('heatmap');
 
   // Filtering
   const [domainFilter, setDomainFilter] = useState<'all' | ProjectDomainType>('all');
@@ -116,6 +149,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
 
   // Manual Activity Logging State
   const [manualCount, setManualCount] = useState('1');
+  const [manualNote, setManualNote] = useState('');
   const [loggingActivity, setLoggingActivity] = useState(false);
   const [activitySuccessNotice, setActivitySuccessNotice] = useState<string | null>(null);
 
@@ -320,14 +354,19 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
     }
   };
 
-  // Manual Activity Logging (+N today)
-  const handleLogManualActivity = async (countToAdd: number) => {
+  // Manual Activity Logging (+N today with optional action note)
+  const handleLogManualActivity = async (countToAdd: number, noteLabel?: string) => {
     if (!projectDetail || projectDetail.isRepoLinked) return;
     try {
       setLoggingActivity(true);
-      const res = await logProjectActivity(projectDetail.id, countToAdd);
+      const noteToSend = noteLabel || (manualNote.trim() ? manualNote.trim() : undefined);
+      const res = await logProjectActivity(projectDetail.id, countToAdd, undefined, noteToSend);
 
-      setActivitySuccessNotice(`+${countToAdd} logged! Today's total: ${res.count}`);
+      const notice = noteToSend
+        ? `+${countToAdd} (${noteToSend}) logged! Today's total: ${res.count}`
+        : `+${countToAdd} logged! Today's total: ${res.count}`;
+      setActivitySuccessNotice(notice);
+      setManualNote('');
       setTimeout(() => setActivitySuccessNotice(null), 3500);
 
       // Refresh detail data

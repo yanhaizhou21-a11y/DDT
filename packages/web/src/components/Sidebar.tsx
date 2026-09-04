@@ -216,7 +216,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  const [isDiscordModalOpen, setIsDiscordModalOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHoveredId] = useState<string | null>(null);
   const [hoverRect, setHoverRect] = useState<HoverRect | null>(null);

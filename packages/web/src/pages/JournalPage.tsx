@@ -40,6 +40,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
 
   const handleSelectTemplate = (templateContent: string, mode: 'replace' | 'append') => {
     if (mode === 'append' && content.trim()) {
@@ -283,6 +284,16 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={() => setIsDiscordModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 border border-[#5865F2]/30 text-[#5865F2] rounded-lg text-xs font-semibold font-mono transition-all shadow-xs group"
+                title="Dispatch Discord Daily Recap for this date"
+              >
+                <DiscordIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline">Discord Recap</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setIsTemplateModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-paper border border-rule hover:border-ledger-blue rounded-lg text-xs font-semibold text-ledger-blue transition-all shadow-xs group"
                 title="Choose a journal template"
@@ -340,6 +351,13 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
         onSelectTemplate={handleSelectTemplate}
         hasExistingContent={Boolean(content.trim())}
         selectedDate={selectedDate}
+      />
+
+      {/* Discord Daily Activity Recap Modal */}
+      <DiscordRecapModal
+        isOpen={isDiscordModalOpen}
+        onClose={() => setIsDiscordModalOpen(false)}
+        initialDate={selectedDate}
       />
 
       {/* Confirmation Dialog for Clearing Entry */}

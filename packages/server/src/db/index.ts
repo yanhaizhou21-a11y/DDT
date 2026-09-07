@@ -82,6 +82,11 @@ export function initDatabase(dbPath?: string): InitDatabaseResult {
       release_date TEXT,
       media_type TEXT DEFAULT 'movie',
       overview TEXT,
+      current_episode INTEGER DEFAULT 0,
+      total_episodes INTEGER,
+      auto_increment INTEGER DEFAULT 0,
+      air_day INTEGER,
+      last_air_date TEXT,
       created_at INTEGER,
       updated_at INTEGER
     );`,
@@ -136,6 +141,22 @@ export function initDatabase(dbPath?: string): InitDatabaseResult {
       await client.execute('ALTER TABLE project_activity ADD COLUMN note TEXT');
     } catch {
       // Column already exists or freshly created
+    }
+
+    // Migration: add episode tracking columns to watchlist_items if they don't exist
+    const watchlistMigrations = [
+      'ALTER TABLE watchlist_items ADD COLUMN current_episode INTEGER DEFAULT 0',
+      'ALTER TABLE watchlist_items ADD COLUMN total_episodes INTEGER',
+      'ALTER TABLE watchlist_items ADD COLUMN auto_increment INTEGER DEFAULT 0',
+      'ALTER TABLE watchlist_items ADD COLUMN air_day INTEGER',
+      'ALTER TABLE watchlist_items ADD COLUMN last_air_date TEXT',
+    ];
+    for (const sql of watchlistMigrations) {
+      try {
+        await client.execute(sql);
+      } catch {
+        // Column already exists
+      }
     }
 
     // Seed default kanban columns if none exist

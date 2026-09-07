@@ -195,6 +195,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
                   onClick={() => jumpDay(-1)}
                   className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
                   title="Previous day"
+                  aria-label="Previous day"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -202,6 +203,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
                   onClick={() => jumpDay(1)}
                   className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
                   title="Next day"
+                  aria-label="Next day"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -287,6 +289,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
                 onClick={() => setIsDiscordModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 border border-[#5865F2]/30 text-[#5865F2] rounded-lg text-xs font-semibold font-mono transition-all shadow-xs group"
                 title="Dispatch Discord Daily Recap for this date"
+                aria-label="Dispatch Discord Daily Recap for this date"
               >
                 <DiscordIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                 <span className="hidden sm:inline">Discord Recap</span>
@@ -308,6 +311,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
                   onClick={() => setIsConfirmDeleteOpen(true)}
                   className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-ink-soft hover:text-stamp-red rounded-md hover:bg-paper transition-colors"
                   title="Clear day's entry"
+                  aria-label="Clear today's journal entry"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Clear</span>

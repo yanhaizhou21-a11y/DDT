@@ -168,8 +168,11 @@ export function createRecapRouter(db: AppDatabase): Router {
 
     // 5. Watchlist Field
     if (data.watchlist.length > 0) {
-      const watchLines = data.watchlist.map((w) => {
-        return `• ${w.status === 'watched' ? 'Watched' : 'Queue'}: **${w.title}**`;
+      const watchLines = data.watchlist.map((w: any) => {
+        const epInfo = w.mediaType === 'tv' && (w.currentEpisode || w.totalEpisodes)
+          ? ` (Ep ${w.currentEpisode || 0}${w.totalEpisodes ? `/${w.totalEpisodes}` : ''})`
+          : '';
+        return `• ${w.status === 'watched' ? 'Watched' : 'Queue'}: **${w.title}**${epInfo}`;
       });
       fields.push({
         name: '🎬 Watchlist & Media',

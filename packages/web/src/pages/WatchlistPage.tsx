@@ -4,6 +4,7 @@ import {
   fetchWatchlist,
   addWatchlistItem,
   updateWatchlistItem,
+  updateWatchlistEpisodes,
   deleteWatchlistItem,
   searchTmdb,
   fetchSettings,
@@ -31,7 +32,20 @@ import {
   ExternalLink,
   Tag,
   Key,
+  Minus,
+  RotateCcw,
+  Sliders,
 } from 'lucide-react';
+
+export const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+];
 
 interface WatchlistPageProps {
   onNavigate: (tab: RouteTab) => void;
@@ -88,18 +102,27 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  // Manual Movie Entry
+  // Manual Movie/Show Entry
   const [manualTitle, setManualTitle] = useState('');
   const [manualMediaType, setManualMediaType] = useState<'movie' | 'tv'>('movie');
   const [manualStatus, setManualStatus] = useState<'want' | 'watching' | 'watched'>('want');
   const [manualReleaseDate, setManualReleaseDate] = useState('');
   const [manualPosterUrl, setManualPosterUrl] = useState('');
   const [manualOverview, setManualOverview] = useState('');
+  const [manualCurrentEpisode, setManualCurrentEpisode] = useState<number>(0);
+  const [manualTotalEpisodes, setManualTotalEpisodes] = useState<string>('');
+  const [manualAutoIncrement, setManualAutoIncrement] = useState<boolean>(false);
+  const [manualAirDay, setManualAirDay] = useState<number>(0);
 
   // Item Detail Modal
   const [selectedItem, setSelectedItem] = useState<WatchlistItem | null>(null);
   const [editPosterUrl, setEditPosterUrl] = useState('');
   const [savingPoster, setSavingPoster] = useState(false);
+  const [editCurrentEpisode, setEditCurrentEpisode] = useState<number>(0);
+  const [editTotalEpisodes, setEditTotalEpisodes] = useState<string>('');
+  const [editAutoIncrement, setEditAutoIncrement] = useState<boolean>(false);
+  const [editAirDay, setEditAirDay] = useState<number>(0);
+  const [savingEpisodes, setSavingEpisodes] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<WatchlistItem | null>(null);
 
 
@@ -178,6 +201,10 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
         mediaType: manualMediaType,
         posterPath: manualPosterUrl.trim() || null,
         overview: manualOverview.trim() || null,
+        currentEpisode: manualMediaType === 'tv' ? manualCurrentEpisode : 0,
+        totalEpisodes: manualMediaType === 'tv' && manualTotalEpisodes.trim() ? Number(manualTotalEpisodes) : null,
+        autoIncrement: manualMediaType === 'tv' ? manualAutoIncrement : false,
+        airDay: manualMediaType === 'tv' ? manualAirDay : null,
       });
       setItems((prev) => [newItem, ...prev]);
       setIsAddModalOpen(false);
@@ -185,6 +212,10 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
       setManualReleaseDate('');
       setManualPosterUrl('');
       setManualOverview('');
+      setManualCurrentEpisode(0);
+      setManualTotalEpisodes('');
+      setManualAutoIncrement(false);
+      setManualAirDay(0);
     } catch (err) {
       console.error(err);
     }
@@ -211,6 +242,84 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
   const handleSelectItem = (item: WatchlistItem) => {
     setSelectedItem(item);
     setEditPosterUrl(item.posterPath || '');
+    setEditCurrentEpisode(item.currentEpisode ?? 0);
+    setEditTotalEpisodes(item.totalEpisodes ? String(item.totalEpisodes) : '');
+    setEditAutoIncrement(Boolean(item.autoIncrement));
+    setEditAirDay(item.airDay ?? 0);
+  };
+
+  const handleEpisodeAction = async (
+    id: string,
+    action: 'increment' | 'decrement' | 'complete' | 'reset' | 'set',
+    customEpisode?: number
+  ) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+
+    const cur = item.currentEpisode ?? 0;
+    const total = item.totalEpisodes ?? null;
+    let nextEp = cur;
+    let nextStatus = item.status;
+
+    if (action === 'increment') {
+      nextEp = total !== null ? Math.min(cur + 1, total) : cur + 1;
+      if (total !== null && nextEp >= total) nextStatus = 'watched';
+      else if (nextStatus === 'want') nextStatus = 'watching';
+    } else if (action === 'decrement') {
+      nextEp = Math.max(0, cur - 1);
+      if (nextStatus === 'watched' && total !== null && nextEp < total) nextStatus = 'watching';
+    } else if (action === 'complete') {
+      nextEp = total ?? cur;
+      nextStatus = 'watched';
+    } else if (action === 'reset') {
+      nextEp = 0;
+      nextStatus = 'watching';
+    } else if (action === 'set') {
+      if (customEpisode !== undefined) {
+        nextEp = total !== null ? Math.min(Math.max(0, customEpisode), total) : Math.max(0, customEpisode);
+        if (total !== null && nextEp >= total) nextStatus = 'watched';
+        else if (nextStatus === 'watched' && total !== null && nextEp < total) nextStatus = 'watching';
+      }
+    }
+
+    // Optimistic update
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, currentEpisode: nextEp, status: nextStatus } : i))
+    );
+    if (selectedItem?.id === id) {
+      setSelectedItem((prev) => (prev ? { ...prev, currentEpisode: nextEp, status: nextStatus } : null));
+      setEditCurrentEpisode(nextEp);
+    }
+
+    try {
+      await updateWatchlistEpisodes(id, action, customEpisode);
+    } catch (err) {
+      console.error('Failed to update episodes', err);
+      loadData();
+    }
+  };
+
+  const handleSaveShowSettings = async () => {
+    if (!selectedItem) return;
+    try {
+      setSavingEpisodes(true);
+      const total = editTotalEpisodes.trim() ? Number(editTotalEpisodes) : null;
+      const updates = {
+        currentEpisode: editCurrentEpisode,
+        totalEpisodes: total,
+        autoIncrement: editAutoIncrement,
+        airDay: editAirDay,
+      };
+      await updateWatchlistItem(selectedItem.id, updates);
+      setItems((prev) =>
+        prev.map((i) => (i.id === selectedItem.id ? { ...i, ...updates } : i))
+      );
+      setSelectedItem((prev) => (prev ? { ...prev, ...updates } : null));
+    } catch (err) {
+      console.error('Failed to save show settings', err);
+    } finally {
+      setSavingEpisodes(false);
+    }
   };
 
   const handleSaveCustomPoster = async () => {
@@ -441,6 +550,84 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                       <div className="mt-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-stamp-light border border-stamp-red/40 text-stamp-red text-[10px] font-mono font-medium rounded-[3px]">
                         <Calendar className="w-3 h-3" />
                         <span>In theaters {item.releaseDate}</span>
+                      </div>
+                    )}
+
+                    {/* TV Show Episode Tracker & Quick Stepper */}
+                    {item.mediaType === 'tv' && (
+                      <div className="mt-2.5 pt-2 border-t border-rule/60">
+                        <div className="flex items-center justify-between text-[11px] font-mono mb-1">
+                          <span className="text-ink font-semibold flex items-center gap-1.5">
+                            <span>Ep {item.currentEpisode ?? 0}</span>
+                            <span className="text-ink-soft font-normal">
+                              {item.totalEpisodes ? `/ ${item.totalEpisodes}` : '(Ongoing)'}
+                            </span>
+                          </span>
+                          {Boolean(item.autoIncrement) && (
+                            <span
+                              className="text-[10px] text-ledger-blue bg-ledger-light px-1.5 py-0.5 rounded-[3px] font-medium flex items-center gap-1"
+                              title={`Auto-advances every ${DAYS_OF_WEEK[item.airDay ?? 0]?.label || 'broadcast day'}`}
+                            >
+                              <Sparkles className="w-2.5 h-2.5" />
+                              <span>{DAYS_OF_WEEK[item.airDay ?? 0]?.label?.slice(0, 3)}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Hairline Progress bar */}
+                        {item.totalEpisodes && (
+                          <div className="w-full bg-rule/70 h-1 rounded-full overflow-hidden mb-2">
+                            <div
+                              className="bg-ledger-blue h-full rounded-full transition-all duration-300"
+                              style={{
+                                width: `${Math.min(100, Math.round(((item.currentEpisode || 0) / item.totalEpisodes) * 100))}%`,
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Fast Steppers */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={(item.currentEpisode ?? 0) <= 0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEpisodeAction(item.id, 'decrement');
+                            }}
+                            className="px-2 py-0.5 bg-paper border border-rule hover:border-ink-soft rounded text-[10px] font-mono text-ink disabled:opacity-40 active:scale-95 transition-all"
+                            title="Previous Episode (-1)"
+                            aria-label="Previous Episode"
+                          >
+                            -1
+                          </button>
+                          <button
+                            type="button"
+                            disabled={item.totalEpisodes ? (item.currentEpisode ?? 0) >= item.totalEpisodes : false}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEpisodeAction(item.id, 'increment');
+                            }}
+                            className="px-2.5 py-0.5 bg-card border border-rule hover:border-ledger-blue hover:text-ledger-blue rounded text-[10px] font-mono font-semibold text-ink disabled:opacity-40 active:scale-95 transition-all"
+                            title="Next Episode (+1)"
+                            aria-label="Next Episode"
+                          >
+                            +1 Ep
+                          </button>
+                          {item.totalEpisodes && (item.currentEpisode ?? 0) < item.totalEpisodes && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEpisodeAction(item.id, 'complete');
+                              }}
+                              className="px-2 py-0.5 bg-ledger-light border border-ledger-blue/30 text-ledger-blue hover:bg-ledger-blue hover:text-paper rounded text-[10px] font-mono font-medium active:scale-95 transition-all ml-auto"
+                              title="Mark all episodes watched (dari awal sampai akhir)"
+                            >
+                              ✓ All ({item.totalEpisodes})
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -716,6 +903,82 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
               </div>
             </div>
 
+            {/* TV Series Episode & Broadcast Settings */}
+            {manualMediaType === 'tv' && (
+              <div className="p-3 bg-card border border-rule rounded-[4px] space-y-3">
+                <div className="flex items-center justify-between pb-1 border-b border-rule/50">
+                  <span className="text-xs font-mono font-semibold text-ink flex items-center gap-1.5">
+                    <Tv className="w-3.5 h-3.5 text-ledger-blue" />
+                    <span>TV Series & Broadcast Settings</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-ink-soft">Episode Tracking</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-ink mb-1">
+                      Current Episode
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={manualCurrentEpisode}
+                      onChange={(e) => setManualCurrentEpisode(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full px-3 py-1.5 text-xs bg-paper border border-rule rounded-[4px] text-ink font-mono focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                      placeholder="e.g. 1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-ink mb-1">
+                      Total Episodes <span className="text-ink-soft font-normal">(if known)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={manualTotalEpisodes}
+                      onChange={(e) => setManualTotalEpisodes(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs bg-paper border border-rule rounded-[4px] text-ink font-mono focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                      placeholder="e.g. 12 (leave blank if ongoing)"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-rule/50 space-y-2">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={manualAutoIncrement}
+                      onChange={(e) => setManualAutoIncrement(e.target.checked)}
+                      className="mt-0.5 rounded border-rule text-ledger-blue focus:ring-ledger-blue"
+                    />
+                    <div className="text-xs">
+                      <span className="font-medium text-ink">Auto-advance +1 episode on weekly broadcast day</span>
+                      <p className="text-[11px] text-ink-soft">
+                        Automatically adds 1 episode every week on the scheduled air day if you haven't manually logged it.
+                      </p>
+                    </div>
+                  </label>
+
+                  {manualAutoIncrement && (
+                    <div className="flex items-center gap-2 pl-5 pt-1">
+                      <span className="text-xs font-mono text-ink-soft">Broadcast Air Day:</span>
+                      <select
+                        value={manualAirDay}
+                        onChange={(e) => setManualAirDay(Number(e.target.value))}
+                        className="px-2 py-1 text-xs bg-paper border border-rule rounded-[4px] text-ink font-mono focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                      >
+                        {DAYS_OF_WEEK.map((d) => (
+                          <option key={d.value} value={d.value}>
+                            {d.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
               <div>
                 <DatePicker
@@ -758,7 +1021,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                     placeholder="https://... (direct image URL)"
                     value={manualPosterUrl}
                     onChange={(e) => setManualPosterUrl(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-hidden font-mono"
+                    className="w-full px-3 py-2 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 font-mono"
                   />
                 </div>
               </div>
@@ -841,6 +1104,161 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
               </div>
             </div>
 
+            {/* TV Show Episode Tracking & Range Progression ("Dari Awal Sampai Akhir") */}
+            {selectedItem.mediaType === 'tv' && (
+              <div className="p-3.5 bg-card border border-rule rounded-lg space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-rule/60">
+                  <div className="flex items-center gap-2">
+                    <Tv className="w-4 h-4 text-ledger-blue" />
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
+                      Episode Progression
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-ledger-blue font-semibold bg-ledger-light px-2 py-0.5 rounded-[3px]">
+                    Ep {editCurrentEpisode} {editTotalEpisodes ? `/ ${editTotalEpisodes}` : '(Ongoing)'}
+                  </span>
+                </div>
+
+                {/* Range Scrubber: From Start to Finish (Dari Awal Sampai Akhir) */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[10px] font-mono text-ink-soft">
+                    <span>Ep 0 (Start)</span>
+                    <span className="font-semibold text-ink">Scrub to any episode</span>
+                    <span>{editTotalEpisodes ? `Ep ${editTotalEpisodes} (End)` : 'Ongoing'}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={editTotalEpisodes ? Math.max(1, Number(editTotalEpisodes)) : Math.max(50, editCurrentEpisode + 10)}
+                    value={editCurrentEpisode}
+                    onChange={(e) => setEditCurrentEpisode(Number(e.target.value))}
+                    className="w-full h-1.5 bg-rule rounded-lg appearance-none cursor-pointer accent-ledger-blue"
+                  />
+                </div>
+
+                {/* Quick Stepper & Range Actions */}
+                <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleEpisodeAction(selectedItem.id, 'reset')}
+                      className="px-2.5 py-1 bg-paper border border-rule hover:border-ink-soft rounded-[4px] text-[11px] font-mono text-ink flex items-center gap-1 active:scale-95 transition-all"
+                      title="Reset progress to Episode 0"
+                    >
+                      <RotateCcw className="w-3 h-3 text-ink-soft" />
+                      <span>Start Over</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={editCurrentEpisode <= 0}
+                      onClick={() => handleEpisodeAction(selectedItem.id, 'decrement')}
+                      className="px-2.5 py-1 bg-paper border border-rule hover:border-ink-soft rounded-[4px] text-[11px] font-mono text-ink disabled:opacity-40 active:scale-95 transition-all flex items-center gap-1"
+                      title="Previous Episode"
+                    >
+                      <Minus className="w-3 h-3" />
+                      <span>Prev</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={editTotalEpisodes ? editCurrentEpisode >= Number(editTotalEpisodes) : false}
+                      onClick={() => handleEpisodeAction(selectedItem.id, 'increment')}
+                      className="px-3 py-1 bg-ledger-blue text-paper rounded-[4px] text-[11px] font-mono font-medium hover:bg-ledger-hover disabled:opacity-40 active:scale-95 transition-all flex items-center gap-1 shadow-xs"
+                      title="Next Episode"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>+1 Ep</span>
+                    </button>
+                  </div>
+
+                  {editTotalEpisodes && editCurrentEpisode < Number(editTotalEpisodes) && (
+                    <button
+                      type="button"
+                      onClick={() => handleEpisodeAction(selectedItem.id, 'complete')}
+                      className="px-2.5 py-1 bg-card border border-ledger-blue/40 text-ledger-blue hover:bg-ledger-light rounded-[4px] text-[11px] font-mono font-semibold active:scale-95 transition-all"
+                      title="Mark all episodes completed (dari awal sampai akhir)"
+                    >
+                      ✓ Complete All ({editTotalEpisodes} eps)
+                    </button>
+                  )}
+                </div>
+
+                {/* Episode Numbers & Air Schedule Form */}
+                <div className="pt-3 border-t border-rule/60 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-mono text-ink-soft mb-1">Current Ep</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={editCurrentEpisode}
+                        onChange={(e) => setEditCurrentEpisode(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full px-2.5 py-1 text-xs bg-paper border border-rule rounded-[4px] font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono text-ink-soft mb-1">
+                        Total Episodes <span className="text-ink-soft/70">(blank if ongoing)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        placeholder="e.g. 12"
+                        value={editTotalEpisodes}
+                        onChange={(e) => setEditTotalEpisodes(e.target.value)}
+                        className="w-full px-2.5 py-1 text-xs bg-paper border border-rule rounded-[4px] font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Auto-Increment Broadcast Settings */}
+                  <div className="p-2.5 bg-paper/70 border border-rule rounded-[4px] space-y-2">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editAutoIncrement}
+                        onChange={(e) => setEditAutoIncrement(e.target.checked)}
+                        className="mt-0.5 rounded border-rule text-ledger-blue focus:ring-ledger-blue"
+                      />
+                      <div className="text-xs">
+                        <span className="font-medium text-ink">Auto-advance +1 episode on weekly air day</span>
+                        <p className="text-[11px] text-ink-soft">
+                          Adds 1 episode every week on broadcast day if you haven't manually logged it.
+                        </p>
+                      </div>
+                    </label>
+
+                    {editAutoIncrement && (
+                      <div className="flex items-center gap-2 pl-5 pt-1">
+                        <span className="text-xs font-mono text-ink-soft">Airs weekly on:</span>
+                        <select
+                          value={editAirDay}
+                          onChange={(e) => setEditAirDay(Number(e.target.value))}
+                          className="px-2 py-1 text-xs bg-card border border-rule rounded-[4px] text-ink font-mono focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                        >
+                          {DAYS_OF_WEEK.map((d) => (
+                            <option key={d.value} value={d.value}>
+                              {d.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleSaveShowSettings}
+                      disabled={savingEpisodes}
+                      className="px-3 py-1.5 bg-ledger-blue text-paper text-xs font-semibold rounded-[4px] hover:bg-ledger-hover disabled:opacity-50 active:scale-95 transition-all shadow-xs"
+                    >
+                      {savingEpisodes ? 'Saving Settings...' : 'Save Series Settings'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Custom Poster Image URL Section */}
             <div className="p-3 bg-paper border border-rule rounded-lg space-y-2">
               <div className="flex items-center justify-between">
@@ -863,7 +1281,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({ onNavigate }) => {
                   placeholder="https://... (paste direct image URL e.g. .jpg, .png, .webp)"
                   value={editPosterUrl}
                   onChange={(e) => setEditPosterUrl(e.target.value)}
-                  className="flex-1 px-3 py-1.5 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+                  className="flex-1 px-3 py-1.5 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                 />
                 <button
                   type="button"

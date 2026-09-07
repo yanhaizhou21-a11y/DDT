@@ -3,6 +3,84 @@ import { eq, desc } from 'drizzle-orm';
 import { watchlistItems, settings, apiCache } from '../db/schema.js';
 import type { AppDatabase } from '../db/index.js';
 
+// Helper to evaluate auto-increment for ongoing TV shows on their broadcast air days
+async function evaluateAutoIncrements(db: AppDatabase) {
+  try {
+    const shows = await db
+      .select()
+      .from(watchlistItems)
+      .where(eq(watchlistItems.mediaType, 'tv'));
+
+    const activeShows = shows.filter(
+      (s) =>
+        s.status === 'watching' &&
+        Boolean(s.autoIncrement) &&
+        s.airDay !== null &&
+        s.airDay !== undefined
+    );
+
+    if (activeShows.length === 0) return;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayDate = new Date(todayStr + 'T00:00:00Z');
+
+    for (const show of activeShows) {
+      const airDay = Number(show.airDay);
+      const currentEp = show.currentEpisode ?? 0;
+      const totalEp = show.totalEpisodes ?? null;
+
+      if (totalEp !== null && currentEp >= totalEp) {
+        continue;
+      }
+
+      let startDate: Date;
+      if (show.lastAirDate) {
+        startDate = new Date(show.lastAirDate + 'T00:00:00Z');
+        startDate.setUTCDate(startDate.getUTCDate() + 1);
+      } else {
+        const created = show.createdAt ? new Date(show.createdAt) : new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        startDate = created > oneWeekAgo ? created : oneWeekAgo;
+        startDate = new Date(startDate.toISOString().slice(0, 10) + 'T00:00:00Z');
+      }
+
+      let episodesToAdd = 0;
+      let latestAirDateStr: string | null = null;
+      const iter = new Date(startDate);
+
+      while (iter <= todayDate) {
+        if (iter.getUTCDay() === airDay) {
+          episodesToAdd++;
+          latestAirDateStr = iter.toISOString().slice(0, 10);
+        }
+        iter.setUTCDate(iter.getUTCDate() + 1);
+      }
+
+      if (episodesToAdd > 0 && latestAirDateStr) {
+        let newEp = currentEp + episodesToAdd;
+        const updates: any = {
+          currentEpisode: totalEp !== null ? Math.min(newEp, totalEp) : newEp,
+          lastAirDate: latestAirDateStr,
+          updatedAt: new Date(),
+        };
+        // If series finished by auto-increment, mark as watched
+        if (totalEp !== null && newEp >= totalEp) {
+          updates.status = 'watched';
+        }
+        await db.update(watchlistItems).set(updates).where(eq(watchlistItems.id, show.id));
+      } else if (!show.lastAirDate) {
+        await db
+          .update(watchlistItems)
+          .set({ lastAirDate: todayStr })
+          .where(eq(watchlistItems.id, show.id));
+      }
+    }
+  } catch (err) {
+    console.error('Failed evaluating auto-increments', err);
+  }
+}
+
 export function createWatchlistRouter(db: AppDatabase): Router {
   const router = Router();
 
@@ -15,6 +93,8 @@ export function createWatchlistRouter(db: AppDatabase): Router {
   // GET /api/watchlist
   router.get('/', async (_req, res) => {
     try {
+      await evaluateAutoIncrements(db);
+
       const items = await db.select().from(watchlistItems).orderBy(desc(watchlistItems.createdAt));
       
       // Sort 'want' list: upcoming release date first, then nulls
@@ -101,7 +181,21 @@ export function createWatchlistRouter(db: AppDatabase): Router {
   // POST /api/watchlist - add item
   router.post('/', async (req, res) => {
     try {
-      const { title, tmdbId, posterPath, status, releaseDate, mediaType, overview } = req.body;
+      const {
+        title,
+        tmdbId,
+        posterPath,
+        status,
+        releaseDate,
+        mediaType,
+        overview,
+        currentEpisode,
+        totalEpisodes,
+        autoIncrement,
+        airDay,
+        lastAirDate,
+      } = req.body;
+
       if (!title) {
         return res.status(400).json({ error: 'Title is required' });
       }
@@ -117,6 +211,11 @@ export function createWatchlistRouter(db: AppDatabase): Router {
         releaseDate: releaseDate || null,
         mediaType: mediaType || 'movie',
         overview: overview || null,
+        currentEpisode: currentEpisode !== undefined && currentEpisode !== null ? Math.max(0, Number(currentEpisode)) : 0,
+        totalEpisodes: totalEpisodes ? Math.max(1, Number(totalEpisodes)) : null,
+        autoIncrement: autoIncrement ? 1 : 0,
+        airDay: airDay !== undefined && airDay !== null && airDay !== '' ? Number(airDay) : null,
+        lastAirDate: lastAirDate || null,
         createdAt: now,
         updatedAt: now,
       };
@@ -128,11 +227,83 @@ export function createWatchlistRouter(db: AppDatabase): Router {
     }
   });
 
+  // PATCH /api/watchlist/:id/episodes - quick batch/range episode controls (dari awal sampai akhir)
+  router.patch('/:id/episodes', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action, episode } = req.body; // 'increment', 'decrement', 'complete', 'reset', 'set'
+
+      const item = await db.select().from(watchlistItems).where(eq(watchlistItems.id, id)).get();
+      if (!item) {
+        return res.status(404).json({ error: 'Watchlist item not found' });
+      }
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const currentEp = item.currentEpisode ?? 0;
+      const totalEp = item.totalEpisodes ?? null;
+      let newEp = currentEp;
+      let newStatus = item.status;
+
+      if (action === 'increment') {
+        newEp = totalEp !== null ? Math.min(currentEp + 1, totalEp) : currentEp + 1;
+        if (totalEp !== null && newEp >= totalEp) {
+          newStatus = 'watched';
+        } else if (newStatus === 'want') {
+          newStatus = 'watching';
+        }
+      } else if (action === 'decrement') {
+        newEp = Math.max(0, currentEp - 1);
+        if (newStatus === 'watched' && totalEp !== null && newEp < totalEp) {
+          newStatus = 'watching';
+        }
+      } else if (action === 'complete') {
+        // Dari awal sampai akhir: complete all episodes
+        newEp = totalEp ?? currentEp;
+        newStatus = 'watched';
+      } else if (action === 'reset') {
+        // Reset back to episode 0
+        newEp = 0;
+        newStatus = 'watching';
+      } else if (action === 'set') {
+        const val = Number(episode);
+        newEp = !isNaN(val) ? Math.max(0, totalEp !== null ? Math.min(val, totalEp) : val) : currentEp;
+        if (totalEp !== null && newEp >= totalEp) {
+          newStatus = 'watched';
+        } else if (newStatus === 'watched' && totalEp !== null && newEp < totalEp) {
+          newStatus = 'watching';
+        }
+      }
+
+      const updates: any = {
+        currentEpisode: newEp,
+        status: newStatus,
+        lastAirDate: todayStr, // Mark today so auto-increment won't re-add if user manually logged
+        updatedAt: new Date(),
+      };
+
+      await db.update(watchlistItems).set(updates).where(eq(watchlistItems.id, id));
+      res.json({ success: true, id, ...updates });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to update episodes' });
+    }
+  });
+
   // PATCH /api/watchlist/:id - update status or details
   router.patch('/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { status, title, posterPath, releaseDate, overview } = req.body;
+      const {
+        status,
+        title,
+        posterPath,
+        releaseDate,
+        overview,
+        currentEpisode,
+        totalEpisodes,
+        autoIncrement,
+        airDay,
+        lastAirDate,
+      } = req.body;
       const updates: any = { updatedAt: new Date() };
 
       if (status !== undefined) updates.status = status;
@@ -140,6 +311,23 @@ export function createWatchlistRouter(db: AppDatabase): Router {
       if (posterPath !== undefined) updates.posterPath = posterPath;
       if (releaseDate !== undefined) updates.releaseDate = releaseDate;
       if (overview !== undefined) updates.overview = overview;
+      if (currentEpisode !== undefined) {
+        updates.currentEpisode = currentEpisode !== null ? Math.max(0, Number(currentEpisode)) : 0;
+        // User manually set episode: sync lastAirDate to today so auto-increment doesn't double-add
+        updates.lastAirDate = new Date().toISOString().slice(0, 10);
+      }
+      if (totalEpisodes !== undefined) {
+        updates.totalEpisodes = totalEpisodes !== null && totalEpisodes !== '' ? Math.max(1, Number(totalEpisodes)) : null;
+      }
+      if (autoIncrement !== undefined) {
+        updates.autoIncrement = autoIncrement ? 1 : 0;
+      }
+      if (airDay !== undefined) {
+        updates.airDay = airDay !== null && airDay !== '' ? Number(airDay) : null;
+      }
+      if (lastAirDate !== undefined) {
+        updates.lastAirDate = lastAirDate;
+      }
 
       await db.update(watchlistItems).set(updates).where(eq(watchlistItems.id, id));
       res.json({ success: true, id, ...updates });

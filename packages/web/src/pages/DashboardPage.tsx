@@ -221,6 +221,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             onClick={() => setIsDiscordModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 border border-[#5865F2]/30 text-[#5865F2] rounded-lg text-xs font-mono font-semibold transition-all shadow-xs group active:scale-95"
             title="Dispatch Discord Daily Activity Recap"
+            aria-label="Dispatch Discord Daily Activity Recap"
           >
             <DiscordIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
             <span className="hidden sm:inline">Discord Recap</span>
@@ -411,7 +412,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 value={quickGameName}
                 onChange={(e) => setQuickGameName(e.target.value)}
                 placeholder="Game title (e.g. Wuthering Waves)..."
-                className="w-full px-3 py-1.5 bg-paper border border-rule rounded-md text-xs text-ink focus:outline-hidden"
+                className="w-full px-3 py-1.5 bg-paper border border-rule rounded-md text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
               />
               <div className="flex gap-2">
                 <div className="flex-1 flex gap-1 items-center">
@@ -421,7 +422,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                     max="10000"
                     value={quickGameHours}
                     onChange={(e) => setQuickGameHours(e.target.value)}
-                    className="w-16 px-2 py-1 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden text-center"
+                    className="w-16 px-2 py-1 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 text-center"
                     placeholder="h"
                   />
                   <span className="text-xs font-mono text-ink-soft">h</span>
@@ -431,7 +432,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                     max="59"
                     value={quickGameMinutes}
                     onChange={(e) => setQuickGameMinutes(e.target.value)}
-                    className="w-12 px-2 py-1 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden text-center"
+                    className="w-12 px-2 py-1 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 text-center"
                     placeholder="m"
                   />
                   <span className="text-xs font-mono text-ink-soft">m</span>
@@ -609,12 +610,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 value={quickFoodName}
                 onChange={(e) => setQuickFoodName(e.target.value)}
                 placeholder="Log meal (e.g. Oatmeal & Banana)..."
-                className="px-3 py-1.5 bg-paper border border-rule rounded-md text-xs text-ink focus:outline-hidden min-w-[200px]"
+                className="px-3 py-1.5 bg-paper border border-rule rounded-md text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 min-w-[200px]"
               />
               <select
                 value={quickMealTag}
                 onChange={(e) => setQuickMealTag(e.target.value as any)}
-                className="px-2.5 py-1.5 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+                className="px-2.5 py-1.5 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
               >
                 <option value="breakfast">Breakfast</option>
                 <option value="lunch">Lunch</option>

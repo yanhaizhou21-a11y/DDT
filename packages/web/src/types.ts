@@ -118,7 +118,13 @@ export interface WatchlistItem {
   releaseDate?: string | null;
   mediaType?: 'movie' | 'tv' | null;
   overview?: string | null;
+  currentEpisode?: number | null;
+  totalEpisodes?: number | null;
+  autoIncrement?: boolean | number | null;
+  airDay?: number | null;
+  lastAirDate?: string | null;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TMDBSearchResult {

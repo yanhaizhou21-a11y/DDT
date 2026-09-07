@@ -280,7 +280,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
       setEditModalOpen(false);
       await loadProjectDetail(updated.id, true);
     } catch (err: any) {
-      alert(err.message || 'Failed to update project');
+      setError(err.message || 'Failed to update project');
     } finally {
       setSavingEdit(false);
     }
@@ -295,6 +295,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
       await updateProject(projectDetail.id, { status: newStatusValue });
     } catch (err: any) {
       console.error('Failed to update status:', err);
+      setError(err.message || 'Failed to update project status');
       loadProjectDetail(projectDetail.id);
     }
   };
@@ -325,6 +326,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
       await loadProjectDetail(projectDetail.id, true);
     } catch (err: any) {
       console.error('Failed to update domain type:', err);
+      setError(err.message || 'Failed to update domain type');
       loadProjectDetail(projectDetail.id);
     }
   };
@@ -349,7 +351,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
         await loadProjects();
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to delete project');
+      setError(err.message || 'Failed to delete project');
     } finally {
       setDeleting(false);
     }
@@ -373,7 +375,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
       // Refresh detail data
       await loadProjectDetail(projectDetail.id, true);
     } catch (err: any) {
-      alert(err.message || 'Failed to log activity');
+      setError(err.message || 'Failed to log activity');
     } finally {
       setLoggingActivity(false);
     }
@@ -385,7 +387,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
       await deleteProjectActivity(projectDetail.id, activityId);
       await loadProjectDetail(projectDetail.id, true);
     } catch (err: any) {
-      alert(err.message || 'Failed to remove entry');
+      setError(err.message || 'Failed to remove entry');
     }
   };
 
@@ -446,6 +448,24 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
         )}
       </Header>
 
+      {/* Global Inline Dismissible Error Banner */}
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 flex items-center justify-between rounded border border-stamp-red/30 bg-stamp-red/10 px-3.5 py-2.5 text-xs text-stamp-red"
+        >
+          <span className="font-mono">{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="ml-3 font-mono text-xs font-bold hover:underline opacity-80 hover:opacity-100"
+            aria-label="Dismiss error banner"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ─── VIEW 1: PROJECT DETAIL VIEW ────────────────────────── */}
       {selectedProjectId ? (
         detailLoading && !projectDetail ? (
@@ -502,7 +522,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                     <select
                       value={projectDetail.status}
                       onChange={(e) => handleInlineStatusChange(e.target.value as ProjectStatus)}
-                      className="bg-card text-ink font-sans text-xs font-medium px-2.5 py-1 rounded border border-rule/80 focus:outline-hidden focus:ring-1 focus:ring-ledger-blue cursor-pointer"
+                      className="bg-card text-ink font-sans text-xs font-medium px-2.5 py-1 rounded border border-rule/80 focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 cursor-pointer"
                     >
                       {STATUS_VALUES.map((statusVal) => (
                         <option key={statusVal} value={statusVal}>
@@ -520,7 +540,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                     <select
                       value={projectDetail.domainType}
                       onChange={(e) => handleInlineDomainChange(e.target.value as ProjectDomainType)}
-                      className="bg-card text-ink font-sans text-xs font-medium px-2.5 py-1 rounded border border-rule/80 focus:outline-hidden focus:ring-1 focus:ring-ledger-blue cursor-pointer"
+                      className="bg-card text-ink font-sans text-xs font-medium px-2.5 py-1 rounded border border-rule/80 focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 cursor-pointer"
                     >
                       {DOMAIN_OPTIONS.map((d) => (
                         <option key={d.value} value={d.value}>
@@ -786,7 +806,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                       max="999"
                       value={manualCount}
                       onChange={(e) => setManualCount(e.target.value)}
-                      className="w-16 px-2.5 py-1.5 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue text-center"
+                      className="w-16 px-2.5 py-1.5 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 text-center"
                     />
                   </div>
 
@@ -796,7 +816,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                       value={manualNote}
                       onChange={(e) => setManualNote(e.target.value)}
                       placeholder="Optional note: e.g. Logo v2 SVG, 50 photos culled, boss fight level"
-                      className="w-full px-3 py-1.5 bg-paper border border-rule rounded text-xs font-sans text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+                      className="w-full px-3 py-1.5 bg-paper border border-rule rounded text-xs font-sans text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                     />
                   </div>
 
@@ -887,13 +907,6 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
               </span>
             </div>
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="ledger-card p-4 text-center">
-              <p className="text-stamp-red text-xs font-mono">{error}</p>
-            </div>
-          )}
 
           {/* Projects Grid or Empty State */}
           {loading && projectsList.length === 0 ? (
@@ -1019,7 +1032,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. DDT Personal Ledger, Brand Refresh 2026..."
-              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
             />
           </div>
 
@@ -1069,7 +1082,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
             <select
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value as ProjectStatus)}
-              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-sans text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-sans text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
             >
               {STATUS_VALUES.map((statusVal) => (
                 <option key={statusVal} value={statusVal}>
@@ -1088,7 +1101,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
               <select
                 value={newLinkedRepo}
                 onChange={(e) => setNewLinkedRepo(e.target.value)}
-                className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+                className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
               >
                 <option value="">-- No linked repository (manual logging) --</option>
                 {availableRepos.map((repo) => (
@@ -1139,7 +1152,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
               required
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
             />
           </div>
 
@@ -1155,7 +1168,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                   setEditLinkedRepo('');
                 }
               }}
-              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
             >
               {DOMAIN_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -1171,7 +1184,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
             <select
               value={editStatus}
               onChange={(e) => setEditStatus(e.target.value as ProjectStatus)}
-              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+              className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
             >
               {STATUS_VALUES.map((statusVal) => (
                 <option key={statusVal} value={statusVal}>
@@ -1190,7 +1203,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
               <select
                 value={editLinkedRepo}
                 onChange={(e) => setEditLinkedRepo(e.target.value)}
-                className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-hidden focus:ring-1 focus:ring-ledger-blue"
+                className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
               >
                 <option value="">-- None (manual activity logging) --</option>
                 {availableRepos.map((repo) => (

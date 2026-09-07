@@ -41,6 +41,11 @@ export const watchlistItems = sqliteTable('watchlist_items', {
   releaseDate: text('release_date'), // YYYY-MM-DD
   mediaType: text('media_type', { enum: ['movie', 'tv'] }).default('movie'),
   overview: text('overview'),
+  currentEpisode: integer('current_episode').default(0),
+  totalEpisodes: integer('total_episodes'),
+  autoIncrement: integer('auto_increment').default(0),
+  airDay: integer('air_day'),
+  lastAirDate: text('last_air_date'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });

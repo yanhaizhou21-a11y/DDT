@@ -174,6 +174,8 @@ const SidebarItem = React.memo(function SidebarItem({
           isExpanded ? 'px-3' : 'justify-center px-0'
         )}
         title={!isExpanded ? item.label : undefined}
+        aria-label={item.label}
+        aria-current={isActive ? 'page' : undefined}
       >
         <div
           className={cn(

@@ -165,7 +165,7 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
   const embed = recapData?.discordPayload.embeds[0];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth="max-w-4xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Discord Daily Activity Recap" maxWidth="max-w-4xl">
       <div className="space-y-5 -mt-2">
         {/* Custom Header with Discord Branding */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-rule/70 gap-3">
@@ -190,6 +190,7 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
               onClick={() => jumpDay(-1)}
               className="p-1 text-ink-soft hover:text-ink rounded hover:bg-card transition-colors"
               title="Previous Day"
+              aria-label="Previous Day"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -198,7 +199,8 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
               type="date"
               value={selectedDate}
               onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-              className="bg-card text-xs font-mono font-semibold text-ink px-2 py-1 rounded border border-rule/60 focus:outline-hidden"
+              aria-label="Select recap date"
+              className="bg-card text-xs font-mono font-semibold text-ink px-2 py-1 rounded border border-rule/60 focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
             />
 
             <button
@@ -206,6 +208,7 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
               onClick={() => jumpDay(1)}
               className="p-1 text-ink-soft hover:text-ink rounded hover:bg-card transition-colors"
               title="Next Day"
+              aria-label="Next Day"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -313,13 +316,14 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
                 placeholder={maskedSavedUrl || 'https://discord.com/api/webhooks/...'}
-                className="w-full pl-3 pr-10 py-2 bg-card border border-rule/80 rounded-lg text-xs font-mono text-ink placeholder:text-ink-soft/40 focus:outline-hidden focus:ring-1 focus:ring-[#5865F2]"
+                className="w-full pl-3 pr-10 py-2 bg-card border border-rule/80 rounded-lg text-xs font-mono text-ink placeholder:text-ink-soft/40 focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
               />
               <button
                 type="button"
                 onClick={() => setShowWebhookUrl(!showWebhookUrl)}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink p-1"
                 title={showWebhookUrl ? 'Hide URL' : 'Show URL'}
+                aria-label={showWebhookUrl ? 'Hide URL' : 'Show URL'}
               >
                 {showWebhookUrl ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
@@ -352,7 +356,7 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
               value={customNote}
               onChange={(e) => setCustomNote(e.target.value)}
               placeholder="e.g. Productive Friday shipping the project tracker..."
-              className="w-full p-2 bg-card border border-rule/80 rounded-lg text-xs font-sans text-ink placeholder:text-ink-soft/40 focus:outline-hidden focus:ring-1 focus:ring-[#5865F2] resize-none"
+              className="w-full p-2 bg-card border border-rule/80 rounded-lg text-xs font-sans text-ink placeholder:text-ink-soft/40 focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 resize-none"
             />
           </div>
         </div>

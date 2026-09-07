@@ -426,7 +426,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
             placeholder="Search titles..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 bg-card border border-rule rounded-lg text-xs font-sans text-ink placeholder:text-ink-soft/50 focus:outline-hidden focus:border-ledger-blue shadow-subtle"
+            className="w-full pl-9 pr-3 py-1.5 bg-card border border-rule rounded-lg text-xs font-sans text-ink placeholder:text-ink-soft/50 focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 shadow-subtle"
           />
         </div>
       </div>
@@ -646,7 +646,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                     value={rawgQuery}
                     onChange={(e) => setRawgQuery(e.target.value)}
                     placeholder="Search RAWG database (e.g. Elden Ring, Wuthering Waves)..."
-                    className="w-full pl-9 pr-3 py-2 bg-paper border border-rule rounded-md text-sm text-ink focus:outline-hidden"
+                    className="w-full pl-9 pr-3 py-2 bg-paper border border-rule rounded-md text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                   />
                 </div>
                 <button
@@ -702,7 +702,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                   value={gameName}
                   onChange={(e) => setGameName(e.target.value)}
                   placeholder="Or type custom game title directly..."
-                  className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm text-ink focus:outline-hidden"
+                  className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                 />
               </div>
             </div>
@@ -827,7 +827,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                   value={coverUrl || ''}
                   onChange={(e) => setCoverUrl(e.target.value.trim() || null)}
                   placeholder="https://... (paste direct image URL e.g. .jpg, .png, .webp)"
-                  className="w-full px-3 py-1.5 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+                  className="w-full px-3 py-1.5 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                 />
               </div>
             )}
@@ -912,7 +912,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                       max="10000"
                       value={inputHours}
                       onChange={(e) => setInputHours(e.target.value)}
-                      className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                     />
                   </div>
                   <div>
@@ -925,7 +925,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                       max="59"
                       value={inputMinutes}
                       onChange={(e) => setInputMinutes(e.target.value)}
-                      className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                     />
                   </div>
                 </div>
@@ -988,7 +988,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                     placeholder="e.g. 252.5"
                     value={decimalHours}
                     onChange={(e) => setDecimalHours(e.target.value)}
-                    className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-hidden"
+                    className="w-full px-3 py-2 bg-paper border border-rule rounded-md text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                   />
                 </div>
 
@@ -1139,7 +1139,7 @@ export const GamesPage: React.FC<GamesPageProps> = () => {
                     value={editCoverUrl}
                     onChange={(e) => setEditCoverUrl(e.target.value)}
                     placeholder="https://... (paste direct image URL)"
-                    className="flex-1 px-3 py-2 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-hidden"
+                    className="flex-1 px-3 py-2 bg-card border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
                   />
                   {editCoverUrl && (
                     <button

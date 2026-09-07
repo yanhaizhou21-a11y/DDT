@@ -221,6 +221,19 @@ export async function updateWatchlistItem(id: string, updates: Partial<Watchlist
   return handleResponse<{ success: boolean }>(res);
 }
 
+export async function updateWatchlistEpisodes(
+  id: string,
+  action: 'increment' | 'decrement' | 'complete' | 'reset' | 'set',
+  episode?: number
+): Promise<{ success: boolean; id: string; currentEpisode: number; status: 'watching' | 'want' | 'watched' }> {
+  const res = await fetch(`${API_BASE}/watchlist/${id}/episodes`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, episode }),
+  });
+  return handleResponse<{ success: boolean; id: string; currentEpisode: number; status: 'watching' | 'want' | 'watched' }>(res);
+}
+
 export async function deleteWatchlistItem(id: string): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/watchlist/${id}`, { method: 'DELETE' });
   return handleResponse<{ success: boolean }>(res);

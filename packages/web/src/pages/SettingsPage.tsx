@@ -284,7 +284,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                     placeholder="e.g. torvalds or octocat"
                     value={githubUsername}
                     onChange={(e) => setGithubUsername(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-hidden font-mono"
+                    className="w-full px-3 py-2 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 font-mono"
                   />
                 </div>
 
@@ -310,7 +310,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                         placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                         value={githubToken}
                         onChange={(e) => setGithubToken(e.target.value)}
-                        className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-hidden font-mono"
+                        className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-md focus:bg-card focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 font-mono"
                       />
                       <button
                         type="button"
@@ -395,7 +395,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                       placeholder="TMDB API Key (32 hex characters) or Bearer Token"
                       value={tmdbKey}
                       onChange={(e) => setTmdbKey(e.target.value)}
-                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
+                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 font-mono"
                     />
                     <button
                       type="button"
@@ -478,7 +478,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                       placeholder="RAWG API Key"
                       value={rawgKey}
                       onChange={(e) => setRawgKey(e.target.value)}
-                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none font-mono"
+                      className="w-full px-3 py-2 pr-9 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 font-mono"
                     />
                     <button
                       type="button"

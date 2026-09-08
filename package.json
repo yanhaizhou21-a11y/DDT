@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Daily Dashboard Tracker — a local-first personal ledger dashboard",
+  "bin": {
+    "ddt": "./packages/cli/dist/cli.js"
+  },
   "scripts": {
+    "ddt": "pnpm --filter ddt start",
     "dev:server": "pnpm --filter @ddt/server dev",
     "dev:web": "pnpm --filter @ddt/web dev",
     "build": "pnpm --filter @ddt/server build && pnpm --filter @ddt/web build && pnpm --filter ddt build",

@@ -141,13 +141,18 @@ pnpm install
 
 # Build all packages (server, web SPA, CLI)
 pnpm build
+
+# Link CLI command globally (run `ddt` directly from any terminal)
+npm link ./packages/cli
 ```
 
 ### 2. Launch DDT
 
 ```bash
-# Launch server & open browser automatically via CLI binary
-pnpm start
+# Launch server & open browser automatically
+ddt
+
+# (Or run via pnpm if preferred: pnpm start)
 
 # Or launch development servers with hot-module reload:
 pnpm dev:server   # API Server on http://127.0.0.1:3001

@@ -29,6 +29,8 @@ import {
 
 import { cn } from '../lib/utils';
 
+export type EditorFontSize = 'normal' | 'large' | 'huge';
+
 export interface RichTextEditorProps {
   value: string;
   onChange: (content: string) => void;
@@ -42,6 +44,7 @@ export interface RichTextEditorProps {
   hideHeaderSave?: boolean;
   minHeight?: string;
   onOpenTemplates?: () => void;
+  initialFontSize?: EditorFontSize;
 }
 
 export function RichTextEditor({
@@ -57,12 +60,18 @@ export function RichTextEditor({
   hideHeaderSave = false,
   minHeight,
   onOpenTemplates,
+  initialFontSize,
 }: RichTextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview'>(() => {
     if (defaultViewMode) return defaultViewMode;
     if (compact && value.trim()) return 'preview';
     return 'edit';
+  });
+  const [fontSize, setFontSize] = useState<EditorFontSize>(() => {
+    if (initialFontSize) return initialFontSize;
+    if (compact) return 'normal';
+    return 'large'; // Default to large so it feels noticeably bigger immediately
   });
   const [history, setHistory] = useState<string[]>([value]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -167,7 +176,65 @@ export function RichTextEditor({
     }
   };
 
-  const resolvedMinHeight = minHeight || (compact ? 'min-h-[170px]' : 'min-h-[380px]');
+  const resolvedMinHeight = minHeight || (compact ? 'min-h-[170px]' : 'min-h-[420px]');
+
+  const fontSizeConfig = {
+    normal: {
+      label: 'Normal',
+      textareaClass: 'text-base md:text-lg leading-relaxed',
+      proseClass: 'text-base md:text-lg leading-relaxed',
+      h1Class: 'text-2xl md:text-3xl font-serif font-bold tracking-tight',
+      h2Class: 'text-xl md:text-2xl font-serif font-bold tracking-tight',
+      h3Class: 'text-lg md:text-xl font-serif font-semibold',
+      pClass: 'text-base md:text-lg leading-relaxed mb-3.5 font-sans',
+      listClass: 'text-base md:text-lg space-y-2 my-2.5',
+      quoteClass: 'text-base md:text-lg pl-4 py-2 my-3.5 italic text-ink-soft',
+      codeInlineClass: 'px-1.5 py-0.5 rounded bg-paper text-ink font-mono text-xs md:text-sm border border-rule',
+      codeBlockClass: 'p-3.5 my-3 rounded-lg bg-paper text-ink font-mono text-xs md:text-sm overflow-x-auto border border-rule',
+    },
+    large: {
+      label: 'Large',
+      textareaClass: 'text-lg md:text-xl lg:text-2xl leading-relaxed',
+      proseClass: 'text-lg md:text-xl lg:text-2xl leading-relaxed',
+      h1Class: 'text-3xl md:text-4xl font-serif font-bold tracking-tight',
+      h2Class: 'text-2xl md:text-3xl font-serif font-bold tracking-tight',
+      h3Class: 'text-xl md:text-2xl font-serif font-semibold',
+      pClass: 'text-lg md:text-xl lg:text-2xl leading-relaxed mb-4 font-sans',
+      listClass: 'text-lg md:text-xl lg:text-2xl space-y-2.5 my-3',
+      quoteClass: 'text-lg md:text-xl lg:text-2xl pl-5 py-2.5 my-4 italic text-ink-soft',
+      codeInlineClass: 'px-2 py-0.5 rounded bg-paper text-ink font-mono text-sm md:text-base border border-rule',
+      codeBlockClass: 'p-4 my-4 rounded-lg bg-paper text-ink font-mono text-sm md:text-base overflow-x-auto border border-rule',
+    },
+    huge: {
+      label: 'Huge',
+      textareaClass: 'text-xl md:text-2xl lg:text-3xl leading-relaxed',
+      proseClass: 'text-xl md:text-2xl lg:text-3xl leading-relaxed',
+      h1Class: 'text-4xl md:text-5xl font-serif font-bold tracking-tight',
+      h2Class: 'text-3xl md:text-4xl font-serif font-bold tracking-tight',
+      h3Class: 'text-2xl md:text-3xl font-serif font-semibold',
+      pClass: 'text-xl md:text-2xl lg:text-3xl leading-relaxed mb-5 font-sans',
+      listClass: 'text-xl md:text-2xl lg:text-3xl space-y-3 my-4',
+      quoteClass: 'text-xl md:text-2xl lg:text-3xl pl-6 py-3 my-5 italic text-ink-soft',
+      codeInlineClass: 'px-2 py-0.5 rounded bg-paper text-ink font-mono text-base md:text-lg border border-rule',
+      codeBlockClass: 'p-5 my-5 rounded-lg bg-paper text-ink font-mono text-base md:text-lg overflow-x-auto border border-rule',
+    },
+  };
+
+  const activeFont = compact
+    ? {
+        label: 'Compact',
+        textareaClass: 'text-xs sm:text-sm leading-relaxed',
+        proseClass: 'text-xs sm:text-sm leading-relaxed',
+        h1Class: 'text-lg font-serif font-bold tracking-tight',
+        h2Class: 'text-base font-serif font-bold tracking-tight',
+        h3Class: 'text-sm font-serif font-semibold',
+        pClass: 'text-xs sm:text-sm leading-relaxed mb-2 font-sans',
+        listClass: 'text-xs sm:text-sm space-y-1 my-1.5',
+        quoteClass: 'text-xs sm:text-sm pl-3 py-1 my-2 italic text-ink-soft',
+        codeInlineClass: 'px-1 py-0.5 rounded bg-paper text-ink font-mono text-[11px] border border-rule',
+        codeBlockClass: 'p-2.5 my-2 rounded bg-paper text-ink font-mono text-xs overflow-x-auto border border-rule',
+      }
+    : fontSizeConfig[fontSize];
 
   return (
     <div
@@ -344,8 +411,53 @@ export function RichTextEditor({
           )}
         </div>
 
-        {/* View Mode Pills, Save Status & Action */}
+        {/* View Mode Pills, Font Sizing, Save Status & Action */}
         <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Font Size Switcher (only on full editor) */}
+          {!compact && (
+            <div className="flex items-center p-0.5 rounded-lg bg-paper border border-rule" title="Adjust Editor Text Size">
+              <button
+                type="button"
+                onClick={() => setFontSize('normal')}
+                className={cn(
+                  'px-2 py-0.5 sm:py-1 text-xs font-mono font-medium rounded-md transition-all',
+                  fontSize === 'normal'
+                    ? 'bg-card text-ink shadow-xs font-bold'
+                    : 'text-ink-soft hover:text-ink'
+                )}
+                title="Normal text size (16-18px)"
+              >
+                Aa
+              </button>
+              <button
+                type="button"
+                onClick={() => setFontSize('large')}
+                className={cn(
+                  'px-2 py-0.5 sm:py-1 text-xs font-mono font-medium rounded-md transition-all',
+                  fontSize === 'large'
+                    ? 'bg-card text-ledger-blue shadow-xs font-bold'
+                    : 'text-ink-soft hover:text-ink'
+                )}
+                title="Large text size (18-22px, recommended for Split View)"
+              >
+                Aa+
+              </button>
+              <button
+                type="button"
+                onClick={() => setFontSize('huge')}
+                className={cn(
+                  'px-2 py-0.5 sm:py-1 text-xs font-mono font-medium rounded-md transition-all',
+                  fontSize === 'huge'
+                    ? 'bg-card text-ink shadow-xs font-bold'
+                    : 'text-ink-soft hover:text-ink'
+                )}
+                title="Huge text size (20-26px)"
+              >
+                Aa++
+              </button>
+            </div>
+          )}
+
           {/* Mode Switcher */}
           <div className="flex items-center p-0.5 rounded-lg bg-paper border border-rule">
             <button
@@ -429,8 +541,9 @@ export function RichTextEditor({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               className={cn(
-                'w-full h-full bg-transparent text-ink font-sans leading-relaxed resize-none focus:outline-hidden placeholder:text-ink-soft/40 selection:bg-ledger-blue selection:text-paper',
-                compact ? 'p-3.5 text-xs sm:text-sm' : 'p-4 md:p-6 text-sm md:text-base',
+                'w-full h-full bg-transparent text-ink font-sans resize-none focus:outline-hidden placeholder:text-ink-soft/40 selection:bg-ledger-blue selection:text-paper transition-all',
+                activeFont.textareaClass,
+                compact ? 'p-3.5' : 'p-5 md:p-8',
                 resolvedMinHeight
               )}
             />
@@ -444,53 +557,53 @@ export function RichTextEditor({
               if (compact && !value.trim()) setViewMode('edit');
             }}
             className={cn(
-              'h-full overflow-y-auto bg-card-surface selection:bg-ledger-blue selection:text-paper',
-              compact ? 'p-3.5' : 'p-4 md:p-6',
+              'h-full overflow-y-auto bg-card-surface selection:bg-ledger-blue selection:text-paper transition-all',
+              compact ? 'p-3.5' : 'p-5 md:p-8',
               viewMode === 'split' && 'border-l border-rule',
               resolvedMinHeight
             )}
           >
             {value.trim() ? (
-              <div className="journal-prose prose max-w-none text-ink font-sans text-xs sm:text-sm leading-relaxed space-y-2">
+              <div className={cn('journal-prose prose max-w-none text-ink font-sans', activeFont.proseClass)}>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
                     h1: ({ node, ...props }) => (
-                      <h1 className="text-xl md:text-2xl font-serif font-bold text-ink border-b border-rule/70 pb-2 mt-4 mb-3 tracking-tight" {...props} />
+                      <h1 className={cn(activeFont.h1Class, 'text-ink border-b border-rule/70 pb-2 mt-4 mb-3')} {...props} />
                     ),
                     h2: ({ node, ...props }) => (
-                      <h2 className="text-lg md:text-xl font-serif font-bold text-ink mt-4 mb-2 tracking-tight" {...props} />
+                      <h2 className={cn(activeFont.h2Class, 'text-ink mt-5 mb-2.5')} {...props} />
                     ),
                     h3: ({ node, ...props }) => (
-                      <h3 className="text-sm md:text-base font-serif font-semibold text-ink mt-3 mb-1.5" {...props} />
+                      <h3 className={cn(activeFont.h3Class, 'text-ink mt-4 mb-2')} {...props} />
                     ),
                     p: ({ node, ...props }) => (
-                      <p className="text-xs md:text-sm text-ink leading-relaxed mb-2.5 font-sans" {...props} />
+                      <p className={cn(activeFont.pClass, 'text-ink')} {...props} />
                     ),
                     strong: ({ node, ...props }) => <strong className="font-bold text-ink" {...props} />,
                     em: ({ node, ...props }) => <em className="italic text-ink" {...props} />,
                     ul: ({ node, ...props }) => (
-                      <ul className="list-disc pl-5 my-2 space-y-1 text-xs md:text-sm text-ink marker:text-ledger-blue" {...props} />
+                      <ul className={cn('list-disc pl-6 marker:text-ledger-blue text-ink', activeFont.listClass)} {...props} />
                     ),
                     ol: ({ node, ...props }) => (
-                      <ol className="list-decimal pl-5 my-2 space-y-1 text-xs md:text-sm text-ink marker:text-ledger-blue font-mono" {...props} />
+                      <ol className={cn('list-decimal pl-6 marker:text-ledger-blue font-mono text-ink', activeFont.listClass)} {...props} />
                     ),
                     li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
                     blockquote: ({ node, ...props }) => (
-                      <blockquote className="border-l-4 border-ledger-blue bg-paper/60 pl-3.5 py-1.5 my-3 italic text-ink-soft text-xs md:text-sm rounded-r" {...props} />
+                      <blockquote className={cn('border-l-4 border-ledger-blue bg-paper/60 rounded-r', activeFont.quoteClass)} {...props} />
                     ),
                     code: ({ node, inline, className, children, ...props }: any) => {
                       return inline ? (
-                        <code className="px-1.5 py-0.5 rounded bg-paper text-ink font-mono text-[11px] border border-rule" {...props}>
+                        <code className={activeFont.codeInlineClass} {...props}>
                           {children}
                         </code>
                       ) : (
-                        <pre className="p-3 my-2 rounded-lg bg-paper text-ink font-mono text-xs overflow-x-auto border border-rule">
+                        <pre className={activeFont.codeBlockClass}>
                           <code {...props}>{children}</code>
                         </pre>
                       );
                     },
-                    hr: ({ node, ...props }) => <hr className="my-4 border-rule" {...props} />,
+                    hr: ({ node, ...props }) => <hr className="my-6 border-rule" {...props} />,
                     input: ({ node, ...props }) => (
                       <input type="checkbox" className="mr-2 rounded border-rule text-ledger-blue focus:ring-ledger-blue accent-ledger-blue" {...props} />
                     ),
@@ -498,12 +611,12 @@ export function RichTextEditor({
                       <a className="text-ledger-blue underline decoration-ledger-blue/40 hover:decoration-ledger-blue hover:text-ledger-hover transition-colors" target="_blank" rel="noopener noreferrer" {...props} />
                     ),
                     table: ({ node, ...props }) => (
-                      <div className="overflow-x-auto my-3 border border-rule rounded-lg">
-                        <table className="w-full text-left border-collapse text-xs font-mono" {...props} />
+                      <div className="overflow-x-auto my-4 border border-rule rounded-lg">
+                        <table className="w-full text-left border-collapse text-sm font-mono" {...props} />
                       </div>
                     ),
-                    th: ({ node, ...props }) => <th className="bg-paper p-2 font-bold border-b border-rule text-ink" {...props} />,
-                    td: ({ node, ...props }) => <td className="p-2 border-b border-rule/60 text-ink-soft" {...props} />,
+                    th: ({ node, ...props }) => <th className="bg-paper p-3 font-bold border-b border-rule text-ink" {...props} />,
+                    td: ({ node, ...props }) => <td className="p-3 border-b border-rule/60 text-ink-soft" {...props} />,
                   }}
                 >
                   {value}
@@ -512,10 +625,10 @@ export function RichTextEditor({
             ) : (
               <div
                 onClick={() => setViewMode('edit')}
-                className="flex flex-col items-center justify-center h-full text-center text-ink-soft/50 py-8 cursor-pointer hover:text-ink-soft transition-colors"
+                className="flex flex-col items-center justify-center h-full text-center text-ink-soft/50 py-12 cursor-pointer hover:text-ink-soft transition-colors"
               >
-                <Sparkles className="w-5 h-5 mb-1.5 opacity-40" />
-                <p className="text-xs">No entry yet. Click here or switch to Write to start journaling.</p>
+                <Sparkles className="w-6 h-6 mb-2 opacity-40" />
+                <p className="text-sm">No entry yet. Click here or switch to Write to start journaling.</p>
               </div>
             )}
           </div>

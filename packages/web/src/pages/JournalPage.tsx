@@ -11,6 +11,7 @@ import { Header } from '../components/Header';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { ConfirmDialog } from '../components/AlertDialog';
 import { DatePicker } from '../components/DatePicker';
+import { cn } from '../lib/utils';
 import {
   Calendar as CalendarIcon,
   Trash2,
@@ -21,6 +22,8 @@ import {
   Save,
   CheckCircle2,
   FileText,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { JournalTemplatesModal } from '../components/JournalTemplatesModal';
 import { DiscordRecapModal, DiscordIcon } from '../components/DiscordRecapModal';
@@ -41,6 +44,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleSelectTemplate = (templateContent: string, mode: 'replace' | 'append') => {
     if (mode === 'append' && content.trim()) {
@@ -182,93 +186,115 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Sidebar: Calendar & Past Entries List (4 cols) */}
-        <div className="lg:col-span-4 space-y-4">
-          {/* Date Picker Card */}
-          <div className="ledger-card p-4">
-            <div className="flex items-center justify-between pb-3 border-b border-rule mb-3">
-              <span className="font-serif font-semibold text-sm text-ink flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-ledger-blue" />
-                Select Date
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => jumpDay(-1)}
-                  className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
-                  title="Previous day"
-                  aria-label="Previous day"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => jumpDay(1)}
-                  className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
-                  title="Next day"
-                  aria-label="Next day"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+        {!isSidebarCollapsed && (
+          <div className="lg:col-span-4 space-y-4 transition-all">
+            {/* Date Picker Card */}
+            <div className="ledger-card p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-rule mb-3">
+                <span className="font-serif font-semibold text-sm text-ink flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4 text-ledger-blue" />
+                  Select Date
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => jumpDay(-1)}
+                    className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
+                    title="Previous day"
+                    aria-label="Previous day"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => jumpDay(1)}
+                    className="p-1 rounded-md hover:bg-paper text-ink-soft hover:text-ink transition-colors"
+                    title="Next day"
+                    aria-label="Next day"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <DatePicker
+                value={selectedDate}
+                onChange={(str) => {
+                  if (str) setSelectedDate(str);
+                }}
+                aria-label="Select journal date"
+              />
+            </div>
+
+            {/* Past Entries List */}
+            <div className="ledger-card p-4">
+              <h3 className="font-serif font-semibold text-sm text-ink pb-2 border-b border-rule mb-3 flex items-center justify-between">
+                <span>Past Entries</span>
+                <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-paper text-ink-soft border border-rule/60">
+                  {entriesList.length}
+                </span>
+              </h3>
+
+              <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
+                {entriesList.map((entry) => {
+                  const isSelected = entry.date === selectedDate;
+                  return (
+                    <button
+                      key={entry.date}
+                      onClick={() => setSelectedDate(entry.date)}
+                      className={`w-full text-left p-3 rounded-lg border transition-all ${
+                        isSelected
+                          ? 'bg-paper border-ledger-blue text-ink shadow-subtle'
+                          : 'bg-card border-rule/70 text-ink hover:border-ink-soft/60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-mono mb-1">
+                        <span className="font-semibold">{entry.date}</span>
+                        <span className="text-ink-soft">{entry.wordCount} words</span>
+                      </div>
+                      {entry.preview ? (
+                        <p className="text-xs text-ink-soft line-clamp-2 font-sans leading-snug">{entry.preview}</p>
+                      ) : (
+                        <p className="text-xs text-ink-soft/50 italic">Empty entry</p>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {entriesList.length === 0 && (
+                  <div className="py-8 text-center text-ink-soft">
+                    <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-xs font-mono">No previous entries logged yet.</p>
+                  </div>
+                )}
               </div>
             </div>
-
-            <DatePicker
-              value={selectedDate}
-              onChange={(str) => {
-                if (str) setSelectedDate(str);
-              }}
-              aria-label="Select journal date"
-            />
           </div>
+        )}
 
-          {/* Past Entries List */}
-          <div className="ledger-card p-4">
-            <h3 className="font-serif font-semibold text-sm text-ink pb-2 border-b border-rule mb-3 flex items-center justify-between">
-              <span>Past Entries</span>
-              <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-paper text-ink-soft border border-rule/60">
-                {entriesList.length}
-              </span>
-            </h3>
+        {/* Right Area: Rich Text & Markdown Editor (8 cols or 12 cols when focused) */}
+        <div className={cn('space-y-4 transition-all', isSidebarCollapsed ? 'lg:col-span-12' : 'lg:col-span-8')}>
+          <div className="flex flex-wrap items-center justify-between gap-2.5 px-1">
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-paper hover:bg-card border border-rule hover:border-ledger-blue rounded-lg text-xs font-mono text-ink transition-all shadow-xs"
+                title={isSidebarCollapsed ? 'Show Sidebar (Calendar & Entries)' : 'Focus Mode (Expand Editor to Full Width)'}
+                aria-label={isSidebarCollapsed ? 'Show Sidebar' : 'Focus Mode'}
+              >
+                {isSidebarCollapsed ? (
+                  <>
+                    <PanelLeftOpen className="w-3.5 h-3.5 text-ledger-blue" />
+                    <span className="hidden sm:inline">Show Sidebar</span>
+                  </>
+                ) : (
+                  <>
+                    <PanelLeftClose className="w-3.5 h-3.5 text-ink-soft" />
+                    <span className="hidden sm:inline">Focus Full Width</span>
+                  </>
+                )}
+              </button>
 
-            <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
-              {entriesList.map((entry) => {
-                const isSelected = entry.date === selectedDate;
-                return (
-                  <button
-                    key={entry.date}
-                    onClick={() => setSelectedDate(entry.date)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all ${
-                      isSelected
-                        ? 'bg-paper border-ledger-blue text-ink shadow-subtle'
-                        : 'bg-card border-rule/70 text-ink hover:border-ink-soft/60'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-xs font-mono mb-1">
-                      <span className="font-semibold">{entry.date}</span>
-                      <span className="text-ink-soft">{entry.wordCount} words</span>
-                    </div>
-                    {entry.preview ? (
-                      <p className="text-xs text-ink-soft line-clamp-2 font-sans leading-snug">{entry.preview}</p>
-                    ) : (
-                      <p className="text-xs text-ink-soft/50 italic">Empty entry</p>
-                    )}
-                  </button>
-                );
-              })}
-
-              {entriesList.length === 0 && (
-                <div className="py-8 text-center text-ink-soft">
-                  <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-xs font-mono">No previous entries logged yet.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Area: Rich Text & Markdown Editor (8 cols) */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-3">
-              <h2 className="font-serif text-xl font-bold text-ink">
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-ink">
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
@@ -343,6 +369,7 @@ export const JournalPage: React.FC<JournalPageProps> = () => {
             onOpenTemplates={() => setIsTemplateModalOpen(true)}
             saveStatus={saveStatus}
             lastSavedAt={lastSavedTime}
+            minHeight={isSidebarCollapsed ? 'min-h-[580px]' : 'min-h-[460px]'}
             placeholder="Write your thoughts, daily journal, achievements, ideas, or notes here..."
           />
         </div>

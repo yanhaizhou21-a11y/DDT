@@ -9,6 +9,7 @@ import {
   Check,
   Sparkles,
   ArrowRight,
+  ListTodo,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -23,59 +24,57 @@ export interface JournalTemplate {
 
 export const JOURNAL_TEMPLATES: JournalTemplate[] = [
   {
-    id: 'daily-journal',
-    title: 'Daily Journal & Reflection',
+    id: 'daily-points',
+    title: 'Daily Journal: Simple Points',
     category: 'daily',
-    icon: BookOpen,
-    description: 'Structured morning intentions, daily wins, lessons learned, and gratitude.',
-    content: (dateStr: string) => `# Daily Journal — ${dateStr}
+    icon: ListTodo,
+    description: 'Minimalist bullet points: single priority, output shipped, friction, and next step.',
+    content: (dateStr: string) => `# Daily Points: ${dateStr}
 
-### 🌅 Morning Intentions
-- **Primary Focus:** [What is the single most important task today?]
-- **Mindset:** [Calm, deliberate execution]
+## Priority
+- [Single primary task to complete today]
 
-### ⚡ Daily Highlights & Output
-- [Key feature shipped, asset exported, or task completed]
-- [Positive moment or breakthrough]
+## Shipped & Done
+- [Completed deliverable, commit, or milestone]
+- [Bug resolved or task closed]
 
-### 💡 Reflections & Adjustments
-- [What was difficult or took longer than planned?]
-- [Adjustment for tomorrow]
+## Blockers & Friction
+- [What stalled or took longer than planned, and why]
 
-### 🙏 Daily Gratitude
-- [Something appreciated today]
+## Tomorrow
+- [First action item for tomorrow morning]
 `,
   },
   {
-    id: 'email-draft',
-    title: 'Email / Client Update',
-    category: 'email',
-    icon: Mail,
-    description: 'Clean professional email update with context, deliverables, and action items.',
-    content: () => `# Email Draft
+    id: 'daily-detailed',
+    title: 'Daily Journal: Detailed',
+    category: 'daily',
+    icon: BookOpen,
+    description: 'Substantive log: target outcomes, time-stamped work, architectural decisions, and reality check.',
+    content: (dateStr: string) => `# Daily Journal: ${dateStr}
 
-**To:** [client-or-team@example.com]  
-**Subject:** Project Update: [Deliverable Name / Sprint Milestone]  
+## Target Outcome
+- [Single concrete deliverable that defines today as productive]
 
-Hi [Name],
+## Log of Work
+- [09:00 - 12:00] [Milestone, feature, or review completed]
+- [13:30 - 16:00] [Implementation, debugging root cause, or refactor]
+- [16:30 - 18:00] [Verification, deployment, or documentation]
 
-I hope you are having a productive week.
+## Decisions & Rationale
+- **Decision:** [What was chosen]
+- **Why:** [Constraint, benchmark, or reason behind the choice]
+- **Alternative rejected:** [What was skipped and why]
 
-### 📌 Summary
-Here is a quick status update on where things stand with **[Project Name]**.
+## Blockers & Friction
+- [Issue encountered, delay, or external dependency waiting on]
 
-### 🔍 Completed Deliverables
-- **[Item 1]:** [Brief description of what was completed or shipped]
-- **[Item 2]:** [Asset or milestone ready for review]
+## Reality Check
+- **Output:** [What actually shipped vs. what was planned]
+- **Focus rating (1-5):** [Score] - [One sentence on what helped or hurt focus]
 
-### 🎯 Next Steps & Feedback
-- [ ] [Action required from recipient, if any]
-- [ ] [Upcoming milestone target date]
-
-Please let me know if you have any feedback or questions.
-
-Best regards,  
-[Your Name]
+## First Move Tomorrow
+- [Exact file, command, or action to start with tomorrow morning]
 `,
   },
   {
@@ -84,20 +83,20 @@ Best regards,
     category: 'progress',
     icon: TrendingUp,
     description: 'Sprint progress tracking: milestone status, shipped items, blockers, and tomorrow’s goals.',
-    content: () => `# Project Progress Update
+    content: (dateStr: string) => `# Project Progress Update: ${dateStr}
 
-### 🎯 Milestone & Sprint Status
+## Milestone Status
 - **Current Milestone:** [Sprint Goal / Deliverable]
-- **Progress:** On Track 🟢
+- **Status:** On track / Blocked / At risk
 
-### ✅ Shipped Today
-- [Specific feature, design revision, cut, or level built]
-- [Bug resolved or asset exported]
+## Shipped Today
+- [Specific feature, revision, or asset completed]
+- [Bug resolved or test verified]
 
-### 🚧 Blockers & Impediments
-- None currently / [Details on any blocker requiring resolution]
+## Blockers
+- [Details on any blocker requiring resolution, or None]
 
-### 🔜 Priorities for Tomorrow
+## Priorities for Tomorrow
 - [ ] [Priority 1: Key deliverable]
 - [ ] [Priority 2: Follow-up or polish]
 `,
@@ -108,22 +107,49 @@ Best regards,
     category: 'meeting',
     icon: Users,
     description: 'Capture attendees, key decisions, takeaways, and owned action items.',
-    content: (dateStr: string) => `# Meeting Notes — ${dateStr}
+    content: (dateStr: string) => `# Meeting Notes: ${dateStr}
 
-**Topic:** [Sync / Client Review / Planning]  
+**Topic:** [Sync / Review / Planning]  
 **Attendees:** [Names]  
 
-### 📝 Key Discussion Points
-1. [Key point discussed]
-2. [Point or feedback raised]
+## Key Discussion Points
+1. [Point discussed]
+2. [Feedback or data point raised]
 
-### 💡 Decisions Made
+## Decisions Made
 - [Decision 1 agreed upon]
 - [Decision 2 agreed upon]
 
-### ⚡ Action Items
-- [ ] [Action item 1] — **Owner:** [Name] — **Due:** [Date]
-- [ ] [Action item 2] — **Owner:** [Name] — **Due:** [Date]
+## Action Items
+- [ ] [Action item 1] - Owner: [Name] - Due: [Date]
+- [ ] [Action item 2] - Owner: [Name] - Due: [Date]
+`,
+  },
+  {
+    id: 'email-draft',
+    title: 'Email / Client Update',
+    category: 'email',
+    icon: Mail,
+    description: 'Clean professional email update with context, deliverables, and action items.',
+    content: () => `# Email Update
+
+**To:** [recipient@example.com]  
+**Subject:** Update: [Deliverable Name / Sprint Milestone]  
+
+Hi [Name],
+
+Here is the status update on [Project Name].
+
+## Completed Deliverables
+- [Item 1]: [Brief description of what was completed or shipped]
+- [Item 2]: [Asset or milestone ready for review]
+
+## Next Steps
+- [ ] [Action required from recipient, if any]
+- [ ] [Upcoming milestone target date]
+
+Best regards,  
+[Your Name]
 `,
   },
 ];
@@ -143,7 +169,7 @@ export const JournalTemplatesModal: React.FC<JournalTemplatesModalProps> = ({
   hasExistingContent,
   selectedDate,
 }) => {
-  const [selectedId, setSelectedId] = useState<string>('daily-journal');
+  const [selectedId, setSelectedId] = useState<string>('daily-points');
   const [insertMode, setInsertMode] = useState<'replace' | 'append'>('append');
 
   const selectedTemplate = JOURNAL_TEMPLATES.find((t) => t.id === selectedId) || JOURNAL_TEMPLATES[0];

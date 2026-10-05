@@ -9,6 +9,19 @@ import { Magnetic } from '../components/Magnetic';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { DiscordRecapModal, DiscordIcon } from '../components/DiscordRecapModal';
+import { DashboardKpiCard } from '../components/charts/DashboardKpiCard';
+import {
+  DashboardActivityAreaChart,
+  type DailyActivityPoint,
+} from '../components/charts/DashboardActivityAreaChart';
+import {
+  DashboardCategoryDonutChart,
+  type CategorySegment,
+} from '../components/charts/DashboardCategoryDonutChart';
+import {
+  DashboardVelocityBarChart,
+  type DailyVelocityData,
+} from '../components/charts/DashboardVelocityBarChart';
 import {
   GitCommit,
   BookOpen,
@@ -27,6 +40,10 @@ import {
   Send,
   Zap,
   Save,
+  Activity,
+  Layers,
+  BarChart3,
+  TrendingUp,
 } from 'lucide-react';
 
 

@@ -5,6 +5,7 @@ import type {
   ProjectWithStats,
   ProjectDetailResponse,
   GithubRepo,
+  GithubBranch,
   RouteTab,
 } from '../types';
 import {
@@ -16,6 +17,7 @@ import {
   logProjectActivity,
   deleteProjectActivity,
   fetchGithubRepos,
+  fetchRepoBranches,
   fetchSettings,
 } from '../api';
 import { Header } from '../components/Header';
@@ -52,6 +54,7 @@ import {
   Check,
   BarChart2,
   Grid,
+  Lock,
 } from 'lucide-react';
 
 interface ProjectsPageProps {
@@ -132,6 +135,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
   const [newDomain, setNewDomain] = useState<ProjectDomainType>('software');
   const [newStatus, setNewStatus] = useState<ProjectStatus>('not_started');
   const [newLinkedRepo, setNewLinkedRepo] = useState('');
+  const [newLinkedBranch, setNewLinkedBranch] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -141,7 +145,29 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
   const [editDomain, setEditDomain] = useState<ProjectDomainType>('software');
   const [editStatus, setEditStatus] = useState<ProjectStatus>('not_started');
   const [editLinkedRepo, setEditLinkedRepo] = useState('');
+  const [editLinkedBranch, setEditLinkedBranch] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Repository Branches Cache
+  const [branchesByRepo, setBranchesByRepo] = useState<Record<string, GithubBranch[]>>({});
+  const [loadingBranchesForRepo, setLoadingBranchesForRepo] = useState<string | null>(null);
+
+  const loadBranchesForRepo = async (repoFullName: string) => {
+    if (!repoFullName || !repoFullName.includes('/')) return;
+    if (branchesByRepo[repoFullName]) return;
+    try {
+      setLoadingBranchesForRepo(repoFullName);
+      const [owner, repo] = repoFullName.split('/');
+      const res = await fetchRepoBranches(owner, repo);
+      if (res?.branches) {
+        setBranchesByRepo((prev) => ({ ...prev, [repoFullName]: res.branches }));
+      }
+    } catch (err) {
+      console.error('Failed to load branches for repo', repoFullName, err);
+    } finally {
+      setLoadingBranchesForRepo(null);
+    }
+  };
 
   // Delete Confirm Dialog State
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -198,6 +224,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
 
       const detail = await fetchProject(id, force);
       setProjectDetail(detail);
+      if (detail.linkedRepo) {
+        loadBranchesForRepo(detail.linkedRepo);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load project details');
     } finally {
@@ -217,12 +246,31 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
     loadProjects();
   };
 
+  // Quick Branch Switcher from Project Detail
+  const handleQuickBranchChange = async (newBranch: string) => {
+    if (!projectDetail) return;
+    try {
+      setDetailLoading(true);
+      await updateProject(projectDetail.id, {
+        linkedBranch: newBranch ? newBranch.trim() : null,
+      });
+      await loadProjectDetail(projectDetail.id, true);
+      await loadProjects();
+    } catch (err: any) {
+      console.error('Failed to switch branch:', err);
+      setError(err.message || 'Failed to update branch');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   // Create Project
   const handleOpenCreateModal = () => {
     setNewName('');
     setNewDomain('software');
     setNewStatus('not_started');
     setNewLinkedRepo('');
+    setNewLinkedBranch('');
     setCreateError(null);
     setCreateModalOpen(true);
   };
@@ -242,6 +290,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
         domainType: newDomain,
         status: newStatus,
         linkedRepo: (newDomain === 'software' || newDomain === 'game_dev') && newLinkedRepo ? newLinkedRepo : null,
+        linkedBranch: (newDomain === 'software' || newDomain === 'game_dev') && newLinkedBranch ? newLinkedBranch : null,
       });
 
       setCreateModalOpen(false);
@@ -261,6 +310,10 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
     setEditDomain(project.domainType);
     setEditStatus(project.status);
     setEditLinkedRepo(project.linkedRepo || '');
+    setEditLinkedBranch(project.linkedBranch || '');
+    if (project.linkedRepo) {
+      loadBranchesForRepo(project.linkedRepo);
+    }
     setEditModalOpen(true);
   };
 
@@ -275,6 +328,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
         domainType: editDomain,
         status: editStatus,
         linkedRepo: (editDomain === 'software' || editDomain === 'game_dev') && editLinkedRepo ? editLinkedRepo : null,
+        linkedBranch: (editDomain === 'software' || editDomain === 'game_dev') && editLinkedBranch ? editLinkedBranch : null,
       });
 
       setEditModalOpen(false);
@@ -504,10 +558,24 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                         status={projectDetail.status}
                       />
                       {projectDetail.isRepoLinked && projectDetail.linkedRepo && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-ledger-blue bg-paper px-2 py-0.5 rounded border border-rule/60">
-                          <GitBranch className="w-3 h-3" />
-                          <span>{projectDetail.linkedRepo}</span>
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-mono text-ledger-blue bg-paper px-2 py-0.5 rounded border border-rule/60">
+                            <GitBranch className="w-3 h-3" />
+                            <span>{projectDetail.linkedRepo}</span>
+                            {projectDetail.linkedBranch && (
+                              <span className="text-ink font-semibold">@{projectDetail.linkedBranch}</span>
+                            )}
+                          </span>
+                          {availableRepos.find((r) => r.fullName === projectDetail.linkedRepo)?.private && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30"
+                              title="Private Repository"
+                            >
+                              <Lock className="w-2.5 h-2.5" />
+                              <span>Private Repo</span>
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -685,35 +753,78 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                       GitHub Repository Sync
                     </h3>
                   </div>
-                  <a
-                    href={`https://github.com/${projectDetail.linkedRepo}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-mono text-ledger-blue hover:underline flex items-center gap-1"
-                  >
-                    <span>{projectDetail.linkedRepo}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="flex items-center gap-2">
+                    {availableRepos.find((r) => r.fullName === projectDetail.linkedRepo)?.private && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                        <Lock className="w-2.5 h-2.5" />
+                        Private Repo
+                      </span>
+                    )}
+                    <a
+                      href={`https://github.com/${projectDetail.linkedRepo}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-mono text-ledger-blue hover:underline flex items-center gap-1"
+                    >
+                      <span>{projectDetail.linkedRepo}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
 
-                <div className="p-3.5 bg-paper/60 border border-rule/70 rounded-lg text-xs font-sans text-ink-soft space-y-2">
-                  <p className="text-ink font-medium">
-                    This project is connected directly to{' '}
-                    <span className="font-mono font-bold text-ledger-blue">
-                      {projectDetail.linkedRepo}
-                    </span>
-                    .
-                  </p>
-                  <p>
-                    Commit counts per day are fetched automatically from GitHub and cached locally.
-                    Manual activity logging is disabled to avoid double-counting work.
+                <div className="p-3.5 bg-paper/60 border border-rule/70 rounded-lg text-xs font-sans text-ink-soft space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-rule/50">
+                    <div>
+                      <p className="text-ink font-medium">
+                        Connected to{' '}
+                        <span className="font-mono font-bold text-ledger-blue">
+                          {projectDetail.linkedRepo}
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-ink-soft mt-0.5">
+                        Authenticated commit tracking with branch isolation for private repos.
+                      </p>
+                    </div>
+
+                    {/* Quick Inline Branch Switcher */}
+                    <div className="flex items-center gap-2 bg-card p-1.5 rounded border border-rule">
+                      <GitBranch className="w-3.5 h-3.5 text-ledger-blue shrink-0" />
+                      <span className="text-[11px] font-mono text-ink-soft hidden sm:inline">
+                        Branch:
+                      </span>
+                      <select
+                        value={projectDetail.linkedBranch || ''}
+                        onChange={(e) => handleQuickBranchChange(e.target.value)}
+                        className="bg-paper text-ink font-mono text-xs font-semibold px-2 py-1 rounded border border-rule focus:outline-none focus:ring-1 focus:ring-ledger-blue cursor-pointer"
+                      >
+                        <option value="">Default Branch</option>
+                        {(branchesByRepo[projectDetail.linkedRepo] || []).map((b) => (
+                          <option key={b.name} value={b.name}>
+                            {b.name} {b.isDefault ? '(default)' : ''} {b.isProtected ? '🛡️' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px]">
+                    Commit counts on branch{' '}
+                    <span className="font-mono font-semibold text-ink">
+                      "{projectDetail.linkedBranch || 'default'}"
+                    </span>{' '}
+                    are synchronized automatically from GitHub and cached locally.
                   </p>
                 </div>
 
                 {projectDetail.lastCommit && (
                   <div className="p-3 bg-paper rounded-[4px] border border-rule text-xs font-mono space-y-1.5">
-                    <div className="text-[10px] uppercase text-ink-soft tracking-wider font-semibold">
-                      Latest Commit on Default Branch
+                    <div className="text-[10px] uppercase text-ink-soft tracking-wider font-semibold flex items-center justify-between">
+                      <span>
+                        Latest Commit on Branch "{projectDetail.linkedBranch || 'default'}"
+                      </span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        Synced
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-ink">
                       <GitBranch className="w-3.5 h-3.5 text-ledger-blue" />
@@ -964,9 +1075,15 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                         </h3>
 
                         {project.isRepoLinked && project.linkedRepo && (
-                          <div className="flex items-center gap-1 mt-1 text-[11px] font-mono text-ledger-blue">
+                          <div className="flex items-center gap-1.5 mt-1 text-[11px] font-mono text-ledger-blue truncate">
                             <GitBranch className="w-3 h-3 shrink-0" />
                             <span className="truncate">{project.linkedRepo}</span>
+                            {project.linkedBranch && (
+                              <span className="text-ink-soft shrink-0">@{project.linkedBranch}</span>
+                            )}
+                            {availableRepos.find((r) => r.fullName === project.linkedRepo)?.private && (
+                              <Lock className="w-2.5 h-2.5 text-ink-soft shrink-0" title="Private Repository" />
+                            )}
                           </div>
                         )}
                       </div>
@@ -1094,25 +1211,76 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
 
           {/* Linked Repo Field — ONLY if domain is software or game_dev AND GitHub token is configured */}
           {(newDomain === 'software' || newDomain === 'game_dev') && hasGithubToken && (
-            <div>
-              <label className="block text-xs font-mono text-ink mb-1">
-                Link GitHub Repository (Optional)
-              </label>
-              <select
-                value={newLinkedRepo}
-                onChange={(e) => setNewLinkedRepo(e.target.value)}
-                className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
-              >
-                <option value="">-- No linked repository (manual logging) --</option>
-                {availableRepos.map((repo) => (
-                  <option key={repo.id} value={repo.fullName}>
-                    {repo.fullName} {repo.private ? '(private)' : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[10px] text-ink-soft font-mono mt-1">
-                When linked, commit graphs are automatically synchronized from GitHub.
-              </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-mono text-ink mb-1">
+                  Link GitHub Repository (Optional)
+                </label>
+                <select
+                  value={newLinkedRepo}
+                  onChange={(e) => {
+                    const repoVal = e.target.value;
+                    setNewLinkedRepo(repoVal);
+                    setNewLinkedBranch('');
+                    if (repoVal) {
+                      loadBranchesForRepo(repoVal);
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
+                >
+                  <option value="">-- No linked repository (manual logging) --</option>
+                  {availableRepos.map((repo) => (
+                    <option key={repo.id} value={repo.fullName}>
+                      {repo.fullName} {repo.private ? '🔒 (private repo)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-ink-soft font-mono mt-1">
+                  Supports both public and private repositories via your Personal Access Token.
+                </p>
+              </div>
+
+              {/* Branch Selector for Selected Repo */}
+              {newLinkedRepo && (
+                <div className="p-3 bg-paper/70 border border-rule/80 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="flex items-center gap-1.5 text-ink font-semibold">
+                      <GitBranch className="w-3.5 h-3.5 text-ledger-blue" />
+                      Target Branch to Track
+                    </span>
+                    {loadingBranchesForRepo === newLinkedRepo && (
+                      <span className="text-[10px] text-ink-soft animate-pulse">
+                        Querying branches...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={newLinkedBranch}
+                      onChange={(e) => setNewLinkedBranch(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 bg-card border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                    >
+                      <option value="">Default Branch (Auto-detected)</option>
+                      {(branchesByRepo[newLinkedRepo] || []).map((b) => (
+                        <option key={b.name} value={b.name}>
+                          {b.name} {b.isDefault ? '★ (default)' : ''} {b.isProtected ? '🛡️' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Or branch name..."
+                      value={newLinkedBranch}
+                      onChange={(e) => setNewLinkedBranch(e.target.value)}
+                      className="w-36 px-2 py-1.5 bg-card border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                      title="Enter custom branch name"
+                    />
+                  </div>
+                  <p className="text-[10px] text-ink-soft font-mono">
+                    Select a feature or development branch to track your commits specifically on that branch in this private repository.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -1166,6 +1334,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                 setEditDomain(dom);
                 if (dom !== 'software' && dom !== 'game_dev') {
                   setEditLinkedRepo('');
+                  setEditLinkedBranch('');
                 }
               }}
               className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
@@ -1196,22 +1365,70 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
 
           {/* Optional Linked Repo if software/game_dev and GitHub is connected */}
           {(editDomain === 'software' || editDomain === 'game_dev') && hasGithubToken && (
-            <div>
-              <label className="block text-xs font-mono text-ink mb-1">
-                Linked GitHub Repository
-              </label>
-              <select
-                value={editLinkedRepo}
-                onChange={(e) => setEditLinkedRepo(e.target.value)}
-                className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
-              >
-                <option value="">-- None (manual activity logging) --</option>
-                {availableRepos.map((repo) => (
-                  <option key={repo.id} value={repo.fullName}>
-                    {repo.fullName} {repo.private ? '(private)' : ''}
-                  </option>
-                ))}
-              </select>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-mono text-ink mb-1">
+                  Linked GitHub Repository
+                </label>
+                <select
+                  value={editLinkedRepo}
+                  onChange={(e) => {
+                    const repoVal = e.target.value;
+                    setEditLinkedRepo(repoVal);
+                    setEditLinkedBranch('');
+                    if (repoVal) {
+                      loadBranchesForRepo(repoVal);
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
+                >
+                  <option value="">-- None (manual activity logging) --</option>
+                  {availableRepos.map((repo) => (
+                    <option key={repo.id} value={repo.fullName}>
+                      {repo.fullName} {repo.private ? '🔒 (private repo)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Branch Selector for Edit Modal */}
+              {editLinkedRepo && (
+                <div className="p-3 bg-paper/70 border border-rule/80 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="flex items-center gap-1.5 text-ink font-semibold">
+                      <GitBranch className="w-3.5 h-3.5 text-ledger-blue" />
+                      Target Branch to Track
+                    </span>
+                    {loadingBranchesForRepo === editLinkedRepo && (
+                      <span className="text-[10px] text-ink-soft animate-pulse">
+                        Querying branches...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={editLinkedBranch}
+                      onChange={(e) => setEditLinkedBranch(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 bg-card border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                    >
+                      <option value="">Default Branch (Auto-detected)</option>
+                      {(branchesByRepo[editLinkedRepo] || []).map((b) => (
+                        <option key={b.name} value={b.name}>
+                          {b.name} {b.isDefault ? '★ (default)' : ''} {b.isProtected ? '🛡️' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Or branch name..."
+                      value={editLinkedBranch}
+                      onChange={(e) => setEditLinkedBranch(e.target.value)}
+                      className="w-36 px-2 py-1.5 bg-card border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                      title="Enter custom branch name"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

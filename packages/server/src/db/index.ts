@@ -122,6 +122,7 @@ export function initDatabase(dbPath?: string): InitDatabaseResult {
       domain_type TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'not_started',
       linked_repo TEXT,
+      linked_branch TEXT,
       created_at INTEGER,
       updated_at INTEGER
     );`,
@@ -136,6 +137,13 @@ export function initDatabase(dbPath?: string): InitDatabaseResult {
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );`
   ]).then(async () => {
+    // Migration: add linked_branch column to projects if it doesn't exist
+    try {
+      await client.execute('ALTER TABLE projects ADD COLUMN linked_branch TEXT');
+    } catch {
+      // Column already exists or freshly created
+    }
+
     // Migration: add note column to project_activity if it doesn't exist
     try {
       await client.execute('ALTER TABLE project_activity ADD COLUMN note TEXT');

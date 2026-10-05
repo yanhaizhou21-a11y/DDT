@@ -90,6 +90,7 @@ export const projects = sqliteTable('projects', {
     enum: ['not_started', 'in_progress', 'ready'],
   }).notNull().default('not_started'),
   linkedRepo: text('linked_repo'), // e.g. "owner/repo"
+  linkedBranch: text('linked_branch'), // e.g. "main", "dev", "feature/xyz"
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });

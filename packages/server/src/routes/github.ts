@@ -353,8 +353,8 @@ export function createGithubRouter(db: AppDatabase): Router {
       }
 
       const endpoint = token
-        ? 'https://api.github.com/user/repos?sort=pushed&per_page=8&direction=desc'
-        : `https://api.github.com/users/${encodeURIComponent(username!)}/repos?sort=pushed&per_page=8&direction=desc`;
+        ? 'https://api.github.com/user/repos?sort=pushed&per_page=100&direction=desc&affiliation=owner,collaborator,organization_member'
+        : `https://api.github.com/users/${encodeURIComponent(username!)}/repos?sort=pushed&per_page=100&direction=desc`;
 
       const reposRes = await fetch(endpoint, { headers });
 
@@ -364,32 +364,36 @@ export function createGithubRouter(db: AppDatabase): Router {
 
       const repos = (await reposRes.json()) as any[];
       const reposWithCommits = await Promise.all(
-        repos.slice(0, 8).map(async (repo: any) => {
+        repos.map(async (repo: any, idx: number) => {
           let lastCommit: any = null;
-          try {
-            const commitRes = await fetch(`https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?per_page=1`, {
-              headers,
-            });
-            if (commitRes.ok) {
-              const commits = (await commitRes.json()) as any[];
-              if (commits.length > 0) {
-                lastCommit = {
-                  message: commits[0].commit.message,
-                  sha: commits[0].sha.slice(0, 7),
-                  author: commits[0].commit.author?.name || commits[0].author?.login || 'Unknown',
-                  date: commits[0].commit.author?.date || commits[0].commit.committer?.date,
-                };
+          // Only fetch last commit details for the first 12 most recent repos to avoid rate limits
+          if (idx < 12) {
+            try {
+              const commitRes = await fetch(`https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?per_page=1`, {
+                headers,
+              });
+              if (commitRes.ok) {
+                const commits = (await commitRes.json()) as any[];
+                if (commits.length > 0) {
+                  lastCommit = {
+                    message: commits[0].commit.message,
+                    sha: commits[0].sha.slice(0, 7),
+                    author: commits[0].commit.author?.name || commits[0].author?.login || 'Unknown',
+                    date: commits[0].commit.author?.date || commits[0].commit.committer?.date,
+                  };
+                }
               }
+            } catch {
+              // Ignore commit fetch error per repo
             }
-          } catch {
-            // Ignore commit fetch error per repo
           }
 
           return {
             id: repo.id,
             name: repo.name,
             fullName: repo.full_name,
-            private: repo.private,
+            private: Boolean(repo.private),
+            defaultBranch: repo.default_branch || 'main',
             htmlUrl: repo.html_url,
             description: repo.description,
             pushedAt: repo.pushed_at,
@@ -412,6 +416,88 @@ export function createGithubRouter(db: AppDatabase): Router {
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Failed to fetch GitHub repositories' });
+    }
+  });
+
+  // GET /api/github/repos/:owner/:repo/branches - List branches for public & private repos
+  router.get('/repos/:owner/:repo/branches', async (req, res) => {
+    try {
+      const { owner, repo } = req.params;
+      const forceRefresh = req.query.force === 'true';
+
+      if (!owner || !repo) {
+        return res.status(400).json({ error: 'Owner and repo are required.' });
+      }
+
+      const config = await getGithubConfig();
+      const token = config.token;
+
+      const cacheKey = `github:branches:${owner.toLowerCase()}/${repo.toLowerCase()}`;
+      const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+
+      if (!forceRefresh) {
+        const cached = await db.select().from(githubCache).where(eq(githubCache.key, cacheKey)).get();
+        if (cached && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL) {
+          try {
+            return res.json(JSON.parse(cached.payload));
+          } catch {}
+        }
+      }
+
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'DDT-Dashboard/1.0',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      // 1. Fetch repo details for default branch
+      let defaultBranch = 'main';
+      try {
+        const repoRes = await fetch(
+          `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+          { headers }
+        );
+        if (repoRes.ok) {
+          const repoData = (await repoRes.json()) as any;
+          if (repoData.default_branch) defaultBranch = repoData.default_branch;
+        }
+      } catch {}
+
+      // 2. Fetch branches
+      const branchesRes = await fetch(
+        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches?per_page=100`,
+        { headers }
+      );
+
+      if (!branchesRes.ok) {
+        if (branchesRes.status === 404) {
+          return res.status(404).json({ error: `Repository "${owner}/${repo}" not found or requires token authorization.` });
+        }
+        return res.status(branchesRes.status).json({ error: 'Failed to fetch branches from GitHub.' });
+      }
+
+      const rawBranches = (await branchesRes.json()) as any[];
+      const branches = rawBranches.map((b) => ({
+        name: b.name,
+        commitSha: b.commit?.sha?.slice(0, 7) || '',
+        isProtected: Boolean(b.protected),
+        isDefault: b.name === defaultBranch,
+      }));
+
+      const result = {
+        repo: `${owner}/${repo}`,
+        defaultBranch,
+        branches,
+        fetchedAt: new Date().toISOString(),
+      };
+
+      const now = new Date();
+      await db.delete(githubCache).where(eq(githubCache.key, cacheKey)).catch(() => {});
+      await db.insert(githubCache).values({ key: cacheKey, payload: JSON.stringify(result), fetchedAt: now });
+
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to fetch repository branches' });
     }
   });
 

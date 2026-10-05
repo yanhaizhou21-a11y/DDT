@@ -32,17 +32,19 @@ export function createProjectsRouter(db: AppDatabase): Router {
     };
   }
 
-  // Fetch commits for a specific repo from GitHub API
+  // Fetch commits for a specific repo and branch from GitHub API
   async function fetchRepoCommits(
     linkedRepo: string,
+    linkedBranch?: string | null,
     force = false
-  ): Promise<{ historyMap: Record<string, number>; totalCommits: number; lastCommit: any; error?: string }> {
+  ): Promise<{ historyMap: Record<string, number>; totalCommits: number; lastCommit: any; branch?: string; error?: string }> {
     const cleanRepo = linkedRepo.trim();
     if (!cleanRepo || !cleanRepo.includes('/')) {
       return { historyMap: {}, totalCommits: 0, lastCommit: null };
     }
 
-    const cacheKey = `github:repo-commits:${cleanRepo.toLowerCase()}`;
+    const cleanBranch = linkedBranch?.trim() || '';
+    const cacheKey = `github:repo-commits:${cleanRepo.toLowerCase()}${cleanBranch ? `:${cleanBranch.toLowerCase()}` : ''}`;
     const CACHE_TTL = 15 * 60 * 1000; // 15 minutes cache
 
     if (!force) {
@@ -74,10 +76,11 @@ export function createProjectsRouter(db: AppDatabase): Router {
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
       const sinceIso = oneYearAgo.toISOString();
 
-      // Fetch recent commits up to 100
+      // Fetch recent commits up to 100 on the selected branch (if specified)
       const [owner, repo] = cleanRepo.split('/');
+      const branchParam = cleanBranch ? `&sha=${encodeURIComponent(cleanBranch)}` : '';
       const res = await fetch(
-        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?since=${sinceIso}&per_page=100`,
+        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?since=${sinceIso}&per_page=100${branchParam}`,
         { headers }
       );
 
@@ -103,12 +106,12 @@ export function createProjectsRouter(db: AppDatabase): Router {
           });
         }
       } else if (res.status === 404) {
-        return { historyMap: {}, totalCommits: 0, lastCommit: null, error: `Repository "${cleanRepo}" not found or private.` };
+        return { historyMap: {}, totalCommits: 0, lastCommit: null, branch: cleanBranch || undefined, error: `Repository "${cleanRepo}" or branch "${cleanBranch}" not found or private.` };
       } else if (res.status === 401 || res.status === 403) {
-        return { historyMap: {}, totalCommits: 0, lastCommit: null, error: 'GitHub API rate limit or token authorization error.' };
+        return { historyMap: {}, totalCommits: 0, lastCommit: null, branch: cleanBranch || undefined, error: 'GitHub API rate limit or token authorization error.' };
       }
 
-      const result = { historyMap, totalCommits, lastCommit };
+      const result = { historyMap, totalCommits, lastCommit, branch: cleanBranch || 'default' };
       const now = new Date();
 
       await db.delete(githubCache).where(eq(githubCache.key, cacheKey)).catch(() => {});
@@ -117,7 +120,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
       return result;
     } catch (err: any) {
       console.error(`Error fetching commits for repo ${cleanRepo}:`, err);
-      return { historyMap, totalCommits, lastCommit, error: err.message };
+      return { historyMap, totalCommits, lastCommit, branch: cleanBranch || undefined, error: err.message };
     }
   }
 
@@ -140,7 +143,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
           let repoError: string | undefined;
 
           if (isRepoLinked && project.linkedRepo) {
-            const { historyMap, totalCommits, error } = await fetchRepoCommits(project.linkedRepo, forceRefresh);
+            const { historyMap, totalCommits, error } = await fetchRepoCommits(project.linkedRepo, project.linkedBranch, forceRefresh);
             repoError = error;
             totalActivity = totalCommits;
             recentActivity = days30.map((d) => {
@@ -187,7 +190,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
   // POST /api/projects - Create a new project
   router.post('/', async (req, res) => {
     try {
-      const { name, domainType, status, linkedRepo } = req.body;
+      const { name, domainType, status, linkedRepo, linkedBranch } = req.body;
 
       if (!name || typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({ error: 'Project name is required' });
@@ -210,6 +213,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
         domainType,
         status: finalStatus,
         linkedRepo: (domainType === 'software' || domainType === 'game_dev') && linkedRepo ? linkedRepo.trim() : null,
+        linkedBranch: (domainType === 'software' || domainType === 'game_dev') && linkedBranch ? linkedBranch.trim() : null,
         createdAt: now,
         updatedAt: now,
       };
@@ -247,7 +251,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
       let repoError: string | undefined;
 
       if (isRepoLinked && project.linkedRepo) {
-        const { historyMap, totalCommits, lastCommit: lc, error } = await fetchRepoCommits(project.linkedRepo, forceRefresh);
+        const { historyMap, totalCommits, lastCommit: lc, error } = await fetchRepoCommits(project.linkedRepo, project.linkedBranch, forceRefresh);
         repoError = error;
         totalActivity = totalCommits;
         lastCommit = lc;
@@ -325,7 +329,7 @@ export function createProjectsRouter(db: AppDatabase): Router {
   router.patch('/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, domainType, status, linkedRepo } = req.body;
+      const { name, domainType, status, linkedRepo, linkedBranch } = req.body;
 
       const project = await db.select().from(projects).where(eq(projects.id, id)).get();
       if (!project) {
@@ -349,9 +353,10 @@ export function createProjectsRouter(db: AppDatabase): Router {
           return res.status(400).json({ error: `Invalid domain type: ${domainType}` });
         }
         updates.domainType = domainType;
-        // If domain type changed away from software/game_dev, clear linkedRepo
+        // If domain type changed away from software/game_dev, clear linkedRepo and linkedBranch
         if (domainType !== 'software' && domainType !== 'game_dev') {
           updates.linkedRepo = null;
+          updates.linkedBranch = null;
         }
       }
 
@@ -369,6 +374,15 @@ export function createProjectsRouter(db: AppDatabase): Router {
           updates.linkedRepo = linkedRepo ? linkedRepo.trim() : null;
         } else {
           updates.linkedRepo = null;
+        }
+      }
+
+      if (linkedBranch !== undefined) {
+        const currentDomain = domainType || project.domainType;
+        if (currentDomain === 'software' || currentDomain === 'game_dev') {
+          updates.linkedBranch = linkedBranch ? linkedBranch.trim() : null;
+        } else {
+          updates.linkedBranch = null;
         }
       }
 

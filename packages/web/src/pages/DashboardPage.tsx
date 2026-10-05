@@ -108,6 +108,109 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     year: 'numeric',
   });
 
+  // Chart and Stream calculations for Dashboard Overview
+  const activityStreamPoints: DailyActivityPoint[] = React.useMemo(() => {
+    if (!data?.dotLedgers) return [];
+    const days = data.dotLedgers.days || [];
+    const githubMap = Object.fromEntries((data.dotLedgers.github || []).map((d) => [d.date, d.value]));
+    const gameMap = Object.fromEntries((data.dotLedgers.game || []).map((d) => [d.date, d.value]));
+    const foodMap = Object.fromEntries((data.dotLedgers.food || []).map((d) => [d.date, d.value]));
+    const journalMap = Object.fromEntries((data.dotLedgers.journal || []).map((d) => [d.date, d.value]));
+
+    return days.map((dateStr) => {
+      const d = new Date(dateStr + 'T00:00:00');
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return {
+        date: dateStr,
+        label,
+        commits: githubMap[dateStr] || 0,
+        gameHours: Math.round((gameMap[dateStr] || 0) * 10) / 10,
+        foodCount: foodMap[dateStr] || 0,
+        journalWritten: journalMap[dateStr] || 0,
+      };
+    });
+  }, [data]);
+
+  const categorySegments: CategorySegment[] = React.useMemo(() => {
+    if (!data?.dotLedgers) return [];
+    const totalCommits = (data.dotLedgers.github || []).reduce((sum, d) => sum + d.value, 0) || data.github.todayCommits;
+    const totalGameHours = Math.round((data.dotLedgers.game || []).reduce((sum, d) => sum + d.value, 0) * 10) / 10 || data.gameToday.hours;
+    const totalFood = (data.dotLedgers.food || []).reduce((sum, d) => sum + d.value, 0) || data.foodToday.count;
+    const totalJournal = (data.dotLedgers.journal || []).reduce((sum, d) => sum + d.value, 0) || (data.journal.hasWritten ? 1 : 0);
+
+    return [
+      {
+        key: 'commits',
+        label: 'Development',
+        value: totalCommits,
+        unit: 'commits',
+        color: 'var(--ledger-blue)',
+        icon: GitCommit,
+      },
+      {
+        key: 'game',
+        label: 'Gaming',
+        value: totalGameHours,
+        unit: 'hrs',
+        color: 'var(--gold)',
+        icon: Gamepad2,
+      },
+      {
+        key: 'food',
+        label: 'Nutrition',
+        value: totalFood,
+        unit: 'meals',
+        color: '#10B981',
+        icon: Utensils,
+      },
+      {
+        key: 'journal',
+        label: 'Reflection',
+        value: totalJournal,
+        unit: 'logs',
+        color: 'var(--stamp-red)',
+        icon: BookOpen,
+      },
+    ];
+  }, [data]);
+
+  const weeklyVelocityData: DailyVelocityData[] = React.useMemo(() => {
+    if (!data?.dotLedgers) return [];
+    const days = (data.dotLedgers.days || []).slice(-7);
+    const githubMap = Object.fromEntries((data.dotLedgers.github || []).map((d) => [d.date, d.value]));
+    const gameMap = Object.fromEntries((data.dotLedgers.game || []).map((d) => [d.date, d.value]));
+    const foodMap = Object.fromEntries((data.dotLedgers.food || []).map((d) => [d.date, d.value]));
+
+    return days.map((dateStr) => {
+      const d = new Date(dateStr + 'T00:00:00');
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      return {
+        dayName,
+        date: dateStr,
+        commits: githubMap[dateStr] || 0,
+        gameHours: Math.round((gameMap[dateStr] || 0) * 10) / 10,
+        foodCount: foodMap[dateStr] || 0,
+      };
+    });
+  }, [data]);
+
+  // Sparkline arrays for KPI cards
+  const commitsSparkline = React.useMemo(() => {
+    return (data?.dotLedgers.github || []).slice(-10).map((d) => d.value);
+  }, [data]);
+
+  const gamesSparkline = React.useMemo(() => {
+    return (data?.dotLedgers.game || []).slice(-10).map((d) => d.value);
+  }, [data]);
+
+  const foodSparkline = React.useMemo(() => {
+    return (data?.dotLedgers.food || []).slice(-10).map((d) => d.value);
+  }, [data]);
+
+  const journalSparkline = React.useMemo(() => {
+    return (data?.dotLedgers.journal || []).slice(-10).map((d) => d.value);
+  }, [data]);
+
   // Debounced autosave for quick journal on dashboard
   useEffect(() => {
     if (!data) return;

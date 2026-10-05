@@ -237,6 +237,10 @@ export interface GithubBranch {
   commitSha?: string;
   isProtected?: boolean;
   isDefault?: boolean;
+  isPullRequest?: boolean;
+  prNumber?: number;
+  prTitle?: string;
+  prAuthor?: string;
 }
 
 export interface GithubBranchesResponse {

@@ -98,7 +98,7 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
 
         // Pick branch: stored branch or default branch
         const found = branchList.find((b) => b.name === selectedBranch);
-        const targetBranch = found ? found.name : res.defaultBranch || (branchList[0]?.name ?? 'main');
+        const targetBranch = found ? found.name : selectedBranch || res.defaultBranch || (branchList[0]?.name ?? 'main');
         setSelectedBranch(targetBranch);
         localStorage.setItem('ddt-selected-contrib-branch', targetBranch);
 
@@ -184,6 +184,7 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
       const [owner, repo] = selectedRepo.split('/');
       const res = await fetchRepoBranches(owner, repo, true);
       setBranches(res.branches || []);
+      setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to refresh branches');
     } finally {
@@ -317,11 +318,18 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
                       <option value="dev">dev</option>
                     </>
                   ) : (
-                    branches.map((b) => (
-                      <option key={b.name} value={b.name}>
-                        {b.name} {b.isDefault ? '★ (default)' : ''} {b.isProtected ? '🛡️' : ''}
-                      </option>
-                    ))
+                    <>
+                      {!branches.some((b) => b.name === selectedBranch) && selectedBranch && (
+                        <option value={selectedBranch}>
+                          {selectedBranch} (tracked branch)
+                        </option>
+                      )}
+                      {branches.map((b) => (
+                        <option key={b.name} value={b.name}>
+                          {b.name} {b.isDefault ? '★ (default)' : ''} {b.isProtected ? '🛡️' : ''} {b.isPullRequest ? `(PR #${b.prNumber} by ${b.prAuthor})` : ''}
+                        </option>
+                      ))}
+                    </>
                   )}
                 </select>
               </div>
@@ -411,6 +419,11 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
                 {currentBranchObj?.isProtected && (
                   <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                     Protected
+                  </span>
+                )}
+                {currentBranchObj?.isPullRequest && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    PR #{currentBranchObj.prNumber} ({currentBranchObj.prAuthor})
                   </span>
                 )}
                 {!currentBranchObj && (

@@ -13,8 +13,8 @@ export function createGithubRouter(db: AppDatabase): Router {
       map[r.key] = r.value?.trim() || '';
     });
     return {
-      token: map.github_token || null,
-      username: map.github_username || null,
+      token: map.github_token || process.env.GITHUB_TOKEN || process.env.GITHUB_PAT || null,
+      username: map.github_username || process.env.GITHUB_USERNAME || null,
     };
   }
 
@@ -433,7 +433,7 @@ export function createGithubRouter(db: AppDatabase): Router {
       const token = config.token;
 
       const cacheKey = `github:branches:${owner.toLowerCase()}/${repo.toLowerCase()}`;
-      const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+      const CACHE_TTL = 60 * 1000; // 60 seconds cache for responsive branch workflow
 
       if (!forceRefresh) {
         const cached = await db.select().from(githubCache).where(eq(githubCache.key, cacheKey)).get();
@@ -463,26 +463,73 @@ export function createGithubRouter(db: AppDatabase): Router {
         }
       } catch {}
 
-      // 2. Fetch branches
-      const branchesRes = await fetch(
-        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches?per_page=100`,
+      // 2. Fetch branches with pagination (up to 200 branches)
+      const rawBranches: any[] = [];
+      const page1Res = await fetch(
+        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches?per_page=100&page=1`,
         { headers }
       );
 
-      if (!branchesRes.ok) {
-        if (branchesRes.status === 404) {
+      if (!page1Res.ok) {
+        if (page1Res.status === 404) {
           return res.status(404).json({ error: `Repository "${owner}/${repo}" not found or requires token authorization.` });
         }
-        return res.status(branchesRes.status).json({ error: 'Failed to fetch branches from GitHub.' });
+        return res.status(page1Res.status).json({ error: 'Failed to fetch branches from GitHub.' });
       }
 
-      const rawBranches = (await branchesRes.json()) as any[];
-      const branches = rawBranches.map((b) => ({
-        name: b.name,
-        commitSha: b.commit?.sha?.slice(0, 7) || '',
-        isProtected: Boolean(b.protected),
-        isDefault: b.name === defaultBranch,
-      }));
+      const page1Data = (await page1Res.json()) as any[];
+      rawBranches.push(...page1Data);
+
+      if (page1Data.length === 100) {
+        try {
+          const page2Res = await fetch(
+            `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches?per_page=100&page=2`,
+            { headers }
+          );
+          if (page2Res.ok) {
+            const page2Data = (await page2Res.json()) as any[];
+            rawBranches.push(...page2Data);
+          }
+        } catch {}
+      }
+
+      const branchMap = new Map<string, any>();
+      for (const b of rawBranches) {
+        branchMap.set(b.name, {
+          name: b.name,
+          commitSha: b.commit?.sha?.slice(0, 7) || '',
+          isProtected: Boolean(b.protected),
+          isDefault: b.name === defaultBranch,
+        });
+      }
+
+      // 3. Fetch active Pull Requests to capture collaborator/fork branches
+      try {
+        const pullsRes = await fetch(
+          `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls?state=open&per_page=50`,
+          { headers }
+        );
+        if (pullsRes.ok) {
+          const pullsData = (await pullsRes.json()) as any[];
+          for (const pr of pullsData) {
+            const refName = pr.head?.ref;
+            if (refName && !branchMap.has(refName)) {
+              branchMap.set(refName, {
+                name: refName,
+                commitSha: pr.head?.sha?.slice(0, 7) || '',
+                isProtected: false,
+                isDefault: false,
+                isPullRequest: true,
+                prNumber: pr.number,
+                prTitle: pr.title,
+                prAuthor: pr.user?.login || 'collaborator',
+              });
+            }
+          }
+        }
+      } catch {}
+
+      const branches = Array.from(branchMap.values());
 
       const result = {
         repo: `${owner}/${repo}`,

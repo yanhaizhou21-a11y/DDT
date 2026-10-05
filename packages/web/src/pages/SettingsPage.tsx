@@ -339,6 +339,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                       <span>{githubTest.result.message || 'Invalid GitHub token. Check scopes (repo, read:user).'}</span>
                     </p>
                   )}
+
+                  {/* Scopes & Collaborator Repos Tip */}
+                  <div className="text-[11px] font-mono text-ink-soft bg-paper/60 p-2.5 rounded border border-rule/60 space-y-1 mt-2">
+                    <div className="font-semibold text-ink flex items-center gap-1">
+                      <span>💡 Token Scopes & Collaborator Repositories:</span>
+                    </div>
+                    <p className="leading-relaxed">
+                      • <strong>Classic Token (<code className="text-ledger-blue font-mono font-bold">ghp_...</code>)</strong>: Recommended if you collaborate on private repositories owned by other users or organizations. Requires the <code className="text-ledger-blue font-bold">repo</code> scope.
+                    </p>
+                    <p className="leading-relaxed">
+                      • <strong>Fine-Grained Token (<code className="text-ledger-blue font-mono font-bold">github_pat_...</code>)</strong>: In GitHub Settings, verify <em>Repository access</em> is set to <em>All repositories</em>, and <em>Permissions</em> has <em>Contents: Read</em>. (Note: GitHub restricts fine-grained tokens from accessing private repos owned by other personal user accounts).
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

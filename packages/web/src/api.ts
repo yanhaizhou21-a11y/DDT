@@ -14,6 +14,8 @@ import type {
   GameStatsResponse,
   GithubContributionsResponse,
   GithubRepo,
+  GithubBranch,
+  GithubBranchesResponse,
   Project,
   ProjectWithStats,
   ProjectDetailResponse,
@@ -361,6 +363,17 @@ export async function refreshGithubCache(): Promise<{ success: boolean }> {
   return handleResponse<{ success: boolean }>(res);
 }
 
+export async function fetchRepoBranches(
+  owner: string,
+  repo: string,
+  force = false
+): Promise<GithubBranchesResponse> {
+  const res = await fetch(
+    `${API_BASE}/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches${force ? '?force=true' : ''}`
+  );
+  return handleResponse<GithubBranchesResponse>(res);
+}
+
 // Projects
 export async function fetchProjects(force = false): Promise<ProjectWithStats[]> {
   const res = await fetch(`${API_BASE}/projects${force ? '?force=true' : ''}`);
@@ -377,6 +390,7 @@ export async function createProject(project: {
   domainType: string;
   status?: string;
   linkedRepo?: string | null;
+  linkedBranch?: string | null;
 }): Promise<Project> {
   const res = await fetch(`${API_BASE}/projects`, {
     method: 'POST',

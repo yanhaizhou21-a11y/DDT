@@ -18,6 +18,7 @@ export interface Project {
   domainType: ProjectDomainType;
   status: ProjectStatus;
   linkedRepo: string | null;
+  linkedBranch?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -222,12 +223,27 @@ export interface GithubRepo {
   name: string;
   fullName: string;
   private: boolean;
+  defaultBranch?: string;
   htmlUrl: string;
   description: string | null;
   pushedAt: string;
   language: string | null;
   stargazersCount: number;
   lastCommit: GithubCommit | null;
+}
+
+export interface GithubBranch {
+  name: string;
+  commitSha?: string;
+  isProtected?: boolean;
+  isDefault?: boolean;
+}
+
+export interface GithubBranchesResponse {
+  repo: string;
+  defaultBranch: string;
+  branches: GithubBranch[];
+  fetchedAt: string;
 }
 
 export interface DashboardResponse {

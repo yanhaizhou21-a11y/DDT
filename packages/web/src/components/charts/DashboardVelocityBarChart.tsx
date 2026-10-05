@@ -61,7 +61,7 @@ export const DashboardVelocityBarChart: React.FC<DashboardVelocityBarChartProps>
   }
 
   return (
-    <div className={cn('ledger-card p-5 space-y-4 font-sans select-none flex flex-col justify-between', className)}>
+    <div className={cn('ledger-card p-5 space-y-4 font-sans select-none flex flex-col justify-between h-full', className)}>
       <div>
         <div className="flex items-center justify-between pb-3 border-b border-rule/70">
           <div className="flex items-center gap-2.5">

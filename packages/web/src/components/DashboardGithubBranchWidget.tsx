@@ -196,7 +196,7 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
   const currentBranchObj = branches.find((b) => b.name === selectedBranch);
 
   return (
-    <div className={cn('ledger-card p-5 flex flex-col justify-between group transition-all', className)}>
+    <div className={cn('ledger-card p-5 flex flex-col justify-between group transition-all h-full', className)}>
       <div>
         {/* Card Header */}
         <div className="flex items-center justify-between pb-3 border-b border-rule/70">

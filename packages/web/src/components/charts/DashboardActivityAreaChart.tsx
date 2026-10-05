@@ -141,7 +141,7 @@ export const DashboardActivityAreaChart: React.FC<DashboardActivityAreaChartProp
   const activeHoverData = hoverIndex !== null && filteredData[hoverIndex] ? filteredData[hoverIndex] : null;
 
   return (
-    <div className={cn('ledger-card p-5 space-y-4 font-sans select-none', className)}>
+    <div className={cn('ledger-card p-5 space-y-4 font-sans select-none flex flex-col justify-between h-full', className)}>
       {/* Card Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-rule/70">
         <div>

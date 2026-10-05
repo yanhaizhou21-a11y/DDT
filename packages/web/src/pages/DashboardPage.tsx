@@ -420,18 +420,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <div className="h-px bg-rule/70 flex-1" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-7 xl:col-span-8 flex">
             <DashboardActivityAreaChart
               data={activityStreamPoints}
               title="Activity Velocity Streams"
               description="Multi-stream ledger activity distribution across time"
+              className="w-full"
             />
           </div>
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-5 xl:col-span-4 flex">
             <DashboardCategoryDonutChart
               segments={categorySegments}
               title="Effort Allocation"
               description="Proportional breakdown across ledger domains"
+              className="w-full"
             />
           </div>
         </div>
@@ -446,19 +448,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <div className="h-px bg-rule/70 flex-1" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 flex">
             <DashboardVelocityBarChart
               data={weeklyVelocityData}
               title="7-Day Velocity Cadence"
               description="Comparative daily throughput across streams"
+              className="w-full"
             />
           </div>
 
           {/* ACTIVE BRANCH CONTRIBUTION WIDGET (PUBLIC & PRIVATE REPOS) */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 flex">
             <DashboardGithubBranchWidget
               onNavigateDev={() => onNavigate('dev')}
               onNavigateProjects={() => onNavigate('projects')}
+              className="w-full"
             />
           </div>
         </div>

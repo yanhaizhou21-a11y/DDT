@@ -9,11 +9,21 @@ import {
   Check,
   ChevronDown,
   Sparkles,
+  Flame,
+  Grid,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
-export type ThemeMode = 'ledger' | 'sepia' | 'kinetic' | 'cyberpunk' | 'matcha' | 'nord';
+export type ThemeMode =
+  | 'ledger'
+  | 'sepia'
+  | 'brutalism'
+  | 'swiss'
+  | 'kinetic'
+  | 'cyberpunk'
+  | 'matcha'
+  | 'nord';
 
 export interface ThemeOption {
   id: ThemeMode;
@@ -35,6 +45,26 @@ export const THEMES: ThemeOption[] = [
     category: 'light',
     icon: Sun,
     dotColor: '#C28B38',
+    isDark: false,
+  },
+  {
+    id: 'brutalism',
+    label: 'Neo-Brutalism',
+    shortLabel: 'Brutal',
+    description: 'Vibrant pop art, 4px black borders & hard ink shadows',
+    category: 'light',
+    icon: Flame,
+    dotColor: '#FF6B6B',
+    isDark: false,
+  },
+  {
+    id: 'swiss',
+    label: 'Swiss International',
+    shortLabel: 'Swiss',
+    description: 'Precision typographic grid, monochrome & Swiss red signal',
+    category: 'light',
+    icon: Grid,
+    dotColor: '#FF3000',
     isDark: false,
   },
   {

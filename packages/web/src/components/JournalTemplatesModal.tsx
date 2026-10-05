@@ -24,6 +24,52 @@ export interface JournalTemplate {
 
 export const JOURNAL_TEMPLATES: JournalTemplate[] = [
   {
+    id: 'daily-fire',
+    title: 'Daily Journal: Fire',
+    category: 'daily',
+    icon: Sparkles,
+    description: 'Full reflection: intention, energy, highlights, challenge, gratitude, and tomorrow.',
+    content: (dateStr: string) => `# Daily Journal: ${dateStr}
+
+## Morning Intention
+> One sentence: what would make today feel meaningful?
+
+## Energy Check
+- **Body:** 
+- **Mind:** 
+
+## Three Highlights
+**One big thing** — the work that mattered most today:
+- 
+
+**One small thing** — a quiet win that doesn't deserve a standup:
+- 
+
+**One surprising thing** — what you didn't expect:
+- 
+
+## What Challenged Me
+Honest reflection, not a to-do list. What slowed you down, confused you, or drained you?
+- 
+
+## What I Learned
+One thing — could be a technique, a person, a mistake, a feeling:
+> 
+
+## Gratitude (be specific)
+1. 
+2. 
+3. 
+
+## Tomorrow's First Move
+The single next action — not a vague goal, a literal first step:
+- 
+
+## Open Notes
+Stream of consciousness. No structure. No pressure. This space is yours.
+`,
+  },
+  {
     id: 'daily-points',
     title: 'Daily Journal: Simple Points',
     category: 'daily',

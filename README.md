@@ -1,209 +1,256 @@
 <div align="center">
 
-  <img src="docs/logo.png" alt="DDT Logo Mascot" width="96" height="96" style="border-radius: 24px; box-shadow: 0 4px 20px rgba(47, 72, 88, 0.15);" />
+  <img src="docs/logo.png" alt="DDT — Daily Dashboard Tracker mascot" width="120" style="border-radius:28px; box-shadow:0 12px 40px rgba(47,72,88,0.18);" />
 
-  # DDT — Daily Dashboard Tracker
-  
-  **A local-first, privacy-respecting personal field notebook & daily ledger dashboard.**  
-  *Runs entirely on `127.0.0.1` • 100% offline-capable • Zero telemetry • Single SQLite database*
+  <h1>DDT — Daily Dashboard Tracker</h1>
 
   <p align="center">
-    <a href="#-quick-start"><img src="https://img.shields.io/badge/License-MIT-2F4858?style=flat-square&logo=opensourceinitiative&logoColor=white" alt="License" /></a>
-    <a href="#-tech-stack"><img src="https://img.shields.io/badge/TypeScript-5.7+-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-    <a href="#-tech-stack"><img src="https://img.shields.io/badge/React-18%2F19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" /></a>
-    <a href="#-tech-stack"><img src="https://img.shields.io/badge/TailwindCSS-v3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" /></a>
-    <a href="#-tech-stack"><img src="https://img.shields.io/badge/Vite-v6-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
-    <a href="#-privacy--local-first"><img src="https://img.shields.io/badge/Database-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite" /></a>
-    <a href="#-privacy--local-first"><img src="https://img.shields.io/badge/Telemetry-Zero%20Data%20Collected-10B981?style=flat-square" alt="Zero Telemetry" /></a>
+    A local-first personal ledger for everything your day touches —
+    <br/>
+    commits, tasks, journal, watchlist, meals &amp; playtime. <em>One database. Zero cloud.</em>
+  </p>
+
+  <p>
+    <a href="#-quick-start"><img src="https://img.shields.io/badge/Node.js-%3E%3D18-2F4858?style=flat-square&amp;logo=node.js&amp;logoColor=white" alt="Node.js" /></a>
+    <a href="#-quick-start"><img src="https://img.shields.io/badge/pnpm-11.20-3178C6?style=flat-square&amp;logo=pnpm&amp;logoColor=white" alt="pnpm" /></a>
+    <a href="#-architecture"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&amp;logo=react&amp;logoColor=black" alt="React" /></a>
+    <a href="#-architecture"><img src="https://img.shields.io/badge/SQLite-Drizzle-003B57?style=flat-square&amp;logo=sqlite&amp;logoColor=white" alt="SQLite" /></a>
+    <a href="#-privacy--local-first"><img src="https://img.shields.io/badge/Telemetry-Zero-10B981?style=flat-square" alt="Zero telemetry" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2F4858?style=flat-square" alt="License" /></a>
   </p>
 
 </div>
 
 ---
 
-## 🎬 Video Preview & Interface Walkthrough
+## 🖼️ At a glance
 
 <div align="center">
   <a href="#-modules--features">
-    <img src="docs/preview.png" alt="DDT Interface Preview & Walkthrough" width="100%" style="border-radius: 12px; border: 1px solid #DDD7C7; box-shadow: 0 10px 30px rgba(35, 32, 25, 0.08);" />
+    <img src="docs/preview.png" alt="DDT dashboard preview — heatmap, kanban, journal, watchlist and playtime charts" width="100%" style="border-radius:14px; border:1px solid #DDD7C7; box-shadow:0 16px 48px rgba(35,32,25,0.10);" />
   </a>
-  <p align="center">
-    <sub><i>▶️ Click the preview above to explore the interactive modules. (Walkthrough video preview mock player)</i></sub>
-  </p>
+  <p><sub><i>One pane of glass: dev activity, kanban, journal, watchlist and playtime — all rendered from a single local SQLite file.</i></sub></p>
 </div>
 
-<details>
-<summary><b>📺 Expand Interactive Video Player (Demo Preview)</b></summary>
-
-<br />
-
-```html
-<!-- DDT Video Walkthrough Player -->
-<video width="100%" poster="docs/preview.png" controls preload="metadata">
-  <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-```
-
-</details>
+DDT is a **personal field notebook that happens to be a dashboard**. It runs entirely on `127.0.0.1`, stores everything in one SQLite database on your machine, and never phones home. Your data stays yours — the only outbound requests are the third-party APIs you explicitly opt into with your own keys.
 
 ---
 
-## 🧭 Why DDT?
+## 🧭 Why DDT
 
-Most modern dashboard apps require mandatory cloud logins, track user metrics, rent your data back to you across subscription tiers, and feel like generic SaaS templates.
+Most daily trackers force a tradeoff: **cloud convenience** or **privacy and control**. DDT refuses it.
 
-**DDT (Daily Dashboard Tracker)** is built with a different philosophy:
-- **🔒 100% Local-First:** Your journals, habits, tasks, movie watchlists, and gaming records live in a single SQLite database (`~/.ddt/data.db`) on your physical disk.
-- **⚡ Instantaneous Speeds:** Zero cloud roundtrips, sub-millisecond local queries, and optimistic client writes.
-- **📖 Field Notebook Aesthetic:** Quiet, typography-first interface crafted with warm paper (`#F6F4EE`), deep ledger ink (`#232019`), machined hairline rules, and the signature **Dot-Ledger** activity strip.
-- **🛡️ Client-Stored API Keys:** Optional keys for GitHub GraphQL, TMDB, and RAWG are encrypted locally in your database and called directly from your machine.
+| Principle | What it means in practice |
+| :--- | :--- |
+| 🔒 **Local-first** | All journals, tasks, habits and logs live in `~/.ddt/data.db` on your physical disk. No account, no sync, no lock-in. |
+| ⚡ **Instant by default** | No network round-trips for core flows. Reads are local queries; writes persist immediately. |
+| 📓 **Ledger, not dashboard-SaaS** | Warm paper (`#F6F4EE`), deep ink (`#232019`), hairline rules, and a signature **dot-ledger** motif reused across every module. |
+| 🛡️ **Keys stay yours** | GitHub, TMDB and RAWG keys are entered in-app, stored in the local DB, and proxied server-side — never bundled, never logged, never sent anywhere but the API you chose. |
+| 📦 **Portable** | Export or move the whole database as JSON from **Settings → Database Portability**. |
 
 ---
 
-## 🍱 Modules & Features
+## 🍱 Modules & features
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                            DAILY DASHBOARD BENTO                            │
+│                           DAILY LEDGER BENTO                                │
 ├──────────────────────┬──────────────────────┬───────────────────────────────┤
-│  🐙 DEV ACTIVITY     │  📋 KANBAN BOARD     │  📖 FIELD JOURNAL             │
-│  12-mo commit graph  │  dnd-kit drag & drop │  Split-pane live markdown     │
-│  Recent push stream  │  Monospace due dates │  Debounced auto-save          │
+│  📈 DEV ACTIVITY     │  📋 KANBAN BOARD     │  📓 DAILY JOURNAL             │
+│  12-mo heatmap       │  dnd-kit drag&drop   │  Split-pane markdown         │
+│  Commit stream       │  Priority dots       │  Debounced autosave (~1.5s)  │
 ├──────────────────────┼──────────────────────┴───────────────────────────────┤
-│  🎬 WATCHLIST RADAR  │  🎮 GAME PLAYTIME LOG       🍽️ DAILY MEAL LOG        │
-│  Theatrical counter  │  RAWG metadata & covers     Breakfast/Lunch/Dinner   │
-│  Want/Watching grid  │  Weekly playtime trend      30-day dot ledger trail  │
+│  🎬 WATCHLIST        │  🎮 GAME LOG              🍽️ MEAL LOG               │
+│  Theater due-dates   │  Hours + weekly trend   Breakfast/Lunch/Dinner/Snack│
+│  TMDB posters        │  RAWG cover art         30-day dot-ledger streak    │
 └──────────────────────┴──────────────────────────────────────────────────────┘
 ```
 
-### 1. 📊 Daily Bento Dashboard
-- **Single Pane of Glass:** Aggregates today's GitHub square, active journal prompt, next 2 due Kanban tasks, upcoming movie theatrical releases, and meal status toggles.
-- **Header Dot-Ledger:** Displays a 30-day sequential intensity strip on desktop and a compact 14-day strip on mobile viewports.
+### 1. 📊 Dashboard home — the single pane of glass
+- Today's GitHub contribution square, journal prompt, next 2 due kanban cards, upcoming theatrical releases (next 7 days), and quick-add for meals &amp; playtime.
+- **Dot-ledger header strip:** a 30-day intensity strip on desktop, compact 14-day version on mobile.
 
-### 2. 🐙 Dev & GitHub Tracker
-- **12-Month Contribution Heatmap:** High-density GitHub GraphQL activity grid rendered with hover metrics in JetBrains Mono.
-- **Commit Stream Feed:** Instant visibility into your latest repository pushes with smart in-memory TTL caching.
+### 2. 🐙 Dev &amp; GitHub tracker
+- **12-month contribution heatmap** via GitHub GraphQL `contributionsCollection`, with hover metrics in JetBrains Mono.
+- **Recent commit stream** per repository, with in-memory TTL caching (1h contributions / 15m repo list).
+- Degrades gracefully: no token configured = a "Connect GitHub" card, never a crash.
 
-### 3. 📋 Drag-and-Drop Kanban
-- **Fluid Task Management:** Powered by `@dnd-kit` with collision detection and keyboard navigation.
-- **Visual Priority Tags:** Subtle colored dot indicators (Bug/Urgent in Stamp Red, Feature in Ledger Blue, Ops in Gold).
-- **Data Safety:** Deletion confirmation dialogs prevent accidental task loss on misclicks.
+### 3. 📋 Kanban board
+- Custom columns, drag-and-drop via `@dnd-kit` with collision detection and keyboard support.
+- Quiet priority dots (Stamp Red = bug/urgent, Ledger Blue = feature, Gold = ops), monospace due dates.
+- Delete confirmations guard against accidental loss.
 
-### 4. 📖 Field Journal & Notes
-- **Split-Pane Markdown Editor:** Real-time side-by-side editing with formatted preview support (headings, code blocks, lists, blockquotes).
-- **Debounced Autosave:** Background persistence (~1.5s debounce) with an unobtrusive sync indicator and live word count.
+### 4. 📓 Daily journal
+- One markdown entry per calendar day, split-pane live preview.
+- Debounced autosave (~1.5s) with an unobtrusive sync indicator and live word count.
+- Calendar/list navigation to revisit any past entry.
 
-### 5. 🎬 Movie & TV Watchlist
-- **Theatrical Release Radar:** Real-time countdown badges (`In theaters Sep 12`, `In theaters in 3 days`) for upcoming theatrical premieres.
-- **TMDB Search & Cover Uploads:** One-click metadata fetch with custom poster art upload overrides.
+### 5. 🎬 Watchlist
+- TMDB search with automatic poster + release-date fetch; manual freeform entries supported.
+- **Theater due-date badges** ("In theaters Sep 12") sorted soonest-first.
+- Three states: Watching / Want to watch / Watched.
 
-### 6. 🎮 Gaming Playtime Logger
-- **Session Duration Calculator:** Log decimal hours (`2.5h`) or duration clocks (`2h 30m`) with quick increments (`+0.5h`, `+1h`, `+5h`).
-- **RAWG Library Sync:** Automatically pull game box art or upload custom artwork from your PC.
+### 6. 🎮 Game log
+- Log sessions as decimals (`2.5h`) or clocks (`2h 30m`) with quick increments.
+- Weekly summary: total hours, top game, and a trend line that updates without reload.
+- Optional RAWG cover art via your own key; custom artwork uploads supported.
 
-### 7. 🍽️ Daily Meal & Nutrition Log
-- **Four-Category Logging:** Breakfast, Lunch, Dinner, and Snack sections with accessible Want vs. Eaten checkboxes.
-- **Activity Streak:** Independent 30-day dot ledger tracking eating consistency.
+### 7. 🍽️ Meal log
+- Breakfast, lunch, dinner, and snack sections with Want vs. Eaten states.
+- Independent 30-day dot-ledger streak per category.
+
+### 8. 🗂️ Project tracker
+- Per-project cards across four domains: Software, Graphic Design, Game Dev, Video/Photo.
+- Status labels adapt to the domain ("Ready to Deploy" vs. "Ready to Ship").
+- Linked GitHub repos pull commit activity automatically; everything else falls back to manual daily counts.
 
 ---
 
-## 🎨 Theme Engine (6 Handcrafted Aesthetics)
+## 🎨 Theme engine
 
-DDT includes 6 meticulously balanced themes accessible from the top-bar dropdown or the collapsed sidebar rail:
+Six handcrafted themes, switchable from the top bar or the collapsed sidebar rail:
 
-| Theme | Type | Base Paper | Accent Tone | Description |
+| Theme | Mode | Paper | Accent | Character |
 | :--- | :---: | :---: | :---: | :--- |
-| ☀️ **Field Ledger** | `Light` | `#F6F4EE` | `#2F4858` | Warm paper & ink field logbook *(Default)* |
-| 📜 **Vintage Sepia** | `Light` | `#F4EEDA` | `#8C4A2F` | Antique parchment & leather library binding |
-| 🌙 **Kinetic Dark** | `Dark` | `#09090B` | `#DFE104` | High-energy brutalism with acid yellow |
-| ⚡ **Cyberpunk Night** | `Dark` | `#07070E` | `#00F0FF` | Midnight indigo glow with neon cyan & magenta |
-| 🍃 **Matcha Forest** | `Dark` | `#111915` | `#4ADE80` | Earthy botanical dark green with sage rules |
-| ❄️ **Nordic Frost** | `Dark` | `#1E222A` | `#88C0D0` | Arctic slate chill with polar cyan |
+| ☀️ **Field Ledger** | Light | `#F6F4EE` | `#2F4858` | Warm paper &amp; ink — the default |
+| 📜 **Vintage Sepia** | Light | `#F4EEDA` | `#8C4A2F` | Antique parchment &amp; leather |
+| 🌙 **Kinetic Dark** | Dark | `#09090B` | `#DFE104` | Brutalist, acid yellow |
+| ⚡ **Cyberpunk Night** | Dark | `#07070E` | `#00F0FF` | Indigo glow, neon cyan &amp; magenta |
+| 🍃 **Matcha Forest** | Dark | `#111915` | `#4ADE80` | Botanical dark green |
+| ❄️ **Nordic Frost** | Dark | `#1E222A` | `#88C0D0` | Arctic slate &amp; polar cyan |
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick start
 
 ### Prerequisites
 - **Node.js** `>= 18.0.0`
-- **pnpm** `>= 8.0.0` (or `npm`)
+- **pnpm** `>= 8.0.0` (npm works too)
 
-### 1. Installation
+### 1. Install &amp; build
 
 ```bash
-# Clone repository
 git clone https://github.com/yanhaizhou21-a11y/DDT.git
 cd DDT
-
-# Install monorepo dependencies
 pnpm install
-
-# Build all packages (server, web SPA, CLI)
-pnpm build
-
-# Link CLI command globally (run `ddt` directly from any terminal)
-npm link ./packages/cli
+pnpm build          # builds server, web SPA, and CLI
+npm link ./packages/cli   # exposes the `ddt` command globally
 ```
 
-### 2. Launch DDT
+### 2. Launch
 
 ```bash
-# Launch server & open browser automatically
-ddt
-
-# (Or run via pnpm if preferred: pnpm start)
-
-# Or launch development servers with hot-module reload:
-pnpm dev:server   # API Server on http://127.0.0.1:3001
-pnpm dev:web      # Web UI on http://127.0.0.1:3000
+ddt                 # boots the local server and opens your browser
 ```
+
+Or run the pieces separately:
+
+```bash
+pnpm dev:server     # API server on http://127.0.0.1:3001
+pnpm dev:web        # web UI on http://127.0.0.1:3000
+```
+
+### 3. Verify
+
+```bash
+pnpm typecheck      # TypeScript across the monorepo
+```
+
+### 4. Optional: connect your own APIs
+Open **Settings** to add your own keys. Each integration is optional and independently toggleable — the app is fully functional with zero keys configured.
+
+| Integration | Used for |
+| :--- | :--- |
+| GitHub Personal Access Token (`repo` read, `read:user`) | Contribution heatmap, commit streams, repo-linked projects |
+| TMDB API key | Poster art, release dates, watchlist search |
+| RAWG API key | Game cover art |
 
 ---
 
-## 📦 Monorepo Architecture
+## 🏗️ Architecture
 
 ```
 DDT/
 ├── packages/
-│   ├── server/           # Express + SQLite (@libsql/client + Drizzle ORM) + Proxies
-│   │   ├── src/db/       # SQLite schema definitions & migrations
-│   │   └── src/routes/   # REST API routes (habits, kanban, journal, games, movies)
-│   ├── web/              # React 18 SPA + Vite + Tailwind CSS + Lucide + motion
-│   │   ├── src/pages/    # Dashboard, Dev, Watchlist, Kanban, Journal, Food, Games, Settings
-│   │   └── src/components# Dropdowns, Modals, DotLedger, Magnetic, ThemeToggle
-│   └── cli/              # Standalone executable CLI binary (`bin: { "ddt": "./dist/cli.js" }`)
-├── docs/                 # Documentation assets, preview screenshots & mascots
-├── DDT-PRD.md            # Product Requirements & Behavioral Specifications
-├── DDT-design.md         # Design System Token Architecture
+│   ├── server/          # Express + SQLite (Drizzle ORM) + API-key proxies
+│   │   ├── src/db/      # Schema, migrations, cache tables
+│   │   └── src/routes/  # REST: dashboard, dev, kanban, journal, food, games, movies, projects
+│   ├── web/             # React 19 SPA + Vite + Tailwind CSS + Lucide + motion
+│   │   ├── src/pages/   # Dashboard, Dev, Projects, Watchlist, Kanban, Journal, Food, Games, Settings
+│   │   └── src/components/  # DotLedger, ThemeToggle, Magnetic, Modals, DatePicker, RichTextEditor
+│   └── cli/             # `ddt` binary: migrate → start server → open browser
+├── docs/                # Logo, preview imagery
+├── DDT-PRD.md           # Product requirements & acceptance criteria
+├── DDT-design.md        # Design tokens, layout, voice
 └── README.md
 ```
 
+```mermaid
+flowchart LR
+    U[You, in the browser] -->|HTTP localhost| CLI[ddt CLI]
+    CLI --> SVR[Express Server :3001]
+    SVR -->|Drizzle ORM| DB[(SQLite ~/.ddt/data.db)]
+    SVR -->|proxied, your keys only| GH[GitHub]
+    SVR -->|proxied, your keys only| TMDB[TMDB]
+    SVR -->|proxied, your keys only| RAWG[RAWG]
+    SPA[React SPA :3000] -->|REST| SVR
+    CLI --> SPA
+```
+
+**Data flow in one line:** your keystrokes → debounced local write → SQLite → instant re-read. Third-party data flows through the server proxy so keys never touch the browser's network tab.
+
 ---
 
-## ⌨️ Keyboard Shortcuts
+## ⌨️ Keyboard shortcuts
 
 | Shortcut | Scope | Action |
 | :--- | :--- | :--- |
-| `Ctrl` + `Z` | Journal | Undo markdown edit |
-| `Ctrl` + `Shift` + `Z` | Journal | Redo markdown edit |
-| `Ctrl` + `B` | Journal | Toggle **bold** text |
-| `Ctrl` + `I` | Journal | Toggle *italic* text |
-| `Esc` | Global | Close any modal, dropdown, or confirmation dialog |
-| `↑` / `↓` | Theme Menu | Navigate themes in dropdown |
-| `Enter` / `Space` | Theme Menu | Select active theme |
+| `Ctrl` + `Z` | Journal | Undo |
+| `Ctrl` + `Shift` + `Z` | Journal | Redo |
+| `Ctrl` + `B` | Journal | Toggle **bold** |
+| `Ctrl` + `I` | Journal | Toggle *italic* |
+| `Esc` | Global | Close any modal, dropdown, or dialog |
+| `↑` / `↓` | Theme menu | Navigate themes |
+| `Enter` / `Space` | Theme menu | Select theme |
 
 ---
 
-## 🔒 Privacy & Local Storage
+## 🔒 Privacy &amp; local storage
 
-- **Database Location:** All data is safely stored in `~/.ddt/data.db`. You can customize this path using the `DDT_DB_PATH` environment variable or the `--db` flag.
-- **Portability:** Export and import full database JSON snapshots directly inside **Settings > Database Portability**.
-- **Network Boundaries:** DDT makes zero outbound network requests without your explicit key configuration.
+- **Database location:** `~/.ddt/data.db` by default. Override with `DDT_DB_PATH` or the `--db` flag.
+- **Portability:** export/import full JSON snapshots from **Settings → Database Portability**.
+- **Network boundary:** zero outbound requests unless you configure an API key. No telemetry, no analytics, no ads.
+- **Binding:** the server listens on `127.0.0.1` only — it never exposes itself on your LAN.
+
+---
+
+## 🛠️ Troubleshooting
+
+| Symptom | Likely cause | Fix |
+| :--- | :--- | :--- |
+| `ddt` command not found | CLI not linked | Run `npm link ./packages/cli` after `pnpm build` |
+| Port 3000/3001 already in use | Another process bound the port | CLI falls back to the next free port automatically |
+| Heatmap shows "Connect GitHub" | No token configured | Add a fine-grained PAT in **Settings** with `repo` read + `read:user` |
+| "Not saved" indicator in journal | Local write failed | Check disk space / DB path permissions; text is kept in memory |
+| Blank screen after build | Stale dist output | Run `pnpm build` again, then `ddt` |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome — this project follows a simple flow:
+
+1. **Fork** the repo and create a branch (`git checkout -b feat/your-thing`).
+2. **Read** `DDT-PRD.md` for behavior and `DDT-design.md` for tokens, layout, and voice before touching UI.
+3. **Build &amp; test** with `pnpm build` and `pnpm typecheck`.
+4. **Open a PR** describing what changed and why.
+
+Good first areas to explore: empty states, accessibility passes, the dot-ledger component, and v2 candidates like notifications or nutrition lookup.
 
 ---
 
 <div align="center">
-  <sub>Crafted with care for private, reflective daily tracking. Released under the <a href="LICENSE">MIT License</a>.</sub>
-</div>
 
+  <sub>Crafted for quiet, private, reflective tracking. Released under the <a href="LICENSE">MIT License</a>.</sub>
+
+</div>

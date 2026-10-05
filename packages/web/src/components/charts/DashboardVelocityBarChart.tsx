@@ -16,6 +16,7 @@ export interface DashboardVelocityBarChartProps {
   className?: string;
   title?: string;
   subtitle?: string;
+  description?: string;
 }
 
 const barConfig: ChartConfig = {
@@ -37,8 +38,10 @@ export const DashboardVelocityBarChart: React.FC<DashboardVelocityBarChartProps>
   data,
   className,
   title = 'Weekly Velocity Comparison',
-  subtitle = 'Daily volume across coding, gaming & nutrition',
+  subtitle,
+  description,
 }) => {
+  const displaySubtitle = description || subtitle || 'Daily volume across coding, gaming & nutrition';
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const maxVal = React.useMemo(() => {
@@ -67,7 +70,7 @@ export const DashboardVelocityBarChart: React.FC<DashboardVelocityBarChartProps>
             </div>
             <div>
               <h3 className="font-serif text-base font-bold text-ink">{title}</h3>
-              <p className="text-[11px] text-ink-soft font-mono">{subtitle}</p>
+              <p className="text-[11px] text-ink-soft font-mono">{displaySubtitle}</p>
             </div>
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-paper border border-rule text-ink-soft">
@@ -95,7 +98,6 @@ export const DashboardVelocityBarChart: React.FC<DashboardVelocityBarChartProps>
                   <div className="w-full flex items-end justify-center gap-1 h-32 relative">
                     {/* Commits Bar */}
                     <div
-                      style={{ height: `${commitHeight}%` }}
                       className={cn(
                         'w-2 sm:w-2.5 rounded-t-xs transition-all duration-150',
                         isHovered ? 'brightness-110 scale-y-105' : 'opacity-90'

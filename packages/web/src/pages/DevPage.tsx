@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import type { GithubContributionsResponse, GithubRepo, RouteTab } from '../types';
-import { fetchGithubContributions, fetchGithubRepos, refreshGithubCache } from '../api';
+import type { GithubContributionsResponse, GithubRepo, GithubBranch, RouteTab } from '../types';
+import { fetchGithubContributions, fetchGithubRepos, fetchRepoBranches, refreshGithubCache } from '../api';
 import { Header } from '../components/Header';
 import { EmptyState } from '../components/EmptyState';
 import { GithubGraph } from '../components/GithubGraph';
@@ -14,6 +14,7 @@ import {
   Lock,
   GitBranch,
   Calendar,
+  Check,
 } from 'lucide-react';
 
 interface DevPageProps {
@@ -27,6 +28,9 @@ export const DevPage: React.FC<DevPageProps> = ({ onNavigate }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unconfigured, setUnconfigured] = useState(false);
+  const [branchesByRepo, setBranchesByRepo] = useState<Record<string, GithubBranch[]>>({});
+  const [loadingBranchesForRepo, setLoadingBranchesForRepo] = useState<string | null>(null);
+  const [selectedBranchByRepo, setSelectedBranchByRepo] = useState<Record<string, string>>({});
 
   const [hoveredDay, setHoveredDay] = useState<{
     date: string;
@@ -82,6 +86,30 @@ export const DevPage: React.FC<DevPageProps> = ({ onNavigate }) => {
       setError(err.message || 'Refresh failed');
       setRefreshing(false);
     }
+  };
+
+  const handleLoadBranches = async (repoFullName: string) => {
+    if (!repoFullName.includes('/')) return;
+    if (branchesByRepo[repoFullName]) return;
+    try {
+      setLoadingBranchesForRepo(repoFullName);
+      const [owner, repoName] = repoFullName.split('/');
+      const res = await fetchRepoBranches(owner, repoName);
+      if (res?.branches) {
+        setBranchesByRepo((prev) => ({ ...prev, [repoFullName]: res.branches }));
+        if (!selectedBranchByRepo[repoFullName]) {
+          setSelectedBranchByRepo((prev) => ({ ...prev, [repoFullName]: res.defaultBranch || 'main' }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load branches', err);
+    } finally {
+      setLoadingBranchesForRepo(null);
+    }
+  };
+
+  const handleSelectBranch = (repoFullName: string, branchName: string) => {
+    setSelectedBranchByRepo((prev) => ({ ...prev, [repoFullName]: branchName }));
   };
 
   const getHeatmapColorClass = (count: number) => {
@@ -233,6 +261,44 @@ export const DevPage: React.FC<DevPageProps> = ({ onNavigate }) => {
                           </p>
                         </div>
                       )}
+
+                      {/* Branch Selection & Link */}
+                      <div className="mt-3 pt-2.5 border-t border-rule/50">
+                        <div className="flex items-center justify-between text-[11px] font-mono text-ink-soft mb-1">
+                          <span className="flex items-center gap-1">
+                            <GitBranch className="w-3 h-3 text-ledger-blue" />
+                            Working Branch:
+                          </span>
+                          {selectedBranchByRepo[repo.fullName] && (
+                            <a
+                              href={`${repo.htmlUrl}/tree/${encodeURIComponent(selectedBranchByRepo[repo.fullName])}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-ledger-blue hover:underline flex items-center gap-0.5 text-[10px]"
+                            >
+                              Browse <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
+                        <select
+                          value={selectedBranchByRepo[repo.fullName] || repo.defaultBranch || 'main'}
+                          onFocus={() => handleLoadBranches(repo.fullName)}
+                          onChange={(e) => handleSelectBranch(repo.fullName, e.target.value)}
+                          className="w-full px-2 py-1 bg-paper border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-1 focus:ring-ledger-blue truncate cursor-pointer"
+                        >
+                          {!branchesByRepo[repo.fullName] ? (
+                            <option value={repo.defaultBranch || 'main'}>
+                              {loadingBranchesForRepo === repo.fullName ? 'Loading branches...' : `${repo.defaultBranch || 'main'} (click to load all)`}
+                            </option>
+                          ) : (
+                            branchesByRepo[repo.fullName].map((b) => (
+                              <option key={b.name} value={b.name}>
+                                {b.name} {b.isDefault ? '★ (default)' : ''} {b.isProtected ? '🛡️' : ''}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-3 mt-3 border-t border-rule/60 text-[11px] font-mono text-ink-soft">

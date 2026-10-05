@@ -7,6 +7,7 @@ export interface DashboardKpiCardProps {
   value: string | number;
   unit?: string;
   description?: string;
+  changeLabel?: string;
   trend?: {
     value: number; // percentage, e.g. +14 or -5
     label?: string;
@@ -14,6 +15,8 @@ export interface DashboardKpiCardProps {
   sparkline?: number[];
   icon: React.ElementType;
   color?: string;
+  accentColor?: string;
+  sparklineColor?: string;
   className?: string;
   onClick?: () => void;
 }
@@ -23,13 +26,18 @@ export const DashboardKpiCard: React.FC<DashboardKpiCardProps> = ({
   value,
   unit,
   description,
+  changeLabel,
   trend,
   sparkline = [],
   icon: Icon,
-  color = 'var(--ledger-blue)',
+  color,
+  accentColor,
+  sparklineColor,
   className,
   onClick,
 }) => {
+  const activeColor = color || accentColor || 'var(--ledger-blue)';
+  const activeSparkColor = sparklineColor || activeColor;
   // Sparkline coordinates
   const sparklineSvg = React.useMemo(() => {
     if (!sparkline || sparkline.length < 2) return null;
@@ -66,7 +74,7 @@ export const DashboardKpiCard: React.FC<DashboardKpiCardProps> = ({
             className="w-7 h-7 rounded-md border border-rule flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
             style={{
               backgroundColor: 'var(--paper)',
-              color: color,
+              color: activeColor,
             }}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -112,9 +120,9 @@ export const DashboardKpiCard: React.FC<DashboardKpiCardProps> = ({
               <span className="font-mono text-xs text-ink-soft font-medium">{unit}</span>
             )}
           </div>
-          {description && (
+          {(changeLabel || description) && (
             <p className="text-[11px] text-ink-soft font-mono truncate mt-0.5">
-              {description}
+              {changeLabel || description}
             </p>
           )}
         </div>
@@ -128,8 +136,8 @@ export const DashboardKpiCard: React.FC<DashboardKpiCardProps> = ({
             >
               <polyline
                 fill="none"
-                stroke={color}
-                strokeWidth="2"
+                stroke={activeSparkColor}
+                strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 points={sparklineSvg}

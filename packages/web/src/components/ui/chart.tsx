@@ -6,7 +6,7 @@ export type ChartConfig = Record<
   string,
   {
     label?: React.ReactNode;
-    icon?: React.ComponentType<{ className?: string }>;
+    icon?: React.ComponentType<{ className?: string; style?: React.CSSProperties }> | React.ComponentType<any> | React.ElementType;
     color?: string;
     theme?: Record<string, string>;
   }

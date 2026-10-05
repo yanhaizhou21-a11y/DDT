@@ -22,6 +22,7 @@ import {
   DashboardVelocityBarChart,
   type DailyVelocityData,
 } from '../components/charts/DashboardVelocityBarChart';
+import { DashboardGithubBranchWidget } from '../components/DashboardGithubBranchWidget';
 import {
   GitCommit,
   BookOpen,
@@ -353,10 +354,124 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* GAPLESS BENTO GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
-        {/* BENTO CARD 1: DEV & GITHUB ACTIVITY (6 cols) */}
-        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between group hover:shadow-card transition-all">
+      {/* SECTION 1: SHADCN KPI METRICS ROW */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono font-bold tracking-widest text-ledger-blue uppercase">
+            01. Daily Metric KPIs
+          </span>
+          <div className="h-px bg-rule/70 flex-1" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <DashboardKpiCard
+            title="Today's Commits"
+            value={data.github.todayCommits}
+            unit="commits"
+            icon={GitCommit}
+            sparkline={commitsSparkline}
+            sparklineColor="var(--ledger-blue)"
+            changeLabel="10-day velocity"
+            accentColor="var(--ledger-blue)"
+            onClick={() => onNavigate('dev')}
+          />
+          <DashboardKpiCard
+            title="Gaming Logged"
+            value={data.gameToday.hours.toFixed(1)}
+            unit="hrs"
+            icon={Gamepad2}
+            sparkline={gamesSparkline}
+            sparklineColor="var(--gold)"
+            changeLabel="Daily session"
+            accentColor="var(--gold)"
+            onClick={() => onNavigate('games')}
+          />
+          <DashboardKpiCard
+            title="Meals & Fuel"
+            value={data.foodToday.count}
+            unit="entries"
+            icon={Utensils}
+            sparkline={foodSparkline}
+            sparklineColor="#10B981"
+            changeLabel="Nutrition intake"
+            accentColor="#10B981"
+            onClick={() => onNavigate('food')}
+          />
+          <DashboardKpiCard
+            title="Daily Reflection"
+            value={data.journal.hasWritten ? 'Recorded' : 'Pending'}
+            unit={data.kanbanDue.length > 0 ? `${data.kanbanDue.length} due` : undefined}
+            icon={BookOpen}
+            sparkline={journalSparkline}
+            sparklineColor="var(--stamp-red)"
+            changeLabel={data.journal.hasWritten ? 'Saved today' : 'Awaiting entry'}
+            accentColor="var(--stamp-red)"
+            onClick={() => onNavigate('journal')}
+          />
+        </div>
+      </div>
+
+      {/* SECTION 2: MULTI-STREAM ACTIVITY & CATEGORY BREAKDOWN */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono font-bold tracking-widest text-ledger-blue uppercase">
+            02. Output Streams & Effort Allocation
+          </span>
+          <div className="h-px bg-rule/70 flex-1" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div className="lg:col-span-8">
+            <DashboardActivityAreaChart
+              data={activityStreamPoints}
+              title="Activity Velocity Streams"
+              description="Multi-stream ledger activity distribution across time"
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <DashboardCategoryDonutChart
+              segments={categorySegments}
+              title="Effort Allocation"
+              description="Proportional breakdown across ledger domains"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3: VELOCITY CADENCE & ACTIVE BRANCH CONTRIBUTION */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono font-bold tracking-widest text-ledger-blue uppercase">
+            03. Cadence & Branch Contribution
+          </span>
+          <div className="h-px bg-rule/70 flex-1" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div className="lg:col-span-5">
+            <DashboardVelocityBarChart
+              data={weeklyVelocityData}
+              title="7-Day Velocity Cadence"
+              description="Comparative daily throughput across streams"
+            />
+          </div>
+
+          {/* ACTIVE BRANCH CONTRIBUTION WIDGET (PUBLIC & PRIVATE REPOS) */}
+          <div className="lg:col-span-7">
+            <DashboardGithubBranchWidget
+              onNavigateDev={() => onNavigate('dev')}
+              onNavigateProjects={() => onNavigate('projects')}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 4: DEV & GITHUB CONTRIBUTION MATRIX */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono font-bold tracking-widest text-ledger-blue uppercase">
+            04. Local & Remote Commit Matrix
+          </span>
+          <div className="h-px bg-rule/70 flex-1" />
+        </div>
+        <div className="ledger-card p-5 flex flex-col justify-between group hover:shadow-card transition-all">
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-rule/70">
               <div className="flex items-center gap-2.5">
@@ -426,9 +541,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* BENTO CARD 2: DAILY JOURNAL QUICK-ENTRY (6 cols) */}
-        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between group hover:shadow-card transition-all h-full">
+      {/* SECTION 5: DAILY LEDGER ACTIONS & QUICK LOGS */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono font-bold tracking-widest text-ledger-blue uppercase">
+            05. Daily Ledger Actions & Logs
+          </span>
+          <div className="h-px bg-rule/70 flex-1" />
+        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
+        {/* BENTO CARD: DAILY JOURNAL QUICK-ENTRY (7 cols) */}
+        <div className="lg:col-span-7 ledger-card p-5 flex flex-col justify-between group hover:shadow-card transition-all h-full">
           <div className="flex items-center justify-between pb-3 border-b border-rule/70 shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-md bg-paper flex items-center justify-center text-ledger-blue border border-rule/60">
@@ -478,10 +603,80 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
+        {/* BENTO CARD: NEXT DUE KANBAN TASKS (5 cols) */}
+        <div className="lg:col-span-5 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-md bg-paper flex items-center justify-center text-ledger-blue border border-rule/60">
+                  <SquareKanban className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-base font-bold text-ink">Upcoming Tasks</h2>
+                  <p className="text-[11px] text-ink-soft font-mono">Kanban Deadlines</p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigate('kanban')}
+                className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1"
+              >
+                Board <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
+            {/* Task List */}
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {data.kanbanDue.map((card) => (
+                <div
+                  key={card.id}
+                  className="p-3 rounded-lg bg-paper/60 border border-rule/60 hover:border-ink-soft/60 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-serif font-semibold text-xs text-ink line-clamp-1">
+                      {card.title}
+                    </span>
+                    {card.tag && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-card text-ink-soft border border-rule shrink-0">
+                        {card.tag}
+                      </span>
+                    )}
+                  </div>
+                  {card.dueDate && (
+                    <div className="flex items-center gap-1.5 mt-1 text-[11px] font-mono">
+                      <Clock className="w-3 h-3 text-ink-soft" />
+                      <span
+                        className={
+                          card.isOverdue ? 'text-stamp-red font-semibold' : 'text-ink-soft'
+                        }
+                      >
+                        {card.isOverdue ? `Overdue: ${card.dueDate}` : `Due: ${card.dueDate}`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
 
-        {/* BENTO CARD 3: GAME PLAYTIME & QUICK LOG (4 cols) */}
-        <div className="lg:col-span-4 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
+              {data.kanbanDue.length === 0 && (
+                <p className="text-xs font-mono text-ink-soft/60 italic py-6 text-center">
+                  No upcoming deadlines on the board.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-rule/60 flex items-center justify-between text-xs text-ink-soft font-mono">
+            <span>{data.kanbanDue.length} tasks scheduled</span>
+            <button
+              onClick={() => onNavigate('kanban')}
+              className="text-ledger-blue hover:underline text-[11px]"
+            >
+              Manage Board →
+            </button>
+          </div>
+        </div>
+
+        {/* BENTO CARD: GAME PLAYTIME & QUICK LOG (6 cols) */}
+        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-3 border-b border-rule/70">
               <div className="flex items-center gap-2.5">
@@ -569,80 +764,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* BENTO CARD 4: NEXT DUE KANBAN TASKS (4 cols) */}
-        <div className="lg:col-span-4 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between pb-3 border-b border-rule/70">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-md bg-paper flex items-center justify-center text-ledger-blue border border-rule/60">
-                  <SquareKanban className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="font-serif text-base font-bold text-ink">Upcoming Tasks</h2>
-                  <p className="text-[11px] text-ink-soft font-mono">Kanban Deadlines</p>
-                </div>
-              </div>
-              <button
-                onClick={() => onNavigate('kanban')}
-                className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1"
-              >
-                Board <ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Task List */}
-            <div className="space-y-2 max-h-56 overflow-y-auto">
-              {data.kanbanDue.map((card) => (
-                <div
-                  key={card.id}
-                  className="p-3 rounded-lg bg-paper/60 border border-rule/60 hover:border-ink-soft/60 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-serif font-semibold text-xs text-ink line-clamp-1">
-                      {card.title}
-                    </span>
-                    {card.tag && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-card text-ink-soft border border-rule shrink-0">
-                        {card.tag}
-                      </span>
-                    )}
-                  </div>
-                  {card.dueDate && (
-                    <div className="flex items-center gap-1.5 mt-1 text-[11px] font-mono">
-                      <Clock className="w-3 h-3 text-ink-soft" />
-                      <span
-                        className={
-                          card.isOverdue ? 'text-stamp-red font-semibold' : 'text-ink-soft'
-                        }
-                      >
-                        {card.isOverdue ? `Overdue: ${card.dueDate}` : `Due: ${card.dueDate}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {data.kanbanDue.length === 0 && (
-                <p className="text-xs font-mono text-ink-soft/60 italic py-6 text-center">
-                  No upcoming deadlines on the board.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-rule/60 flex items-center justify-between text-xs text-ink-soft font-mono">
-            <span>{data.kanbanDue.length} tasks scheduled</span>
-            <button
-              onClick={() => onNavigate('kanban')}
-              className="text-ledger-blue hover:underline text-[11px]"
-            >
-              Manage Board →
-            </button>
-          </div>
-        </div>
-
-        {/* BENTO CARD 5: WATCHLIST & UPCOMING CINEMA (4 cols) */}
-        <div className="lg:col-span-4 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
+        {/* BENTO CARD: WATCHLIST & UPCOMING CINEMA (6 cols) */}
+        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-3 border-b border-rule/70">
               <div className="flex items-center gap-2.5">
@@ -774,6 +897,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Discord Daily Activity Recap Modal */}

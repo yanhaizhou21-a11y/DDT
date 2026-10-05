@@ -593,19 +593,19 @@
 }
 
 [data-theme="brutalism"] .ledger-card {
-  border: 3px solid #000000 !important;
+  border: 3.5px solid #000000 !important;
   border-radius: 0px !important;
   box-shadow: 6px 6px 0px 0px #000000 !important;
   background-color: #FFFFFF !important;
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out !important;
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out !important;
 }
 
 [data-theme="brutalism"] .ledger-card-interactive {
-  border: 3px solid #000000 !important;
+  border: 3.5px solid #000000 !important;
   border-radius: 0px !important;
   box-shadow: 6px 6px 0px 0px #000000 !important;
   background-color: #FFFFFF !important;
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out !important;
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out !important;
 }
 
 [data-theme="brutalism"] .ledger-card-interactive:hover {
@@ -623,30 +623,46 @@
 [data-theme="brutalism"] select,
 [data-theme="brutalism"] textarea {
   border-color: #000000 !important;
-  border-width: 2px !important;
+  border-width: 2.5px !important;
   border-radius: 0px !important;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 3px 3px 0px 0px #000000;
 }
 
 [data-theme="brutalism"] input:focus,
 [data-theme="brutalism"] select:focus,
 [data-theme="brutalism"] textarea:focus {
-  background-color: #FFFDF5 !important;
+  background-color: #FFD93D !important;
+  color: #000000 !important;
   outline: 2px solid #000000 !important;
   outline-offset: 1px;
-  box-shadow: 4px 4px 0px 0px #000000 !important;
+  box-shadow: 5px 5px 0px 0px #000000 !important;
+}
+
+[data-theme="brutalism"] .badge,
+[data-theme="brutalism"] .pill-tag {
+  border: 2px solid #000000 !important;
+  box-shadow: 2px 2px 0px 0px #000000 !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Halftone and Grid Pattern Textures for Neo-Brutalism */
 .neo-halftone {
   background-image: radial-gradient(#000000 1.5px, transparent 1.5px);
-  background-size: 14px 14px;
+  background-size: 16px 16px;
 }
 
 .neo-grid {
   background-size: 32px 32px;
   background-image: linear-gradient(to right, rgba(0, 0, 0, 0.12) 1px, transparent 1px),
                     linear-gradient(to bottom, rgba(0, 0, 0, 0.12) 1px, transparent 1px);
+}
+
+.neo-outline-text {
+  -webkit-text-stroke: 2px #000000;
+  color: transparent;
 }
 
 /* ==========================================================================
@@ -672,7 +688,7 @@
   border-radius: 0px !important;
   box-shadow: none !important;
   background-color: #FFFFFF !important;
-  transition: border-color 0.15s ease-out, transform 0.15s ease-out !important;
+  transition: border-color 0.12s ease-out, transform 0.12s ease-out !important;
 }
 
 [data-theme="swiss"] .ledger-card-interactive {
@@ -680,7 +696,7 @@
   border-radius: 0px !important;
   box-shadow: none !important;
   background-color: #FFFFFF !important;
-  transition: border-color 0.15s ease-out, transform 0.15s ease-out !important;
+  transition: border-color 0.12s ease-out, transform 0.12s ease-out !important;
 }
 
 [data-theme="swiss"] .ledger-card-interactive:hover {
@@ -705,7 +721,11 @@
   box-shadow: none !important;
 }
 
-/* Swiss Texture Patterns (Grid, Dots, Diagonal) */
+[data-theme="swiss"] button:hover {
+  border-color: #FF3000;
+}
+
+/* Swiss Texture Patterns (Grid, Dots, Diagonal, Noise) */
 .swiss-grid-pattern {
   background-size: 24px 24px;
   background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
@@ -720,6 +740,11 @@
 .swiss-diagonal {
   background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.04) 0, rgba(0,0,0,0.04) 1px, transparent 0, transparent 12px);
 }
+
+.swiss-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'%2F%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'%2F%3E%3C/svg%3E");
+}
+
 
 
 

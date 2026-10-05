@@ -9,7 +9,7 @@ export interface CategorySegment {
   value: number;
   unit: string;
   color: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }> | React.ComponentType<any> | React.ElementType;
 }
 
 export interface DashboardCategoryDonutChartProps {
@@ -17,14 +17,17 @@ export interface DashboardCategoryDonutChartProps {
   className?: string;
   title?: string;
   subtitle?: string;
+  description?: string;
 }
 
 export const DashboardCategoryDonutChart: React.FC<DashboardCategoryDonutChartProps> = ({
   segments,
   className,
   title = 'Balance & Output Ratio',
-  subtitle = 'Category distribution across work, play & daily habits',
+  subtitle,
+  description,
 }) => {
+  const displaySubtitle = description || subtitle || 'Category distribution across work, play & daily habits';
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   const totalValue = React.useMemo(() => {
@@ -79,7 +82,7 @@ export const DashboardCategoryDonutChart: React.FC<DashboardCategoryDonutChartPr
             </div>
             <div>
               <h3 className="font-serif text-base font-bold text-ink">{title}</h3>
-              <p className="text-[11px] text-ink-soft font-mono">{subtitle}</p>
+              <p className="text-[11px] text-ink-soft font-mono">{displaySubtitle}</p>
             </div>
           </div>
         </div>

@@ -17,6 +17,7 @@ export interface DashboardActivityAreaChartProps {
   className?: string;
   title?: string;
   subtitle?: string;
+  description?: string;
 }
 
 const chartConfig: ChartConfig = {
@@ -46,8 +47,10 @@ export const DashboardActivityAreaChart: React.FC<DashboardActivityAreaChartProp
   data,
   className,
   title = 'Activity & Productivity Streams',
-  subtitle = 'Multi-dimensional output timeline across dev, gaming, meals & journaling',
+  subtitle,
+  description,
 }) => {
+  const displaySubtitle = description || subtitle || 'Multi-dimensional output timeline across dev, gaming, meals & journaling';
   const [range, setRange] = useState<'7d' | '14d' | '30d'>('14d');
   const [activeStreams, setActiveStreams] = useState<Record<string, boolean>>({
     commits: true,
@@ -151,7 +154,7 @@ export const DashboardActivityAreaChart: React.FC<DashboardActivityAreaChartProp
             </span>
           </div>
           <h2 className="font-serif text-lg font-bold text-ink">{title}</h2>
-          <p className="text-xs text-ink-soft font-mono mt-0.5">{subtitle}</p>
+          <p className="text-xs text-ink-soft font-mono mt-0.5">{displaySubtitle}</p>
         </div>
 
         {/* Time Range Selector */}
@@ -195,7 +198,11 @@ export const DashboardActivityAreaChart: React.FC<DashboardActivityAreaChartProp
                   : 'bg-card/40 text-ink-soft/50 border-rule/50 line-through opacity-60 hover:opacity-80'
               )}
             >
-              {Icon && <Icon className="w-3 h-3" style={{ color: cfg.color }} />}
+              {Icon && (
+                <span style={{ color: cfg.color }} className="inline-flex items-center">
+                  <Icon className="w-3 h-3" />
+                </span>
+              )}
               <span
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: cfg.color }}

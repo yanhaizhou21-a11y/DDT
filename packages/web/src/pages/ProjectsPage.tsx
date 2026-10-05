@@ -798,7 +798,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                         className="bg-paper text-ink font-mono text-xs font-semibold px-2 py-1 rounded border border-rule focus:outline-none focus:ring-1 focus:ring-ledger-blue cursor-pointer"
                       >
                         <option value="">Default Branch</option>
-                        {(branchesByRepo[projectDetail.linkedRepo] || []).map((b) => (
+                        {((projectDetail.linkedRepo ? branchesByRepo[projectDetail.linkedRepo] : []) || []).map((b: GithubBranch) => (
                           <option key={b.name} value={b.name}>
                             {b.name} {b.isDefault ? '(default)' : ''} {b.isProtected ? '🛡️' : ''}
                           </option>
@@ -1082,7 +1082,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                               <span className="text-ink-soft shrink-0">@{project.linkedBranch}</span>
                             )}
                             {availableRepos.find((r) => r.fullName === project.linkedRepo)?.private && (
-                              <Lock className="w-2.5 h-2.5 text-ink-soft shrink-0" title="Private Repository" />
+                              <span title="Private Repository" className="inline-flex items-center">
+                                <Lock className="w-2.5 h-2.5 text-ink-soft shrink-0" />
+                              </span>
                             )}
                           </div>
                         )}

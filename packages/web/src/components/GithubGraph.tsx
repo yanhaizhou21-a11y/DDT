@@ -35,6 +35,8 @@ export interface GithubGraphProps {
   unitPlural?: string;
   metricLabel?: string;
   className?: string;
+  onTotalLoaded?: (total: number) => void;
+  fullWidth?: boolean;
 }
 
 const VARIANTS: Record<GithubGraphVariant, [string, string, string, string, string]> = {
@@ -63,10 +65,10 @@ function addDays(date: Date, days: number): Date {
 export function GithubGraph({
   account = '',
   projectId,
-  months = 6,
+  months = 12,
   variant = 'github',
   animation = 'wave',
-  cellSize = 12,
+  cellSize = 13,
   cellGap = 3,
   cellRadius = 2,
   showLegend = true,
@@ -77,6 +79,8 @@ export function GithubGraph({
   unitPlural = 'commits',
   metricLabel = 'in the last year',
   className,
+  onTotalLoaded,
+  fullWidth = true,
 }: GithubGraphProps) {
   const [hoveredCell, setHoveredCell] = React.useState<GithubContributionCell | null>(null);
   const [tooltipPos, setTooltipPos] = React.useState<{ x: number; y: number } | null>(null);
@@ -89,6 +93,7 @@ export function GithubGraph({
       setFetchedData(data);
       const total = data.reduce((acc, curr) => acc + curr.count, 0);
       setTotalCommits(total);
+      onTotalLoaded?.(total);
       return;
     }
 
@@ -105,7 +110,9 @@ export function GithubGraph({
 
         if (projectId && resData.activity) {
           setFetchedData(resData.activity);
-          setTotalCommits(resData.totalActivity || 0);
+          const total = resData.totalActivity || 0;
+          setTotalCommits(total);
+          onTotalLoaded?.(total);
         } else if (resData.weeks) {
           const list: GithubContribution[] = [];
           for (const w of resData.weeks) {
@@ -116,7 +123,9 @@ export function GithubGraph({
             }
           }
           setFetchedData(list);
-          setTotalCommits(resData.totalContributions || 0);
+          const total = resData.totalContributions || 0;
+          setTotalCommits(total);
+          onTotalLoaded?.(total);
         }
       })
       .catch(() => {})
@@ -127,7 +136,7 @@ export function GithubGraph({
     return () => {
       isMounted = false;
     };
-  }, [data, projectId]);
+  }, [data, projectId, onTotalLoaded]);
 
   const palette = VARIANTS[variant] || VARIANTS.github;
 
@@ -166,8 +175,29 @@ export function GithubGraph({
     return resultWeeks;
   }, [fetchedData, months]);
 
+  // Month markers across the week timeline
+  const monthLabels = React.useMemo(() => {
+    const labels: { index: number; label: string }[] = [];
+    let lastMonth = -1;
+
+    weeks.forEach((week, wIndex) => {
+      if (!week[0]?.date) return;
+      const d = new Date(week[0].date + 'T00:00:00');
+      const month = d.getUTCMonth();
+      if (month !== lastMonth && wIndex < weeks.length - 2) {
+        labels.push({
+          index: wIndex,
+          label: d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }),
+        });
+        lastMonth = month;
+      }
+    });
+
+    return labels;
+  }, [weeks]);
+
   return (
-    <div className={cn('relative flex flex-col gap-3 font-sans', className)}>
+    <div className={cn('relative flex flex-col gap-3 font-sans w-full', className)}>
       {(showAccount || totalCommits > 0) && (
         <div className="flex items-center justify-between text-xs text-ink-soft">
           <div className="flex items-center gap-2">
@@ -182,48 +212,99 @@ export function GithubGraph({
       )}
 
       {/* Grid container */}
-      <div className="overflow-x-auto pb-1 scrollbar-none">
+      <div className="w-full overflow-x-auto pb-1 scrollbar-none">
         <div
-          className="inline-flex gap-[3px] p-2 rounded-lg bg-card/60 border border-rule/50 backdrop-blur-xs"
-          style={{ gap: `${cellGap}px` }}
+          className={cn(
+            'flex flex-col gap-1 p-3 rounded-lg bg-card/60 border border-rule/50 backdrop-blur-xs',
+            fullWidth ? 'w-full min-w-[700px]' : 'inline-flex'
+          )}
         >
-          {weeks.map((week, wIndex) => (
-            <div key={`w-${wIndex}`} className="flex flex-col gap-[3px]" style={{ gap: `${cellGap}px` }}>
-              {week.map((cell, cIndex) => {
-                const cellColor = palette[cell.level] || palette[0];
-                const animDelay = animation === 'wave' ? (wIndex * 0.015 + cIndex * 0.01) : 0;
-
+          {/* Month headers row */}
+          {weeks.length > 8 && (
+            <div className="relative h-4 text-[10px] font-mono text-ink-soft select-none ml-7 pr-1">
+              {monthLabels.map((m) => {
+                const leftPercent = (m.index / weeks.length) * 100;
                 return (
-                  <motion.div
-                    key={cell.date}
-                    initial={animation !== 'none' ? { opacity: 0, scale: 0.6 } : undefined}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: animDelay, duration: 0.2 }}
-                    whileHover={{ scale: 1.35, zIndex: 20 }}
-                    onMouseEnter={(e) => {
-                      setHoveredCell(cell);
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top - 8 });
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredCell(null);
-                      setTooltipPos(null);
-                    }}
-                    style={{
-                      width: `${cellSize}px`,
-                      height: `${cellSize}px`,
-                      borderRadius: `${cellRadius}px`,
-                      backgroundColor: cellColor,
-                    }}
-                    className={cn(
-                      'cursor-pointer transition-colors duration-150',
-                      ambientEffect === 'twinkle' && cell.level > 1 && 'hover:brightness-125'
-                    )}
-                  />
+                  <span
+                    key={`${m.label}-${m.index}`}
+                    className="absolute transform -translate-x-1"
+                    style={{ left: `${leftPercent}%` }}
+                  >
+                    {m.label}
+                  </span>
                 );
               })}
             </div>
-          ))}
+          )}
+
+          {/* Grid with Left Day Labels */}
+          <div className="flex gap-2 items-start">
+            {/* Day of week labels (aligned with 7 rows) */}
+            <div
+              className="flex flex-col text-[9px] font-mono text-ink-soft select-none w-5 text-right shrink-0 pt-[1px]"
+              style={{ gap: `${cellGap}px` }}
+            >
+              <span style={{ height: `${cellSize}px` }} className="opacity-0">Sun</span>
+              <span style={{ height: `${cellSize}px` }} className="leading-none flex items-center justify-end">Mon</span>
+              <span style={{ height: `${cellSize}px` }} className="opacity-0">Tue</span>
+              <span style={{ height: `${cellSize}px` }} className="leading-none flex items-center justify-end">Wed</span>
+              <span style={{ height: `${cellSize}px` }} className="opacity-0">Thu</span>
+              <span style={{ height: `${cellSize}px` }} className="leading-none flex items-center justify-end">Fri</span>
+              <span style={{ height: `${cellSize}px` }} className="opacity-0">Sat</span>
+            </div>
+
+            {/* Weeks columns */}
+            <div
+              className={cn(
+                'flex',
+                fullWidth ? 'flex-1 justify-between' : 'gap-[3px]'
+              )}
+              style={!fullWidth ? { gap: `${cellGap}px` } : undefined}
+            >
+              {weeks.map((week, wIndex) => (
+                <div
+                  key={`w-${wIndex}`}
+                  className="flex-1 flex flex-col items-center"
+                  style={{ gap: `${cellGap}px` }}
+                >
+                  {week.map((cell, cIndex) => {
+                    const cellColor = palette[cell.level] || palette[0];
+                    const animDelay = animation === 'wave' ? (wIndex * 0.012 + cIndex * 0.008) : 0;
+
+                    return (
+                      <motion.div
+                        key={cell.date}
+                        initial={animation !== 'none' ? { opacity: 0, scale: 0.6 } : undefined}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: animDelay, duration: 0.2 }}
+                        whileHover={{ scale: 1.35, zIndex: 20 }}
+                        onMouseEnter={(e) => {
+                          setHoveredCell(cell);
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top - 8 });
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredCell(null);
+                          setTooltipPos(null);
+                        }}
+                        style={{
+                          width: '100%',
+                          maxWidth: `${cellSize}px`,
+                          aspectRatio: '1 / 1',
+                          borderRadius: `${cellRadius}px`,
+                          backgroundColor: cellColor,
+                        }}
+                        className={cn(
+                          'cursor-pointer transition-colors duration-150',
+                          ambientEffect === 'twinkle' && cell.level > 1 && 'hover:brightness-125'
+                        )}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

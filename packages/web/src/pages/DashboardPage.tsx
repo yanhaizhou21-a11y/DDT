@@ -82,6 +82,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [quickGameMinutes, setQuickGameMinutes] = useState('0');
   const [gameLogging, setGameLogging] = useState(false);
   const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
+  const [loadedYearCommits, setLoadedYearCommits] = useState<number | null>(null);
 
   const loadData = async () => {
     try {
@@ -508,7 +509,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   12-Month Total
                 </span>
                 <div className="font-mono text-2xl font-bold text-ink mt-0.5">
-                  {data.github.totalYearCommits || '—'}
+                  {(loadedYearCommits !== null ? loadedYearCommits : data.github.totalYearCommits) || '—'}
                 </div>
               </div>
             </div>
@@ -516,17 +517,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             {/* Interactive GitHub Graph */}
             <div className="pt-1">
               <div className="text-[11px] font-mono text-ink-soft uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span>Contribution Wave Matrix</span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Live</span>
+                <span>Contribution Wave Matrix (12-Month Timeline)</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Live 52-Wk Stream</span>
               </div>
               <GithubGraph
                 account={data.github.username}
-                months={5}
-                cellSize={11}
+                months={12}
+                cellSize={13}
                 cellGap={3}
                 animation="wave"
                 variant="github"
                 showAccount={false}
+                onTotalLoaded={(total) => setLoadedYearCommits(total)}
               />
             </div>
           </div>
@@ -675,8 +677,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* BENTO CARD: GAME PLAYTIME & QUICK LOG (6 cols) */}
-        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
+        {/* BENTO CARD: GAME PLAYTIME & QUICK LOG (4 cols) */}
+        <div className="lg:col-span-4 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-3 border-b border-rule/70">
               <div className="flex items-center gap-2.5">
@@ -762,10 +764,107 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               </div>
             </form>
           </div>
+
+          <div className="pt-3 border-t border-rule/60 flex items-center justify-between text-xs text-ink-soft font-mono">
+            <span>Playtime Radar</span>
+            <button
+              onClick={() => onNavigate('games')}
+              className="text-ledger-blue hover:underline text-[11px]"
+            >
+              Manage →
+            </button>
+          </div>
         </div>
 
-        {/* BENTO CARD: WATCHLIST & UPCOMING CINEMA (6 cols) */}
-        <div className="lg:col-span-6 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
+        {/* BENTO CARD: FOOD & MEALS TODAY (4 cols) */}
+        <div className="lg:col-span-4 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-md bg-paper flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-rule/60">
+                  <Utensils className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-base font-bold text-ink">Food & Meals</h2>
+                  <p className="text-[11px] text-ink-soft font-mono">
+                    {data.foodToday.count} meals recorded today
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigate('food')}
+                className="text-xs font-semibold text-ledger-blue hover:underline flex items-center gap-1"
+              >
+                Log <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Today's Meals */}
+            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              {data.foodToday.items.map((f) => (
+                <div
+                  key={f.id}
+                  className="flex items-center justify-between p-2 rounded-md bg-paper/60 border border-rule/60 text-xs font-mono"
+                >
+                  <span className="font-serif font-semibold text-ink truncate pr-2">
+                    {f.itemName}
+                  </span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[10px] shrink-0">
+                    {f.mealTag}
+                  </span>
+                </div>
+              ))}
+              {data.foodToday.items.length === 0 && (
+                <p className="text-xs font-mono text-ink-soft/60 italic py-2 text-center">
+                  No meals logged yet today.
+                </p>
+              )}
+            </div>
+
+            {/* Quick Food Add Form */}
+            <form onSubmit={handleQuickFoodSubmit} className="pt-2 space-y-2 border-t border-rule/60">
+              <input
+                type="text"
+                value={quickFoodName}
+                onChange={(e) => setQuickFoodName(e.target.value)}
+                placeholder="Meal (e.g. Oatmeal & Banana)..."
+                className="w-full px-3 py-1.5 bg-paper border border-rule rounded-md text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
+              />
+              <div className="flex gap-2">
+                <select
+                  value={quickMealTag}
+                  onChange={(e) => setQuickMealTag(e.target.value as any)}
+                  className="flex-1 px-2 py-1 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                >
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="snack">Snack</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={foodLogging || !quickFoodName.trim()}
+                  className="px-3 py-1 bg-ledger-blue text-paper text-xs font-semibold rounded-md hover:bg-ledger-hover disabled:opacity-40 transition-colors shrink-0"
+                >
+                  + Add
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="pt-3 border-t border-rule/60 flex items-center justify-between text-xs text-ink-soft font-mono">
+            <span>Fuel tracker</span>
+            <button
+              onClick={() => onNavigate('food')}
+              className="text-ledger-blue hover:underline text-[11px]"
+            >
+              Full Menu →
+            </button>
+          </div>
+        </div>
+
+        {/* BENTO CARD: WATCHLIST & UPCOMING CINEMA (4 cols) */}
+        <div className="lg:col-span-4 ledger-card p-5 flex flex-col justify-between hover:shadow-card transition-all">
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-3 border-b border-rule/70">
               <div className="flex items-center gap-2.5">
@@ -786,27 +885,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             </div>
 
             {/* Releases List */}
-            <div className="space-y-2 max-h-56 overflow-y-auto">
+            <div className="space-y-2 max-h-48 overflow-y-auto">
               {data.inTheaterSoon.map((w) => (
                 <div
                   key={w.id}
-                  className="flex items-center gap-3 p-2.5 rounded-lg bg-paper/60 border border-rule/60"
+                  className="flex items-center gap-3 p-2 rounded-lg bg-paper/60 border border-rule/60"
                 >
                   {w.posterPath ? (
                     <img
                       src={w.posterPath}
                       alt={w.title}
-                      className="w-8 h-11 object-cover rounded shrink-0 border border-rule"
+                      className="w-7 h-10 object-cover rounded shrink-0 border border-rule"
                     />
                   ) : (
-                    <div className="w-8 h-11 bg-card border border-rule rounded flex items-center justify-center shrink-0">
-                      <Film className="w-4 h-4 text-ink-soft/40" />
+                    <div className="w-7 h-10 bg-card border border-rule rounded flex items-center justify-center shrink-0">
+                      <Film className="w-3.5 h-3.5 text-ink-soft/40" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="font-serif font-bold text-xs text-ink truncate">{w.title}</div>
-                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-stamp-light text-stamp-red">
-                      {w.releaseDate ? `Theaters: ${w.releaseDate}` : 'Upcoming'}
+                    <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-stamp-light text-stamp-red">
+                      {w.releaseDate ? `${w.releaseDate}` : 'Upcoming'}
                     </span>
                   </div>
                 </div>
@@ -828,73 +927,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             >
               + Add Movie →
             </button>
-          </div>
-        </div>
-
-        {/* BENTO CARD 6: FOOD & DAILY NUTRITION LOG (12 cols) */}
-        <div className="col-span-12 ledger-card p-5 hover:shadow-card transition-all">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-rule/70 mb-4 gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-md bg-paper flex items-center justify-center text-ledger-blue border border-rule/60">
-                <Utensils className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="font-serif text-base font-bold text-ink">Food & Meals Today</h2>
-                <p className="text-[11px] text-ink-soft font-mono">
-                  {data.foodToday.count} meals recorded today
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Food Add Form */}
-            <form onSubmit={handleQuickFoodSubmit} className="flex items-center gap-2 flex-wrap">
-              <input
-                type="text"
-                value={quickFoodName}
-                onChange={(e) => setQuickFoodName(e.target.value)}
-                placeholder="Log meal (e.g. Oatmeal & Banana)..."
-                className="px-3 py-1.5 bg-paper border border-rule rounded-md text-xs text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1 min-w-[200px]"
-              />
-              <select
-                value={quickMealTag}
-                onChange={(e) => setQuickMealTag(e.target.value as any)}
-                className="px-2.5 py-1.5 bg-paper border border-rule rounded-md text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue focus:ring-offset-1"
-              >
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-                <option value="snack">Snack</option>
-              </select>
-              <button
-                type="submit"
-                disabled={foodLogging || !quickFoodName.trim()}
-                className="px-3 py-1.5 bg-ledger-blue text-paper text-xs font-semibold rounded-md hover:bg-ledger-hover disabled:opacity-40 transition-colors"
-              >
-                + Log Food
-              </button>
-            </form>
-          </div>
-
-          {/* Food items pills */}
-          <div className="flex flex-wrap gap-2 pt-1">
-            {data.foodToday.items.map((f) => (
-              <div
-                key={f.id}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-paper/70 border border-rule text-xs"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="font-medium text-ink">{f.itemName}</span>
-                <span className="text-[10px] font-mono uppercase text-ink-soft opacity-75">
-                  ({f.mealTag})
-                </span>
-              </div>
-            ))}
-
-            {data.foodToday.items.length === 0 && (
-              <p className="text-xs font-mono text-ink-soft/60 italic py-1">
-                No food logged yet for today. Use the input above or jump to the Food log.
-              </p>
-            )}
           </div>
         </div>
       </div>

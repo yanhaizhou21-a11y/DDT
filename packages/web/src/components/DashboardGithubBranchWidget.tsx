@@ -46,6 +46,8 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
   } | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [isManualBranch, setIsManualBranch] = useState(false);
+  const [manualBranchName, setManualBranchName] = useState('');
 
   // Load repositories on mount
   useEffect(() => {
@@ -113,7 +115,19 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
         }
       })
       .catch((err) => {
-        if (mounted) setError(err.message || 'Failed to load branches for repository');
+        if (mounted) {
+          const msg = err.message || '';
+          if (msg.includes('404')) {
+            setError('404: Private repo branches require a GitHub Token with "repo" scope in Settings.');
+            // Fallback to saved or 'main' branch automatically
+            if (!selectedBranch) {
+              setSelectedBranch('main');
+              localStorage.setItem('ddt-selected-contrib-branch', 'main');
+            }
+          } else {
+            setError(msg || 'Failed to load branches for repository');
+          }
+        }
       })
       .finally(() => {
         if (mounted) setLoadingBranches(false);
@@ -127,7 +141,24 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
   const handleRepoChange = (newRepo: string) => {
     setSelectedRepo(newRepo);
     setSelectedBranch('');
+    setError(null);
     localStorage.setItem('ddt-selected-contrib-repo', newRepo);
+  };
+
+  const handleSelectFallbackBranch = (bName: string) => {
+    setSelectedBranch(bName);
+    setError(null);
+    localStorage.setItem('ddt-selected-contrib-branch', bName);
+  };
+
+  const handleApplyManualBranch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualBranchName.trim()) return;
+    const clean = manualBranchName.trim();
+    setSelectedBranch(clean);
+    setIsManualBranch(false);
+    setError(null);
+    localStorage.setItem('ddt-selected-contrib-branch', clean);
   };
 
   const handleBranchChange = (newBranch: string) => {
@@ -239,29 +270,129 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
 
           {/* Branch Selector */}
           <div>
-            <label className="block text-[11px] font-mono text-ink-soft uppercase tracking-wider mb-1.5">
-              Working Branch
-            </label>
-            <div className="relative">
-              <select
-                value={selectedBranch}
-                onChange={(e) => handleBranchChange(e.target.value)}
-                disabled={loadingBranches || branches.length === 0}
-                className="w-full px-2.5 py-2 bg-paper/80 border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue pr-8 truncate"
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-mono text-ink-soft uppercase tracking-wider">
+                Working Branch
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsManualBranch((prev) => !prev)}
+                className="text-[10px] font-mono text-ledger-blue hover:underline"
               >
-                {branches.length === 0 ? (
-                  <option value="">{loadingBranches ? 'Fetching branches...' : 'No branches found'}</option>
-                ) : (
-                  branches.map((b) => (
-                    <option key={b.name} value={b.name}>
-                      {b.name} {b.isDefault ? '★ (default)' : ''} {b.isProtected ? '🛡️' : ''}
-                    </option>
-                  ))
-                )}
-              </select>
+                {isManualBranch ? 'Select list' : '+ Custom branch'}
+              </button>
             </div>
+
+            {isManualBranch ? (
+              <form onSubmit={handleApplyManualBranch} className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={manualBranchName}
+                  onChange={(e) => setManualBranchName(e.target.value)}
+                  placeholder="e.g. main, feat/ui..."
+                  className="flex-1 px-2.5 py-1.5 bg-paper/80 border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue"
+                />
+                <button
+                  type="submit"
+                  disabled={!manualBranchName.trim()}
+                  className="px-2.5 py-1.5 bg-ledger-blue text-paper rounded text-xs font-mono font-semibold hover:bg-ledger-hover disabled:opacity-40 transition-colors"
+                >
+                  Set
+                </button>
+              </form>
+            ) : (
+              <div className="relative">
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => handleBranchChange(e.target.value)}
+                  disabled={loadingBranches}
+                  className="w-full px-2.5 py-2 bg-paper/80 border border-rule rounded text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-ledger-blue pr-8 truncate"
+                >
+                  {branches.length === 0 ? (
+                    <>
+                      <option value={selectedBranch || 'main'}>
+                        {selectedBranch ? `${selectedBranch} (active)` : 'main (default)'}
+                      </option>
+                      <option value="master">master</option>
+                      <option value="dev">dev</option>
+                    </>
+                  ) : (
+                    branches.map((b) => (
+                      <option key={b.name} value={b.name}>
+                        {b.name} {b.isDefault ? '★ (default)' : ''} {b.isProtected ? '🛡️' : ''}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* 404 / Private Repo Guidance or Error Box */}
+        {error && (
+          <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <div className="font-semibold text-amber-700 dark:text-amber-300">
+                    Repository Authorization Notice
+                  </div>
+                  <p className="text-[11px] text-ink-soft mt-0.5 leading-relaxed">
+                    {error.includes('404')
+                      ? 'Private repository branches require a GitHub Token with "repo" scope in Settings. You can still track your working branch below.'
+                      : error}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="text-[10px] font-mono text-ink-soft hover:text-ink px-1.5 py-0.5"
+                title="Dismiss message"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quick Track Fallback Buttons */}
+            <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20 flex-wrap">
+              <span className="text-[10px] font-mono text-ink-soft">Quick track:</span>
+              <button
+                type="button"
+                onClick={() => handleSelectFallbackBranch('main')}
+                className={cn(
+                  'px-2 py-0.5 text-xs font-mono rounded border transition-colors',
+                  selectedBranch === 'main'
+                    ? 'bg-ledger-blue text-paper border-ledger-blue font-bold'
+                    : 'bg-paper text-ink border-rule hover:border-ledger-blue'
+                )}
+              >
+                main
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectFallbackBranch('master')}
+                className={cn(
+                  'px-2 py-0.5 text-xs font-mono rounded border transition-colors',
+                  selectedBranch === 'master'
+                    ? 'bg-ledger-blue text-paper border-ledger-blue font-bold'
+                    : 'bg-paper text-ink border-rule hover:border-ledger-blue'
+                )}
+              >
+                master
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsManualBranch(true)}
+                className="px-2 py-0.5 text-xs font-mono rounded border bg-paper text-ledger-blue border-rule hover:border-ledger-blue"
+              >
+                Custom...
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Branch Live Status Banner */}
         {selectedBranch && (
@@ -282,6 +413,11 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
                     Protected
                   </span>
                 )}
+                {!currentBranchObj && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-card text-ledger-blue border border-rule font-medium">
+                    Tracked
+                  </span>
+                )}
               </div>
 
               {currentRepoObj && (
@@ -297,7 +433,7 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
             </div>
 
             {/* Latest Commit on Branch */}
-            {lastCommitInfo && (
+            {lastCommitInfo ? (
               <div className="pt-2 border-t border-rule/50 flex items-start gap-2 text-xs font-mono">
                 <GitCommit className="w-3.5 h-3.5 text-ledger-blue mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
@@ -317,13 +453,12 @@ export const DashboardGithubBranchWidget: React.FC<DashboardGithubBranchWidgetPr
                   </p>
                 </div>
               </div>
+            ) : (
+              <div className="pt-2 border-t border-rule/50 flex items-center justify-between text-[11px] font-mono text-ink-soft">
+                <span>Direct link configured for repository</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Ready</span>
+              </div>
             )}
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-2 text-xs text-stamp-red font-mono bg-stamp-light/30 border border-stamp-red/30 p-2 rounded">
-            {error}
           </div>
         )}
       </div>

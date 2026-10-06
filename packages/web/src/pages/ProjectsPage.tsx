@@ -829,7 +829,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
                     <div className="flex items-center gap-2 text-ink">
                       <GitBranch className="w-3.5 h-3.5 text-ledger-blue" />
                       <span className="font-bold">{projectDetail.lastCommit.sha}</span>
-                      <span>—</span>
+                      <span>:</span>
                       <span className="font-sans line-clamp-1">{projectDetail.lastCommit.message}</span>
                     </div>
                     <div className="text-[11px] text-ink-soft">

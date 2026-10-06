@@ -68,7 +68,7 @@ export function GithubGraph({
   months = 12,
   variant = 'github',
   animation = 'wave',
-  cellSize = 13,
+  cellSize,
   cellGap = 3,
   cellRadius = 2,
   showLegend = true,
@@ -164,7 +164,18 @@ export function GithubGraph({
         const dStr = isoDate(currentDay);
         const match = rawMap[dStr];
         const count = match?.count || 0;
-        const level = match?.level !== undefined ? match.level : count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 9 ? 3 : 4;
+        const level =
+          match?.level !== undefined
+            ? match.level
+            : count === 0
+            ? 0
+            : count <= 2
+            ? 1
+            : count <= 5
+            ? 2
+            : count <= 9
+            ? 3
+            : 4;
         week.push({ date: dStr, count, level });
         currentDay = addDays(currentDay, 1);
       }
@@ -196,6 +207,8 @@ export function GithubGraph({
     return labels;
   }, [weeks]);
 
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
   return (
     <div className={cn('relative flex flex-col gap-3 font-sans w-full', className)}>
       {(showAccount || totalCommits > 0) && (
@@ -211,17 +224,12 @@ export function GithubGraph({
         </div>
       )}
 
-      {/* Grid container */}
+      {/* Grid container spanning 100% of the available width */}
       <div className="w-full overflow-x-auto pb-1 scrollbar-none">
-        <div
-          className={cn(
-            'flex flex-col gap-1 p-3 rounded-lg bg-card/60 border border-rule/50 backdrop-blur-xs',
-            fullWidth ? 'w-full min-w-[700px]' : 'inline-flex'
-          )}
-        >
-          {/* Month headers row */}
+        <div className="w-full min-w-[720px] flex flex-col gap-1.5 p-3.5 rounded-lg bg-card/60 border border-rule/50 backdrop-blur-xs">
+          {/* Month headers row aligned to week column percentages */}
           {weeks.length > 8 && (
-            <div className="relative h-4 text-[10px] font-mono text-ink-soft select-none ml-7 pr-1">
+            <div className="relative h-4 text-[10px] font-mono text-ink-soft select-none ml-6 pr-1">
               {monthLabels.map((m) => {
                 const leftPercent = (m.index / weeks.length) * 100;
                 return (
@@ -237,39 +245,40 @@ export function GithubGraph({
             </div>
           )}
 
-          {/* Grid with Left Day Labels */}
-          <div className="flex gap-2 items-start">
-            {/* Day of week labels (aligned with 7 rows) */}
+          {/* Grid with Left Day Labels & Dynamic Full-Width Weeks */}
+          <div className="flex gap-2 items-center w-full">
+            {/* Day of week labels */}
             <div
-              className="flex flex-col text-[9px] font-mono text-ink-soft select-none w-5 text-right shrink-0 pt-[1px]"
+              className="flex flex-col text-[9px] font-mono text-ink-soft select-none w-5 text-right shrink-0"
               style={{ gap: `${cellGap}px` }}
             >
-              <span style={{ height: `${cellSize}px` }} className="opacity-0">Sun</span>
-              <span style={{ height: `${cellSize}px` }} className="leading-none flex items-center justify-end">Mon</span>
-              <span style={{ height: `${cellSize}px` }} className="opacity-0">Tue</span>
-              <span style={{ height: `${cellSize}px` }} className="leading-none flex items-center justify-end">Wed</span>
-              <span style={{ height: `${cellSize}px` }} className="opacity-0">Thu</span>
-              <span style={{ height: `${cellSize}px` }} className="leading-none flex items-center justify-end">Fri</span>
-              <span style={{ height: `${cellSize}px` }} className="opacity-0">Sat</span>
+              {daysOfWeek.map((day, idx) => {
+                const isVisible = idx === 1 || idx === 3 || idx === 5;
+                return (
+                  <div
+                    key={day}
+                    className="aspect-square flex items-center justify-end leading-none"
+                  >
+                    <span className={cn('block', !isVisible && 'invisible')}>{day}</span>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Weeks columns */}
+            {/* Weeks columns stretching to fill 100% width */}
             <div
-              className={cn(
-                'flex',
-                fullWidth ? 'flex-1 justify-between' : 'gap-[3px]'
-              )}
-              style={!fullWidth ? { gap: `${cellGap}px` } : undefined}
+              className="flex-1 w-full flex items-center justify-between"
+              style={{ gap: `${cellGap}px` }}
             >
               {weeks.map((week, wIndex) => (
                 <div
                   key={`w-${wIndex}`}
-                  className="flex-1 flex flex-col items-center"
+                  className="flex-1 min-w-[8px] flex flex-col items-center"
                   style={{ gap: `${cellGap}px` }}
                 >
                   {week.map((cell, cIndex) => {
                     const cellColor = palette[cell.level] || palette[0];
-                    const animDelay = animation === 'wave' ? (wIndex * 0.012 + cIndex * 0.008) : 0;
+                    const animDelay = animation === 'wave' ? wIndex * 0.012 + cIndex * 0.008 : 0;
 
                     return (
                       <motion.div
@@ -289,7 +298,7 @@ export function GithubGraph({
                         }}
                         style={{
                           width: '100%',
-                          maxWidth: `${cellSize}px`,
+                          maxWidth: cellSize ? `${cellSize}px` : undefined,
                           aspectRatio: '1 / 1',
                           borderRadius: `${cellRadius}px`,
                           backgroundColor: cellColor,

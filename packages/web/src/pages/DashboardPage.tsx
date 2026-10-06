@@ -513,7 +513,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   12-Month Total
                 </span>
                 <div className="font-mono text-2xl font-bold text-ink mt-0.5">
-                  {(loadedYearCommits !== null ? loadedYearCommits : data.github.totalYearCommits) || '—'}
+                  {(loadedYearCommits !== null ? loadedYearCommits : data.github.totalYearCommits) || '0'}
                 </div>
               </div>
             </div>
@@ -527,11 +527,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               <GithubGraph
                 account={data.github.username}
                 months={12}
-                cellSize={13}
                 cellGap={3}
                 animation="wave"
                 variant="github"
                 showAccount={false}
+                fullWidth={true}
                 onTotalLoaded={(total) => setLoadedYearCommits(total)}
               />
             </div>
@@ -543,7 +543,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('settings')}
               className="text-ledger-blue hover:underline text-[11px]"
             >
-              Config Token →
+              Configure Token
             </button>
           </div>
         </div>
@@ -676,7 +676,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('kanban')}
               className="text-ledger-blue hover:underline text-[11px]"
             >
-              Manage Board →
+              Manage Board
             </button>
           </div>
         </div>
@@ -775,7 +775,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('games')}
               className="text-ledger-blue hover:underline text-[11px]"
             >
-              Manage →
+              Manage Games
             </button>
           </div>
         </div>
@@ -862,7 +862,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('food')}
               className="text-ledger-blue hover:underline text-[11px]"
             >
-              Full Menu →
+              View Menu
             </button>
           </div>
         </div>
@@ -929,7 +929,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('watchlist')}
               className="text-ledger-blue hover:underline text-[11px]"
             >
-              + Add Movie →
+              Add Movie
             </button>
           </div>
         </div>

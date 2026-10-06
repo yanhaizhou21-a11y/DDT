@@ -1,123 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  Sun,
-  Moon,
-  Zap,
-  Leaf,
-  BookOpen,
-  Snowflake,
   Check,
   ChevronDown,
   Sparkles,
-  Flame,
-  Grid,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import {
+  THEME_LIST,
+  THEME_REGISTRY,
+  type ThemeMode,
+  applyTheme,
+  getActiveTheme,
+} from '../theme';
 
-export type ThemeMode =
-  | 'ledger'
-  | 'sepia'
-  | 'brutalism'
-  | 'swiss'
-  | 'kinetic'
-  | 'cyberpunk'
-  | 'matcha'
-  | 'nord';
-
-export interface ThemeOption {
-  id: ThemeMode;
-  label: string;
-  shortLabel: string;
-  description: string;
-  category: 'light' | 'dark';
-  icon: React.ElementType;
-  dotColor: string;
-  isDark: boolean;
-}
-
-export const THEMES: ThemeOption[] = [
-  {
-    id: 'ledger',
-    label: 'Field Ledger',
-    shortLabel: 'Ledger',
-    description: 'Warm paper & ink field notebook',
-    category: 'light',
-    icon: Sun,
-    dotColor: '#C28B38',
-    isDark: false,
-  },
-  {
-    id: 'brutalism',
-    label: 'Neo-Brutalism',
-    shortLabel: 'Brutal',
-    description: 'Vibrant pop art, 4px black borders & hard ink shadows',
-    category: 'light',
-    icon: Flame,
-    dotColor: '#FF6B6B',
-    isDark: false,
-  },
-  {
-    id: 'swiss',
-    label: 'Swiss International',
-    shortLabel: 'Swiss',
-    description: 'Precision typographic grid, monochrome & Swiss red signal',
-    category: 'light',
-    icon: Grid,
-    dotColor: '#FF3000',
-    isDark: false,
-  },
-  {
-    id: 'sepia',
-    label: 'Vintage Sepia',
-    shortLabel: 'Sepia',
-    description: 'Antique parchment & leather binding',
-    category: 'light',
-    icon: BookOpen,
-    dotColor: '#8C4A2F',
-    isDark: false,
-  },
-  {
-    id: 'kinetic',
-    label: 'Kinetic Dark',
-    shortLabel: 'Dark',
-    description: 'High-contrast brutalism & acid yellow',
-    category: 'dark',
-    icon: Moon,
-    dotColor: '#DFE104',
-    isDark: true,
-  },
-  {
-    id: 'cyberpunk',
-    label: 'Cyberpunk Night',
-    shortLabel: 'Cyber',
-    description: 'Midnight glow & neon cyan/magenta',
-    category: 'dark',
-    icon: Zap,
-    dotColor: '#00F0FF',
-    isDark: true,
-  },
-  {
-    id: 'matcha',
-    label: 'Matcha Forest',
-    shortLabel: 'Matcha',
-    description: 'Earthy botanical green & sage tone',
-    category: 'dark',
-    icon: Leaf,
-    dotColor: '#4ADE80',
-    isDark: true,
-  },
-  {
-    id: 'nord',
-    label: 'Nordic Frost',
-    shortLabel: 'Nord',
-    description: 'Arctic slate chill & polar cyan',
-    category: 'dark',
-    icon: Snowflake,
-    dotColor: '#88C0D0',
-    isDark: true,
-  },
-];
+export { type ThemeMode };
+export const THEMES = THEME_LIST;
 
 interface ThemeToggleProps {
   className?: string;
@@ -130,12 +28,7 @@ export function ThemeToggle({
   compact = false,
   placement = 'bottom-end',
 }: ThemeToggleProps) {
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') return 'ledger';
-    const stored = localStorage.getItem('ddt-theme') as ThemeMode;
-    return stored && THEMES.some((t) => t.id === stored) ? stored : 'ledger';
-  });
-
+  const [theme, setTheme] = useState<ThemeMode>(() => getActiveTheme().id);
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,17 +36,10 @@ export function ThemeToggle({
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    const active = THEMES.find((t) => t.id === theme);
-    if (active?.isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('ddt-theme', theme);
+    applyTheme(theme);
   }, [theme]);
 
-  // Click outside to dismiss
+  // Click outside or escape to dismiss
   useEffect(() => {
     if (!isOpen) return;
 
@@ -182,12 +68,12 @@ export function ThemeToggle({
   const handleMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const next = (focusedIndex + 1) % THEMES.length;
+      const next = (focusedIndex + 1) % THEME_LIST.length;
       setFocusedIndex(next);
       itemRefs.current[next]?.focus();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      const prev = (focusedIndex - 1 + THEMES.length) % THEMES.length;
+      const prev = (focusedIndex - 1 + THEME_LIST.length) % THEME_LIST.length;
       setFocusedIndex(prev);
       itemRefs.current[prev]?.focus();
     } else if (e.key === 'Tab') {
@@ -201,7 +87,7 @@ export function ThemeToggle({
     triggerRef.current?.focus();
   };
 
-  const activeTheme = THEMES.find((t) => t.id === theme) || THEMES[0];
+  const activeTheme = THEME_REGISTRY[theme] || THEME_REGISTRY.ledger;
   const ActiveIcon = activeTheme.icon;
 
   const placementClasses = {
@@ -220,7 +106,7 @@ export function ThemeToggle({
           type="button"
           onClick={() => {
             setIsOpen((prev) => !prev);
-            setFocusedIndex(THEMES.findIndex((t) => t.id === theme));
+            setFocusedIndex(THEME_LIST.findIndex((t) => t.id === theme));
           }}
           aria-haspopup="menu"
           aria-expanded={isOpen}
@@ -240,7 +126,7 @@ export function ThemeToggle({
           type="button"
           onClick={() => {
             setIsOpen((prev) => !prev);
-            setFocusedIndex(THEMES.findIndex((t) => t.id === theme));
+            setFocusedIndex(THEME_LIST.findIndex((t) => t.id === theme));
           }}
           aria-haspopup="menu"
           aria-expanded={isOpen}
@@ -304,13 +190,13 @@ export function ThemeToggle({
                 </span>
               </div>
               <span className="text-[10px] font-mono text-ink-soft">
-                {THEMES.length} styles
+                {THEME_LIST.length} styles
               </span>
             </div>
 
             {/* Theme Options List */}
             <div className="py-1 max-h-80 overflow-y-auto space-y-0.5 no-scrollbar">
-              {THEMES.map((t, idx) => {
+              {THEME_LIST.map((t, idx) => {
                 const Icon = t.icon;
                 const isSelected = theme === t.id;
 
@@ -375,7 +261,7 @@ export function ThemeToggle({
               })}
             </div>
 
-            {/* Menu Footer Tip */}
+            {/* Menu Footer */}
             <div className="px-3 py-1.5 border-t border-rule/70 bg-paper/20 rounded-b-lg">
               <p className="text-[10px] text-ink-soft font-mono truncate">
                 Theme choice is automatically saved locally.

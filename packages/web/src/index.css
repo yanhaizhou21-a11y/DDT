@@ -200,6 +200,48 @@
     --accent-foreground: #FFFFFF;
   }
 
+  [data-theme="terminal"] {
+    --paper: #0A0A0A;
+    --paper-tint: #0F150F;
+    --ink: #33FF00;
+    --ink-soft: #22B300;
+    --ink-muted: #1F521F;
+    --ledger-blue: #33FF00;
+    --ledger-hover: #2BD900;
+    --ledger-light: rgba(51, 255, 0, 0.15);
+    --stamp-red: #FF3333;
+    --stamp-light: rgba(255, 51, 51, 0.15);
+    --rule: #1F521F;
+    --rule-light: #2C6E2C;
+    --card: #0D110D;
+    --card-surface: #080C08;
+    --gold: #FFB000;
+    --gold-light: rgba(255, 176, 0, 0.15);
+    --accent: #33FF00;
+    --accent-foreground: #0A0A0A;
+  }
+
+  [data-theme="monochrome"] {
+    --paper: #000000;
+    --paper-tint: #080808;
+    --ink: #FFFFFF;
+    --ink-soft: #A3A3A3;
+    --ink-muted: #737373;
+    --ledger-blue: #FFFFFF;
+    --ledger-hover: #E5E5E5;
+    --ledger-light: rgba(255, 255, 255, 0.12);
+    --stamp-red: #FFFFFF;
+    --stamp-light: rgba(255, 255, 255, 0.12);
+    --rule: #262626;
+    --rule-light: #404040;
+    --card: #000000;
+    --card-surface: #050505;
+    --gold: #FFFFFF;
+    --gold-light: rgba(255, 255, 255, 0.12);
+    --accent: #FFFFFF;
+    --accent-foreground: #000000;
+  }
+
 
   body {
     background-color: var(--paper);
@@ -743,6 +785,125 @@
 
 .swiss-noise {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'%2F%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'%2F%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   TERMINAL CLI THEME STYLES (Cyber-Industrial Monospace Shell)
+   ========================================================================== */
+
+[data-theme="terminal"] {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="terminal"] * {
+  border-radius: 0px !important;
+}
+
+[data-theme="terminal"] .ledger-header,
+[data-theme="terminal"] .font-serif,
+[data-theme="terminal"] h1,
+[data-theme="terminal"] h2,
+[data-theme="terminal"] h3 {
+  font-family: 'JetBrains Mono', monospace !important;
+  text-shadow: 0 0 6px rgba(51, 255, 0, 0.4);
+  text-transform: uppercase;
+}
+
+[data-theme="terminal"] .ledger-card {
+  border: 1px solid #1F521F !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  background-color: #0D110D !important;
+  transition: border-color 0.12s ease-out !important;
+}
+
+[data-theme="terminal"] .ledger-card-interactive {
+  border: 1px solid #1F521F !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  background-color: #0D110D !important;
+  transition: border-color 0.12s ease-out, box-shadow 0.12s ease-out !important;
+}
+
+[data-theme="terminal"] .ledger-card-interactive:hover {
+  border-color: #33FF00 !important;
+  box-shadow: 0 0 8px rgba(51, 255, 0, 0.2) !important;
+}
+
+[data-theme="terminal"] input,
+[data-theme="terminal"] select,
+[data-theme="terminal"] textarea {
+  border-color: #1F521F !important;
+  border-radius: 0px !important;
+  background-color: #080C08 !important;
+  color: #33FF00 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+[data-theme="terminal"] input:focus,
+[data-theme="terminal"] select:focus,
+[data-theme="terminal"] textarea:focus {
+  border-color: #33FF00 !important;
+  outline: 1px solid #33FF00 !important;
+  box-shadow: 0 0 6px rgba(51, 255, 0, 0.35) !important;
+}
+
+/* Subtle CRT Scanline utility */
+.terminal-scanlines {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.3)
+  );
+  background-size: 100% 4px;
+}
+
+/* ==========================================================================
+   MINIMALIST MONOCHROME THEME STYLES (Inverted Pure Black & White Ink)
+   ========================================================================== */
+
+[data-theme="monochrome"] * {
+  border-radius: 0px !important;
+}
+
+[data-theme="monochrome"] .ledger-card {
+  border: 1px solid #262626 !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  background-color: #000000 !important;
+  transition: border-color 0.1s ease-out !important;
+}
+
+[data-theme="monochrome"] .ledger-card-interactive {
+  border: 1px solid #262626 !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  background-color: #000000 !important;
+  transition: border-color 0.1s ease-out !important;
+}
+
+[data-theme="monochrome"] .ledger-card-interactive:hover {
+  border-color: #FFFFFF !important;
+}
+
+[data-theme="monochrome"] input,
+[data-theme="monochrome"] select,
+[data-theme="monochrome"] textarea {
+  border-color: #262626 !important;
+  border-radius: 0px !important;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="monochrome"] input:focus,
+[data-theme="monochrome"] select:focus,
+[data-theme="monochrome"] textarea:focus {
+  border-color: #FFFFFF !important;
+  outline: 2px solid #FFFFFF !important;
+  outline-offset: 1px;
 }
 
 

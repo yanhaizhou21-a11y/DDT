@@ -423,7 +423,7 @@ export const DiscordRecapModal: React.FC<DiscordRecapModalProps> = ({
 
                 {/* Content text */}
                 <div className="text-xs text-[#dbdee1]">
-                  📅 <strong>Daily Ledger Dispatch</strong> — <strong>{recapData?.formattedDate || selectedDate}</strong>
+                  📅 <strong>Daily Ledger Dispatch</strong>: <strong>{recapData?.formattedDate || selectedDate}</strong>
                 </div>
 
                 {/* Discord Embed Box */}

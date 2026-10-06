@@ -51,13 +51,13 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
 - **Mind:** 
 
 ## Three Highlights
-**One big thing** — the work that mattered most today:
+**One big thing**: the work that mattered most today:
 - 
 
-**One small thing** — a quiet win that doesn't deserve a standup:
+**One small thing**: a quiet win that doesn't deserve a standup:
 - 
 
-**One surprising thing** — what you didn't expect:
+**One surprising thing**: what you didn't expect:
 - 
 
 ## What Challenged Me
@@ -65,7 +65,7 @@ Honest reflection, not a to-do list. What slowed you down, confused you, or drai
 - 
 
 ## What I Learned
-One thing — could be a technique, a person, a mistake, a feeling:
+One thing (could be a technique, a person, a mistake, a feeling):
 > 
 
 ## Gratitude (be specific)
@@ -74,7 +74,7 @@ One thing — could be a technique, a person, a mistake, a feeling:
 3. 
 
 ## Tomorrow's First Move
-The single next action — not a vague goal, a literal first step:
+The single next action, not a vague goal, a literal first step:
 - 
 
 ## Open Notes

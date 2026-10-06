@@ -11,12 +11,18 @@ import { FoodPage } from './pages/FoodPage';
 import { GamesPage } from './pages/GamesPage';
 import { SettingsPage } from './pages/SettingsPage';
 
+import { applyTheme, getActiveTheme } from './theme';
+
 export function App() {
   const [activeTab, setActiveTab] = useState<RouteTab>(() => {
     const hash = window.location.hash.replace('#', '') as RouteTab;
     const validTabs: RouteTab[] = ['home', 'dev', 'projects', 'watchlist', 'kanban', 'journal', 'food', 'games', 'settings'];
     return validTabs.includes(hash) ? hash : 'home';
   });
+
+  useEffect(() => {
+    applyTheme(getActiveTheme().id);
+  }, []);
 
   const handleSelectTab = (tab: RouteTab) => {
     setActiveTab(tab);

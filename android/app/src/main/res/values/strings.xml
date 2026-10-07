@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">DDT</string>
+    <string name="title_activity_main">Daily Dashboard Tracker</string>
+    <string name="package_name">com.ddt.app</string>
+    <string name="custom_url_scheme">com.ddt.app</string>
+</resources>

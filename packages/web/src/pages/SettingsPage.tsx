@@ -8,9 +8,15 @@ import {
   testRawgKey,
   testDiscordWebhook,
   importData,
+  getApiBase,
+  setApiBase,
+  resetApiBase,
+  testServerConnection,
+  getExportUrl,
 } from '../api';
 import { Header } from '../components/Header';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { cn } from '../lib/utils';
 
 import {
   Key,
@@ -33,6 +39,9 @@ import {
   ExternalLink,
   Lock,
   Send,
+  Server,
+  Wifi,
+  Smartphone,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -66,6 +75,52 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
   // Import state
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+
+  // Dynamic API server URL state
+  const [serverUrl, setServerUrl] = useState<string>(() => {
+    const current = getApiBase();
+    return current === '/api' ? '' : current;
+  });
+  const [serverTest, setServerTest] = useState<{ testing: boolean; result?: { success: boolean; message: string } }>({ testing: false });
+  const [serverSavedMessage, setServerSavedMessage] = useState<string | null>(null);
+
+  const [desktopNavMode, setDesktopNavMode] = useState<'sidebar' | 'dock'>(() => {
+    if (typeof window !== 'undefined') {
+      return (window.localStorage.getItem('ddt_desktop_nav_mode') as 'sidebar' | 'dock') || 'sidebar';
+    }
+    return 'sidebar';
+  });
+
+  const handleNavModeChange = (mode: 'sidebar' | 'dock') => {
+    setDesktopNavMode(mode);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('ddt_desktop_nav_mode', mode);
+      window.dispatchEvent(new Event('ddt_nav_mode_changed'));
+    }
+  };
+
+  const handleSaveServerUrl = () => {
+    setApiBase(serverUrl.trim() || null);
+    setServerSavedMessage('Server URL configuration saved.');
+    setTimeout(() => setServerSavedMessage(null), 3500);
+  };
+
+  const handleResetServerUrl = () => {
+    resetApiBase();
+    setServerUrl('');
+    setServerSavedMessage('Reset to local relative default (/api).');
+    setTimeout(() => setServerSavedMessage(null), 3500);
+  };
+
+  const handleTestServer = async () => {
+    setServerTest({ testing: true });
+    try {
+      const res = await testServerConnection(serverUrl.trim() || undefined);
+      setServerTest({ testing: false, result: res });
+    } catch (err: any) {
+      setServerTest({ testing: false, result: { success: false, message: err.message || 'Connection failed' } });
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -166,7 +221,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
   };
 
   const handleExportData = () => {
-    window.location.href = '/api/settings/export';
+    const link = document.createElement('a');
+    link.href = getExportUrl();
+    link.download = `ddt-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -630,6 +690,39 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
             <p className="text-xs text-ink-soft leading-relaxed">
               DDT supports 6 distinctive handcrafted themes: <strong className="text-ink font-semibold">Field Ledger</strong> (warm paper & ink), <strong className="text-ink font-semibold">Vintage Sepia</strong> (antique parchment & leather), <strong className="text-ink font-semibold">Kinetic Dark</strong> (high-energy brutalism & acid yellow), <strong className="text-ink font-semibold">Cyberpunk Night</strong> (midnight glow & cyan/magenta), <strong className="text-ink font-semibold">Matcha Forest</strong> (earthy botanical green), and <strong className="text-ink font-semibold">Nordic Frost</strong> (arctic slate chill).
             </p>
+
+            <div className="pt-3 border-t border-rule/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-xs font-semibold text-ink">Desktop Navigation Style</h4>
+                <p className="text-[11px] text-ink-soft">Choose between the classic side rail or the spring-smoothed macOS magnifying dock</p>
+              </div>
+              <div className="flex items-center gap-1.5 p-1 bg-paper border border-rule rounded-md text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => handleNavModeChange('sidebar')}
+                  className={cn(
+                    'px-2.5 py-1 rounded transition-all font-medium',
+                    desktopNavMode === 'sidebar'
+                      ? 'bg-card text-ledger-blue font-bold shadow-xs border border-rule'
+                      : 'text-ink-soft hover:text-ink'
+                  )}
+                >
+                  Sidebar Rail
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavModeChange('dock')}
+                  className={cn(
+                    'px-2.5 py-1 rounded transition-all font-medium',
+                    desktopNavMode === 'dock'
+                      ? 'bg-card text-ledger-blue font-bold shadow-xs border border-rule'
+                      : 'text-ink-soft hover:text-ink'
+                  )}
+                >
+                  Floating Dock
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Database & Data Backup Card */}
@@ -695,6 +788,98 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                 {importMessage.text}
               </div>
             )}
+          </div>
+
+          {/* Mobile APK & Remote Server Connection Card */}
+          <div className="ledger-card p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-rule/70">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-paper rounded-md border border-rule text-ledger-blue">
+                  <Server className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-base font-semibold text-ink">
+                    Mobile APK & Remote Server Connection
+                  </h2>
+                  <p className="text-[11px] text-ink-soft">
+                    Configure custom backend API host for Android APK or network-connected clients
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-paper border border-rule text-[11px] font-mono rounded-[4px] text-ink">
+                <Wifi className="w-3 h-3 text-ledger-blue" />
+                <span>{serverUrl ? 'Custom Host' : 'Relative /api'}</span>
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-ink">
+                Backend API Server Base URL
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  placeholder="http://192.168.1.50:3000/api (leave blank for local relative /api)"
+                  value={serverUrl}
+                  onChange={(e) => setServerUrl(e.target.value)}
+                  className="flex-1 px-3 py-2 text-xs bg-paper border border-rule rounded-[4px] focus:bg-card focus:outline-none focus:ring-1 focus:ring-ledger-blue font-mono"
+                />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestServer}
+                    disabled={serverTest.testing}
+                    className="px-3 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all"
+                  >
+                    {serverTest.testing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Smartphone className="w-3.5 h-3.5 text-ledger-blue" />}
+                    <span>Test Ping</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveServerUrl}
+                    className="px-3.5 py-2 bg-ledger-blue hover:bg-ledger-hover text-white text-xs font-mono rounded-[4px] flex items-center gap-1.5 active:scale-95 transition-all shadow-xs"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save</span>
+                  </button>
+
+                  {serverUrl && (
+                    <button
+                      type="button"
+                      onClick={handleResetServerUrl}
+                      className="px-3 py-2 bg-paper border border-rule hover:bg-card text-xs font-mono text-ink-soft hover:text-ink rounded-[4px] active:scale-95 transition-all"
+                      title="Reset to /api"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-[11px] text-ink-soft leading-relaxed">
+                When using the Android APK on your phone, set this to your desktop PC's local network IP address (e.g. <code className="bg-paper px-1 py-0.5 rounded text-ink border border-rule font-mono">http://192.168.1.100:3000/api</code>). The web app on desktop uses relative <code className="bg-paper px-1 py-0.5 rounded text-ink border border-rule font-mono">/api</code> by default.
+              </p>
+
+              {serverSavedMessage && (
+                <p className="text-xs font-mono text-emerald-600 flex items-center gap-1 pt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{serverSavedMessage}</span>
+                </p>
+              )}
+
+              {serverTest.result && (
+                <div className={`p-2.5 rounded-[4px] text-xs font-mono border flex items-center gap-2 ${
+                  serverTest.result.success
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                    : 'bg-stamp-light border-stamp-red/40 text-stamp-red'
+                }`}>
+                  {serverTest.result.success ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+                  <span>{serverTest.result.message}</span>
+                </div>
+              )}
+            </div>
           </div>
         </form>
       )}

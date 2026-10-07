@@ -154,3 +154,47 @@ dist/
 .agents/
 icon svg/
 .impeccable/
+
+# Tauri & Rust build artifacts
+src-tauri/target/
+**/target/
+Cargo.lock.bak
+
+# Android & Capacitor build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/.idea/
+android/local.properties
+android/captures/
+android/.cxx/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+
+# Native Application Packages & Installers
+*.apk
+*.aab
+*.exe
+*.msi
+*.dmg
+*.deb
+*.AppImage
+
+# Signing Keys & Credentials
+*.keystore
+*.jks
+
+# IDE & Editor files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Operating System files
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+.DS_Store
+.AppleDouble
+.LSOverride

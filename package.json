@@ -2,7 +2,7 @@
   "name": "ddt-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Daily Dashboard Tracker — a local-first personal ledger dashboard",
+  "description": "Daily Dashboard Tracker - a local-first personal ledger dashboard",
   "bin": {
     "ddt": "./packages/cli/dist/cli.js"
   },
@@ -11,6 +11,8 @@
     "dev:server": "pnpm --filter @ddt/server dev",
     "dev:web": "pnpm --filter @ddt/web dev",
     "build": "pnpm --filter @ddt/server build && pnpm --filter @ddt/web build && pnpm --filter ddt build",
+    "build:exe": "powershell -ExecutionPolicy Bypass -File scripts/build-exe.ps1",
+    "build:apk": "powershell -ExecutionPolicy Bypass -File scripts/build-apk.ps1",
     "start": "pnpm --filter ddt start",
     "typecheck": "pnpm -r typecheck"
   },

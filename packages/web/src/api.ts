@@ -25,7 +25,81 @@ import type {
   SendDiscordRecapResponse,
 } from './types';
 
-const API_BASE = '/api';
+export const STORAGE_KEY_API_BASE = 'ddt_api_base_url';
+
+export function getApiBase(): string {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const stored = window.localStorage.getItem(STORAGE_KEY_API_BASE);
+    if (stored && stored.trim()) {
+      let cleaned = stored.trim().replace(/\/+$/, '');
+      if (!cleaned.endsWith('/api') && (cleaned.startsWith('http://') || cleaned.startsWith('https://'))) {
+        cleaned = `${cleaned}/api`;
+      }
+      return cleaned;
+    }
+  }
+  return '/api';
+}
+
+export function setApiBase(url: string | null): void {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    if (!url || !url.trim() || url.trim() === '/api') {
+      window.localStorage.removeItem(STORAGE_KEY_API_BASE);
+    } else {
+      window.localStorage.setItem(STORAGE_KEY_API_BASE, url.trim());
+    }
+  }
+}
+
+export function resetApiBase(): void {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.removeItem(STORAGE_KEY_API_BASE);
+  }
+}
+
+export function getExportUrl(): string {
+  return `${getApiBase()}/settings/export`;
+}
+
+export async function testServerConnection(targetUrl?: string): Promise<{ success: boolean; message: string }> {
+  const base = targetUrl && targetUrl.trim()
+    ? (targetUrl.trim().replace(/\/+$/, '').endsWith('/api')
+        ? targetUrl.trim().replace(/\/+$/, '')
+        : (targetUrl.trim().startsWith('http://') || targetUrl.trim().startsWith('https://'))
+          ? `${targetUrl.trim().replace(/\/+$/, '')}/api`
+          : targetUrl.trim().replace(/\/+$/, ''))
+    : getApiBase();
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    // Ping lightweight health endpoint first with fallback to dashboard
+    let res = await fetch(`${base}/health`, { signal: controller.signal }).catch(() => null);
+    if (!res || !res.ok) {
+      res = await fetch(`${base}/dashboard`, { signal: controller.signal });
+    }
+    clearTimeout(timeout);
+    if (res.ok) {
+      return { success: true, message: `Connected to DDT API at ${base}` };
+    }
+    return { success: false, message: `Server responded with HTTP status ${res.status}` };
+  } catch (err: any) {
+    const isTimeout = err.name === 'AbortError';
+    return {
+      success: false,
+      message: isTimeout ? 'Connection timed out (6s)' : (err.message || 'Unable to reach backend server'),
+    };
+  }
+}
+
+// Dynamic API_BASE object that resolves to getApiBase() in string interpolations and primitive coercion
+export const API_BASE = {
+  toString: () => getApiBase(),
+  valueOf: () => getApiBase(),
+  [Symbol.toPrimitive]: () => getApiBase(),
+} as unknown as string;
+
+
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {

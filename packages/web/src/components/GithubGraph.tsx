@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
+import { getApiBase } from '../api';
 
 export type GithubGraphVariant = 'github' | 'graphite' | 'ocean' | 'violet';
 export type GithubGraphAnimation = 'none' | 'wave' | 'scan' | 'cascade';
@@ -100,7 +101,8 @@ export function GithubGraph({
     let isMounted = true;
     setIsLoading(true);
 
-    const endpoint = projectId ? `/api/projects/${projectId}` : '/api/github/contributions';
+    const base = getApiBase();
+    const endpoint = projectId ? `${base}/projects/${projectId}` : `${base}/github/contributions`;
 
     fetch(endpoint)
       .then((res) => (res.ok ? res.json() : null))

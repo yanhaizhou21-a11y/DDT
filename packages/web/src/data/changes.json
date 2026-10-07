@@ -1,0 +1,162 @@
+{
+  "upcoming": [
+    {
+      "id": "chg-001",
+      "title": "Tauri v2 Desktop Native App (.exe)",
+      "description": "Ultra-lightweight Windows desktop bundle with low memory footprint, system tray support, and offline local SQLite database synchronization.",
+      "category": "core",
+      "status": "In Progress",
+      "priority": "high",
+      "milestone": "v1.1.0 Cross-Platform Release",
+      "targetRelease": "v1.1.0",
+      "tags": ["desktop", "tauri", "rust", "low-ram"],
+      "progress": 85
+    },
+    {
+      "id": "chg-002",
+      "title": "Capacitor Android Package (.apk)",
+      "description": "Mobile native container with hardware acceleration, responsive magnifying touch dock, and remote server IP connector.",
+      "category": "mobile",
+      "status": "In Progress",
+      "priority": "high",
+      "milestone": "v1.1.0 Cross-Platform Release",
+      "targetRelease": "v1.1.0",
+      "tags": ["mobile", "android", "capacitor", "gpu-dock"],
+      "progress": 90
+    },
+    {
+      "id": "chg-003",
+      "title": "Skecher GPU-Accelerated Magnifying Dock",
+      "description": "macOS-style magnifying navigation dock with RAF throttling, 0% idle CPU usage, and passive touch event listeners.",
+      "category": "ui",
+      "status": "Completed",
+      "priority": "high",
+      "milestone": "v1.1.0 Cross-Platform Release",
+      "targetRelease": "v1.1.0",
+      "tags": ["dock", "motion", "gpu", "touch"],
+      "progress": 100
+    },
+    {
+      "id": "chg-004",
+      "title": "Dynamic Remote Server IP Connector",
+      "description": "Configurable backend host resolution stored in local storage to allow mobile APK clients to connect directly to desktop server IP address.",
+      "category": "sync",
+      "status": "Completed",
+      "priority": "high",
+      "milestone": "v1.1.0 Cross-Platform Release",
+      "targetRelease": "v1.1.0",
+      "tags": ["network", "api", "mobile-connect"],
+      "progress": 100
+    },
+    {
+      "id": "chg-005",
+      "title": "P2P Local Network Device Sync",
+      "description": "Automatic mDNS discovery between mobile APK and desktop server instances for zero-configuration Wi-Fi sync.",
+      "category": "sync",
+      "status": "Under Review",
+      "priority": "medium",
+      "milestone": "v1.2.0 Sync & Cloud",
+      "targetRelease": "v1.2.0",
+      "tags": ["sync", "mdns", "p2p", "local-first"],
+      "progress": 40
+    },
+    {
+      "id": "chg-006",
+      "title": "Encrypted WebDAV and S3 Remote Backup",
+      "description": "Configurable periodic snapshot backups to personal Nextcloud, WebDAV, or AWS S3 compatible buckets with AES-256 encryption.",
+      "category": "sync",
+      "status": "Planned",
+      "priority": "medium",
+      "milestone": "v1.2.0 Sync & Cloud",
+      "targetRelease": "v1.2.0",
+      "tags": ["backup", "security", "s3", "webdav"],
+      "progress": 15
+    },
+    {
+      "id": "chg-007",
+      "title": "SQLite WAL Engine Zero-Latency Memory Caching",
+      "description": "In-memory query result cache with Write-Ahead Logging dirty-page invalidation to achieve sub-millisecond API response times.",
+      "category": "performance",
+      "status": "Under Review",
+      "priority": "high",
+      "milestone": "v1.2.0 Sync & Cloud",
+      "targetRelease": "v1.2.0",
+      "tags": ["sqlite", "perf", "cache", "wal"],
+      "progress": 65
+    },
+    {
+      "id": "chg-008",
+      "title": "Multi-Factor Habit and Metric Streaks",
+      "description": "Customizable streak rules combining daily commits, journal logs, and calorie/water tracking into unified momentum scores.",
+      "category": "tracking",
+      "status": "Planned",
+      "priority": "low",
+      "milestone": "v1.3.0 Metrics & Insights",
+      "targetRelease": "v1.3.0",
+      "tags": ["habits", "analytics", "streaks"],
+      "progress": 10
+    },
+    {
+      "id": "chg-009",
+      "title": "Custom Theme Builder and CSS Token Exporter",
+      "description": "Interactive visual palette designer allowing custom paper tint, ink contrast, and rule borders with one-click JSON export.",
+      "category": "ui",
+      "status": "Planned",
+      "priority": "medium",
+      "milestone": "v1.3.0 Metrics & Insights",
+      "targetRelease": "v1.3.0",
+      "tags": ["theme", "customization", "css"],
+      "progress": 20
+    }
+  ],
+  "releases": [
+    {
+      "version": "v1.0.0",
+      "title": "Initial Release: Local-First Ledger Dashboard",
+      "date": "2026-10-01",
+      "highlights": [
+        "Full local-first SQLite ledger architecture with zero cloud dependency",
+        "Multi-domain project tracking with GitHub integration and commit graphs",
+        "Daily journal editor, food nutrient ledger, game backlog, and media watchlist",
+        "Automated daily Discord recap dispatch with customizable webhooks",
+        "Field Ledger, Sepia, Kinetic Dark, Cyberpunk, Matcha, and Nordic theme presets"
+      ],
+      "changes": [
+        { "type": "feat", "description": "Interactive GitHub commit branch visualizer and contribution heatmap" },
+        { "type": "feat", "description": "Kanban task board with drag-and-drop sortable lists" },
+        { "type": "feat", "description": "Markdown rich text daily journal with word counter and export" },
+        { "type": "feat", "description": "Food nutrition tracker with meal categories and daily totals" },
+        { "type": "feat", "description": "Game tracker with RAWG metadata search and rating system" },
+        { "type": "feat", "description": "Movie and TV watchlist with TMDB API search integration" },
+        { "type": "perf", "description": "Fast SQLite queries with indexed foreign keys and JSON aggregation" }
+      ]
+    },
+    {
+      "version": "v0.9.0",
+      "title": "Beta: Discord Webhook Recap and Extended Theming",
+      "date": "2026-09-15",
+      "highlights": [
+        "Discord bot recap dispatcher formatting today's work into rich embeds",
+        "Added Sepia and Nordic Frost color schemes with tactile borders",
+        "Database import and export JSON portability tools"
+      ],
+      "changes": [
+        { "type": "feat", "description": "Webhook payload builder with markdown field tables" },
+        { "type": "fix", "description": "Resolved theme flash on page reload by storing active theme in local storage" },
+        { "type": "ui", "description": "Spring-smoothed sidebar collapse and expand transitions" }
+      ]
+    },
+    {
+      "version": "v0.8.0",
+      "title": "Alpha: Core Ledger Architecture",
+      "date": "2026-08-20",
+      "highlights": [
+        "Initial monorepo bootstrap with Node server, SQLite driver, and React Vite frontend"
+      ],
+      "changes": [
+        { "type": "feat", "description": "Core SQLite tables: journal, food, games, watchlist, projects, kanban" },
+        { "type": "ui", "description": "Tailwind paper and ink color system layout" }
+      ]
+    }
+  ]
+}

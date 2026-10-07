@@ -22,9 +22,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  History,
+  PanelsTopLeft,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { DiscordRecapModal, DiscordIcon } from './DiscordRecapModal';
+import { Dock, type DockItem } from './ui/dock';
 import { cn } from '../lib/utils';
 
 // ─── Types & Nav Structure ──────────────────────────────────────────────────
@@ -46,6 +49,7 @@ const NAV_ITEMS: NavItemConfig[] = [
   { id: 'food', label: 'Food Ledger', category: 'tracking', icon: Utensils },
   { id: 'games', label: 'Game Log', category: 'leisure', icon: Gamepad2 },
   { id: 'watchlist', label: 'Watchlist', category: 'leisure', icon: Film },
+  { id: 'changes', label: 'Logs Changes', category: 'system', icon: History, badge: 'Roadmap' },
   { id: 'settings', label: 'Settings', category: 'system', icon: Settings },
 ];
 
@@ -215,14 +219,39 @@ const SidebarItem = React.memo(function SidebarItem({
 interface SidebarProps {
   activeTab: RouteTab;
   onSelectTab: (tab: RouteTab) => void;
+  desktopNavMode?: 'sidebar' | 'dock';
+  onToggleDesktopNavMode?: (mode: 'sidebar' | 'dock') => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  onSelectTab,
+  desktopNavMode,
+  onToggleDesktopNavMode,
+}) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [isDiscordModalOpen, setIsDiscordModalOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHoveredId] = useState<string | null>(null);
   const [hoverRect, setHoverRect] = useState<HoverRect | null>(null);
+
+  const [internalNavMode, setInternalNavMode] = useState<'sidebar' | 'dock'>(() => {
+    if (typeof window !== 'undefined') {
+      return (window.localStorage.getItem('ddt_desktop_nav_mode') as 'sidebar' | 'dock') || 'sidebar';
+    }
+    return 'sidebar';
+  });
+
+  const effectiveNavMode = desktopNavMode ?? internalNavMode;
+
+  const handleNavModeChange = (mode: 'sidebar' | 'dock') => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('ddt_desktop_nav_mode', mode);
+      window.dispatchEvent(new Event('ddt_nav_mode_changed'));
+    }
+    setInternalNavMode(mode);
+    onToggleDesktopNavMode?.(mode);
+  };
 
   const setHovered = useCallback((id: string | null, rect?: HoverRect | null) => {
     setHoveredId(id);
@@ -234,154 +263,230 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
     [hovered, hoverRect, setHovered]
   );
 
+  const dockItems = useMemo<DockItem<RouteTab>[]>(() => {
+    return NAV_ITEMS.map((item) => {
+      const Icon = item.icon;
+      return {
+        id: item.id,
+        label: item.label,
+        icon: <Icon className="w-full h-full" />,
+        badge: item.badge,
+        ariaLabel: item.label,
+        onClick: () => onSelectTab(item.id),
+      };
+    });
+  }, [onSelectTab]);
+
   return (
     <>
-      {/* Desktop Animated Rail Navigation */}
-      <aside
-        className={cn(
-          'hidden md:flex flex-col fixed top-0 left-0 bottom-0 z-40 bg-card border-r border-rule/80 transition-all duration-300 ease-out select-none shadow-subtle',
-          isExpanded ? 'w-56' : 'w-[74px]'
-        )}
-      >
-        {/* Brand / Logo Header */}
-        <div className="h-16 flex items-center justify-between px-3.5 border-b border-rule/70 bg-paper/40">
+      {/* Desktop Animated Rail Navigation (rendered when sidebar mode is active) */}
+      {effectiveNavMode === 'sidebar' && (
+        <aside
+          className={cn(
+            'hidden md:flex flex-col fixed top-0 left-0 bottom-0 z-40 bg-card border-r border-rule/80 transition-all duration-300 ease-out select-none shadow-subtle',
+            isExpanded ? 'w-56' : 'w-[74px]'
+          )}
+        >
+          {/* Brand / Logo Header */}
+          <div className="h-16 flex items-center justify-between px-3.5 border-b border-rule/70 bg-paper/40">
+            <button
+              onClick={() => onSelectTab('home')}
+              aria-label="Daily Dashboard Tracker Home"
+              className="flex items-center gap-3 text-left focus-visible:outline-hidden group"
+            >
+              <div className="bezel-shell p-0.5 rounded-[9px] group-hover:scale-105 transition-transform">
+                <img
+                  src="/logo.png"
+                  alt="DDT Logo"
+                  className="w-8 h-8 rounded-[7px] object-cover shadow-sm border border-rule/60"
+                />
+              </div>
+              {isExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden"
+                >
+                  <span className="font-serif font-bold text-base text-ink tracking-tight">DDT</span>
+                  <span className="block text-[10px] text-ink-soft tracking-wider uppercase font-mono">
+                    Personal Ledger
+                  </span>
+                </motion.div>
+              )}
+            </button>
+
+            {isExpanded && (
+              <button
+                onClick={() => setIsExpanded(false)}
+                className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 active:scale-95 transition-all"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Navigation Items with Gliding Hover Spring */}
+          <HoverContext.Provider value={hoverContextValue}>
+            <div className="flex-1 py-3 px-2 overflow-y-auto no-scrollbar" data-scroll-viewport>
+              <div ref={containerRef} className="relative space-y-0.5">
+                <HoverHighlight />
+                {NAV_ITEMS.map((item) => (
+                  <SidebarItem
+                    key={item.id}
+                    item={item}
+                    isActive={activeTab === item.id}
+                    isExpanded={isExpanded}
+                    onClick={() => onSelectTab(item.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </HoverContext.Provider>
+
+          {/* Footer: Discord Recap, Layout Mode Toggle, Theme Toggle & Expand Button */}
+          <div className="p-2.5 border-t border-rule/70 flex flex-col items-center gap-2 bg-paper/30">
+            <button
+              type="button"
+              onClick={() => setIsDiscordModalOpen(true)}
+              className={cn(
+                'flex items-center gap-2 rounded-lg text-xs font-mono font-semibold transition-all shadow-xs active:scale-95 group',
+                isExpanded
+                  ? 'w-full px-2.5 py-1.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#5865F2] border border-[#5865F2]/30'
+                  : 'p-2 text-[#5865F2] bg-[#5865F2]/10 hover:bg-[#5865F2]/20'
+              )}
+              title="Discord Daily Recap Dispatcher"
+              aria-label="Discord Daily Recap"
+            >
+              <DiscordIcon className="w-4 h-4 text-[#5865F2] group-hover:scale-110 transition-transform shrink-0" />
+              {isExpanded && <span className="truncate">Discord Recap</span>}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleNavModeChange('dock')}
+              className={cn(
+                'flex items-center gap-2 rounded-lg text-xs font-mono transition-all active:scale-95 text-ink-soft hover:text-ink hover:bg-paper',
+                isExpanded ? 'w-full px-2.5 py-1.5 border border-rule/60' : 'p-2'
+              )}
+              title="Switch to Floating Dock on desktop"
+              aria-label="Switch to Floating Dock"
+            >
+              <PanelsTopLeft className="w-4 h-4 shrink-0" />
+              {isExpanded && <span className="truncate">Floating Dock</span>}
+            </button>
+
+            <ThemeToggle
+              compact={!isExpanded}
+              placement="top-start"
+              className={isExpanded ? 'w-full' : ''}
+            />
+
+            {!isExpanded && (
+              <button
+                onClick={() => setIsExpanded(true)}
+                className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper active:scale-95 transition-all"
+                title="Expand sidebar"
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Discord Recap Modal */}
+          <DiscordRecapModal
+            isOpen={isDiscordModalOpen}
+            onClose={() => setIsDiscordModalOpen(false)}
+          />
+        </aside>
+      )}
+
+      {/* Desktop Floating Pill Header (rendered in dock mode) */}
+      {effectiveNavMode === 'dock' && (
+        <header
+          aria-label="Desktop Dock Controls"
+          className="hidden md:flex fixed top-3 left-4 z-40 items-center gap-2 px-3 py-1.5 rounded-xl bg-card/90 border border-rule/80 backdrop-blur-md shadow-md"
+        >
           <button
             onClick={() => onSelectTab('home')}
             aria-label="Daily Dashboard Tracker Home"
-            className="flex items-center gap-3 text-left focus-visible:outline-hidden group"
+            className="flex items-center gap-2 group focus-visible:outline-hidden"
           >
-            <div className="bezel-shell p-0.5 rounded-[9px] group-hover:scale-105 transition-transform">
-              <img
-                src="/logo.png"
-                alt="DDT Logo"
-                className="w-8 h-8 rounded-[7px] object-cover shadow-sm border border-rule/60"
-              />
-            </div>
-            {isExpanded && (
-              <motion.div
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.15 }}
-                className="overflow-hidden"
-              >
-                <span className="font-serif font-bold text-base text-ink tracking-tight">DDT</span>
-                <span className="block text-[10px] text-ink-soft tracking-wider uppercase font-mono">
-                  Personal Ledger
-                </span>
-              </motion.div>
-            )}
+            <img src="/logo.png" alt="DDT Logo" className="w-6 h-6 rounded-md object-cover" />
+            <span className="font-serif font-bold text-sm text-ink tracking-tight">DDT</span>
           </button>
-
-          {isExpanded && (
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper/80 active:scale-95 transition-all"
-              title="Collapse sidebar"
-              aria-label="Collapse sidebar"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Navigation Items with Gliding Hover Spring */}
-        <HoverContext.Provider value={hoverContextValue}>
-          <div className="flex-1 py-3 px-2 overflow-y-auto no-scrollbar" data-scroll-viewport>
-            <div ref={containerRef} className="relative space-y-0.5">
-              <HoverHighlight />
-              {NAV_ITEMS.map((item) => (
-                <SidebarItem
-                  key={item.id}
-                  item={item}
-                  isActive={activeTab === item.id}
-                  isExpanded={isExpanded}
-                  onClick={() => onSelectTab(item.id)}
-                />
-              ))}
-            </div>
-          </div>
-        </HoverContext.Provider>
-
-        {/* Footer: Discord Recap, Theme Toggle & Expand Button */}
-        <div className="p-2.5 border-t border-rule/70 flex flex-col items-center gap-2 bg-paper/30">
+          <div className="w-px h-4 bg-rule/80 my-auto" />
+          <button
+            type="button"
+            onClick={() => handleNavModeChange('sidebar')}
+            className="p-1 text-ink-soft hover:text-ink rounded hover:bg-paper transition-colors"
+            title="Switch back to Sidebar Rail"
+            aria-label="Switch back to Sidebar Rail"
+          >
+            <PanelsTopLeft className="w-3.5 h-3.5" />
+          </button>
           <button
             type="button"
             onClick={() => setIsDiscordModalOpen(true)}
-            className={cn(
-              'flex items-center gap-2 rounded-lg text-xs font-mono font-semibold transition-all shadow-xs active:scale-95 group',
-              isExpanded
-                ? 'w-full px-2.5 py-1.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#5865F2] border border-[#5865F2]/30'
-                : 'p-2 text-[#5865F2] bg-[#5865F2]/10 hover:bg-[#5865F2]/20'
-            )}
-            title="Discord Daily Recap Dispatcher"
+            className="p-1 text-[#5865F2] hover:bg-[#5865F2]/10 rounded transition-colors"
+            title="Discord Daily Recap"
             aria-label="Discord Daily Recap"
           >
-            <DiscordIcon className="w-4 h-4 text-[#5865F2] group-hover:scale-110 transition-transform shrink-0" />
-            {isExpanded && <span className="truncate">Discord Recap</span>}
+            <DiscordIcon className="w-3.5 h-3.5" />
           </button>
+          <ThemeToggle compact placement="bottom-start" />
+        </header>
+      )}
 
-          <ThemeToggle
-            compact={!isExpanded}
-            placement="top-start"
-            className={isExpanded ? 'w-full' : ''}
+      {/* Desktop Floating Skecher Magnifying Dock */}
+      {effectiveNavMode === 'dock' && (
+        <nav
+          aria-label="Desktop Floating Navigation Dock"
+          className="hidden md:flex fixed bottom-5 left-0 right-0 z-40 justify-center pointer-events-none"
+        >
+          <div className="pointer-events-auto">
+            <Dock
+              items={dockItems}
+              baseSize={42}
+              maxSize={68}
+              influence={110}
+              activeId={activeTab}
+              onSelectItem={onSelectTab}
+              className="shadow-2xl border border-rule/90 bg-card/95 backdrop-blur-md px-3 pt-6 pb-2 rounded-2xl"
+            />
+          </div>
+        </nav>
+      )}
+
+      {/* Mobile Skecher Magnifying Dock Navigation (always active on mobile) */}
+      <nav
+        aria-label="Mobile Navigation Dock"
+        className="md:hidden fixed bottom-1.5 left-0 right-0 z-40 px-2 flex justify-center pointer-events-none"
+      >
+        <div className="pointer-events-auto max-w-full">
+          <Dock
+            items={dockItems}
+            baseSize={32}
+            maxSize={48}
+            influence={68}
+            activeId={activeTab}
+            onSelectItem={onSelectTab}
+            className="shadow-2xl border border-rule/90 bg-card/95 backdrop-blur-md px-2 pt-5 pb-1.5 rounded-2xl"
           />
-
-          {!isExpanded && (
-            <button
-              onClick={() => setIsExpanded(true)}
-              className="p-1.5 rounded-md text-ink-soft hover:text-ink hover:bg-paper active:scale-95 transition-all"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
         </div>
+      </nav>
 
-        {/* Discord Recap Modal */}
+      {/* Discord Recap Modal for Dock Mode */}
+      {effectiveNavMode === 'dock' && (
         <DiscordRecapModal
           isOpen={isDiscordModalOpen}
           onClose={() => setIsDiscordModalOpen(false)}
         />
-      </aside>
-
-      {/* Mobile Animated Bottom Navigation Bar */}
-      <nav
-        aria-label="Mobile Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-rule/80 py-1.5 px-2 shadow-lg overflow-x-auto no-scrollbar"
-      >
-        <div className="flex items-center justify-between min-w-full gap-1">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onSelectTab(item.id)}
-                aria-label={item.label}
-                aria-current={isActive ? 'page' : undefined}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-lg min-h-[44px] min-w-[40px] text-xs transition-all relative shrink-0 active:scale-95',
-                  isActive
-                    ? 'text-ledger-blue font-bold bg-ledger-light/50'
-                    : 'text-ink-soft hover:text-ink hover:bg-paper/60'
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-[9px] font-mono tracking-tight">{item.label}</span>
-                {isActive && (
-                  <motion.span
-                    layoutId="mobile-nav-dot"
-                    className="w-1.5 h-1.5 rounded-full bg-ledger-blue absolute bottom-0.5"
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      )}
     </>
   );
 };

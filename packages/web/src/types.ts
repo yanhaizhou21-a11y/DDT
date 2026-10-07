@@ -7,6 +7,7 @@ export type RouteTab =
   | 'journal'
   | 'food'
   | 'games'
+  | 'changes'
   | 'settings';
 
 export type ProjectDomainType = 'software' | 'graphic_design' | 'game_dev' | 'video_photo';
@@ -359,6 +360,43 @@ export interface SendDiscordRecapResponse {
   date: string;
   dispatchedAt: string;
   message: string;
+}
+
+export type ChangeStatus = 'Planned' | 'In Progress' | 'Under Review' | 'Completed';
+export type ChangePriority = 'high' | 'medium' | 'low';
+export type ChangeCategory = 'core' | 'tracking' | 'sync' | 'ui' | 'mobile' | 'performance';
+
+export interface LogChangeItem {
+  id: string;
+  title: string;
+  description: string;
+  category: ChangeCategory;
+  status: ChangeStatus;
+  priority: ChangePriority;
+  milestone: string;
+  targetRelease?: string;
+  tags?: string[];
+  progress?: number;
+  createdAt?: string;
+  completedAt?: string;
+}
+
+export interface ReleaseLogEntry {
+  type: 'feat' | 'fix' | 'perf' | 'ui' | 'refactor';
+  description: string;
+}
+
+export interface ReleaseLog {
+  version: string;
+  title: string;
+  date: string;
+  highlights: string[];
+  changes: ReleaseLogEntry[];
+}
+
+export interface ChangesData {
+  upcoming: LogChangeItem[];
+  releases: ReleaseLog[];
 }
 
 

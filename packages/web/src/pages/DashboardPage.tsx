@@ -309,12 +309,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <AlertTriangle className="w-8 h-8 text-stamp-red mx-auto mb-3" />
         <p className="text-stamp-red font-semibold mb-2">{error || 'Unable to load dashboard'}</p>
         <p className="text-xs text-ink-soft font-mono mb-4">Check server connection and try again.</p>
-        <button
-          onClick={loadData}
-          className="px-4 py-2 bg-ledger-blue text-paper text-xs font-semibold rounded-lg hover:bg-ledger-hover transition-all shadow-subtle"
-        >
-          Retry Loading
-        </button>
+        <div className="flex items-center justify-center gap-2.5">
+          <button
+            onClick={loadData}
+            className="px-4 py-2 bg-ledger-blue text-paper text-xs font-semibold rounded-lg hover:bg-ledger-hover transition-all shadow-subtle active:scale-95"
+          >
+            Retry Loading
+          </button>
+          <button
+            onClick={() => onNavigate('settings')}
+            className="px-4 py-2 bg-paper border border-rule text-ink text-xs font-semibold rounded-lg hover:bg-card transition-all active:scale-95"
+          >
+            Open Settings
+          </button>
+        </div>
       </div>
     );
   }

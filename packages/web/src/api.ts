@@ -27,6 +27,44 @@ import type {
 
 export const STORAGE_KEY_API_BASE = 'ddt_api_base_url';
 
+export function isDesktopOrMobileApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  return (
+    protocol === 'tauri:' ||
+    protocol === 'capacitor:' ||
+    protocol === 'file:' ||
+    hostname === 'tauri.localhost' ||
+    Boolean((window as any).__TAURI_INTERNALS__) ||
+    Boolean((window as any).__TAURI__) ||
+    Boolean((window as any).Capacitor)
+  );
+}
+
+let activeNativeApiBase = 'http://127.0.0.1:3000/api';
+
+if (typeof window !== 'undefined' && isDesktopOrMobileApp()) {
+  const custom = window.localStorage.getItem(STORAGE_KEY_API_BASE);
+  if (!custom) {
+    (async () => {
+      try {
+        const p3000 = await fetch('http://127.0.0.1:3000/api/health').catch(() => null);
+        if (p3000 && p3000.ok) {
+          activeNativeApiBase = 'http://127.0.0.1:3000/api';
+          return;
+        }
+        const p3001 = await fetch('http://127.0.0.1:3001/api/health').catch(() => null);
+        if (p3001 && p3001.ok) {
+          activeNativeApiBase = 'http://127.0.0.1:3001/api';
+        }
+      } catch {
+        // Fall back to default 3000
+      }
+    })();
+  }
+}
+
 export function getApiBase(): string {
   if (typeof window !== 'undefined' && window.localStorage) {
     const stored = window.localStorage.getItem(STORAGE_KEY_API_BASE);
@@ -38,6 +76,13 @@ export function getApiBase(): string {
       return cleaned;
     }
   }
+
+  // Native desktop (.exe) and mobile (.apk) apps serve web assets locally,
+  // so relative '/api' points to the webview origin rather than the Express server.
+  if (isDesktopOrMobileApp()) {
+    return activeNativeApiBase;
+  }
+
   return '/api';
 }
 
@@ -73,13 +118,19 @@ export async function testServerConnection(targetUrl?: string): Promise<{ succes
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
-    // Ping lightweight health endpoint first with fallback to dashboard
     let res = await fetch(`${base}/health`, { signal: controller.signal }).catch(() => null);
     if (!res || !res.ok) {
       res = await fetch(`${base}/dashboard`, { signal: controller.signal });
     }
     clearTimeout(timeout);
     if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return {
+          success: false,
+          message: `Host returned HTML instead of DDT API at ${base}. Make sure the port points to DDT backend.`,
+        };
+      }
       return { success: true, message: `Connected to DDT API at ${base}` };
     }
     return { success: false, message: `Server responded with HTTP status ${res.status}` };
@@ -92,16 +143,26 @@ export async function testServerConnection(targetUrl?: string): Promise<{ succes
   }
 }
 
-// Dynamic API_BASE object that resolves to getApiBase() in string interpolations and primitive coercion
 export const API_BASE = {
   toString: () => getApiBase(),
   valueOf: () => getApiBase(),
   [Symbol.toPrimitive]: () => getApiBase(),
 } as unknown as string;
 
-
-
 async function handleResponse<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      throw new Error(
+        'Host returned web page HTML instead of JSON. Ensure DDT backend is running on http://127.0.0.1:3000.'
+      );
+    }
+    if (!res.ok) {
+      throw new Error(`Request failed with status ${res.status}`);
+    }
+    throw new Error(`Expected JSON response, but received "${contentType || 'unknown'}".`);
+  }
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
     throw new Error(errorBody.error || errorBody.message || `Request failed with status ${res.status}`);

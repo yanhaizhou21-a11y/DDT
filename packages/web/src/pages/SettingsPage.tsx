@@ -16,6 +16,7 @@ import {
 } from '../api';
 import { Header } from '../components/Header';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { AppUpdateSection } from '../components/AppUpdateSection';
 import { cn } from '../lib/utils';
 
 import {
@@ -881,6 +882,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
               )}
             </div>
           </div>
+
+          {/* Application Updates & Packaging Section */}
+          <AppUpdateSection />
         </form>
       )}
     </div>

@@ -79,6 +79,7 @@ if ($HasJava) {
                 New-Item -ItemType Directory -Force -Path $ApkDist | Out-Null
                 if (Test-Path $ApkPath) {
                     Copy-Item -Path $ApkPath -Destination (Join-Path $ApkDist "DDT.apk") -Force
+                    Copy-Item -Path $ApkPath -Destination (Join-Path $ApkDist "app-debug.apk") -Force
                 }
 
                 Write-Host "`n==========================================================" -ForegroundColor Green

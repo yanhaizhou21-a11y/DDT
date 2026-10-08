@@ -64,7 +64,7 @@ jobs:
 
       - name: Build Android APK
         working-directory: android
-        run: gradle assembleDebug --stacktrace
+        run: gradle clean assembleDebug --stacktrace
 
       - name: Stage Named APK Artifacts
         run: |

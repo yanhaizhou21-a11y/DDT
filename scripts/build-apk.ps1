@@ -1,7 +1,8 @@
 # Build Android Package (.apk) for DDT using Capacitor / Android Gradle
 param (
     [switch]$Release,
-    [switch]$SkipWebBuild
+    [switch]$SkipWebBuild,
+    [switch]$Clean
 )
 
 $ErrorActionPreference = "Stop"
@@ -69,6 +70,10 @@ if ($HasJava) {
         
         Push-Location $AndroidDir
         try {
+            if ($Clean) {
+                Write-Host "  -> Running gradle clean..." -ForegroundColor Yellow
+                & $GradleCommand clean
+            }
             & $GradleCommand $TargetTask
             if ($LASTEXITCODE -eq 0) {
                 $BuiltApk = $true

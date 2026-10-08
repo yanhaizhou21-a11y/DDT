@@ -35,6 +35,9 @@ if (-not (Test-Path (Join-Path $DistPath "index.html"))) {
 # Step 2: Sync Web Assets to Android Project Assets Directory
 Write-Host "`n[2/3] Synchronizing assets to Android project..." -ForegroundColor Yellow
 $AndroidAssetsPath = Join-Path $RootDir "android/app/src/main/assets/public"
+if (Test-Path $AndroidAssetsPath) {
+    Remove-Item -Path "$AndroidAssetsPath\*" -Recurse -Force -ErrorAction SilentlyContinue
+}
 New-Item -ItemType Directory -Force -Path $AndroidAssetsPath | Out-Null
 
 Copy-Item -Path "$DistPath\*" -Destination $AndroidAssetsPath -Recurse -Force

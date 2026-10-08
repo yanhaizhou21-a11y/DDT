@@ -5,7 +5,7 @@ export * from './db/index.js';
 export * as schema from './db/schema.js';
 
 const PORT = Number(process.env.PORT) || 3001;
-const HOST = '127.0.0.1';
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Only auto-listen if this is the main module
 if (process.argv[1] && (process.argv[1].endsWith('index.ts') || process.argv[1].endsWith('index.js'))) {

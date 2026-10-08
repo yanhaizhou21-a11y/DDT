@@ -859,6 +859,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
                 </div>
               </div>
 
+              {(serverUrl.includes('127.0.0.1') || serverUrl.includes('localhost')) && (
+                <div className="p-2.5 rounded-[4px] text-[11px] font-mono border bg-amber-500/10 border-amber-500/30 text-amber-600 flex items-start gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    Notice: <code>127.0.0.1</code> and <code>localhost</code> refer to this phone itself. To connect to your computer, enter your PC's local Wi-Fi IP address (e.g. <code>http://192.168.18.47:3000/api</code>).
+                  </span>
+                </div>
+              )}
+
               <p className="text-[11px] text-ink-soft leading-relaxed">
                 When using the Android APK on your phone, set this to your desktop PC's local network IP address (e.g. <code className="bg-paper px-1 py-0.5 rounded text-ink border border-rule font-mono">http://192.168.1.100:3000/api</code>). The web app on desktop uses relative <code className="bg-paper px-1 py-0.5 rounded text-ink border border-rule font-mono">/api</code> by default.
               </p>

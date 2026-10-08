@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { DashboardResponse, RouteTab } from '../types';
-import { fetchDashboard, saveJournalEntry, addFoodEntry, addGameEntry } from '../api';
+import { fetchDashboard, saveJournalEntry, addFoodEntry, addGameEntry, getDataMode, setDataMode, type DataMode } from '../api';
 import { Header } from '../components/Header';
 import { DotLedger } from '../components/DotLedger';
 import { GithubGraph } from '../components/GithubGraph';
@@ -45,6 +45,8 @@ import {
   Layers,
   BarChart3,
   TrendingUp,
+  Smartphone,
+  Server,
 } from 'lucide-react';
 
 
@@ -83,6 +85,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [gameLogging, setGameLogging] = useState(false);
   const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
   const [loadedYearCommits, setLoadedYearCommits] = useState<number | null>(null);
+  const [dataMode, setDataModeState] = useState<DataMode>(() => getDataMode());
 
   const loadData = async () => {
     try {
@@ -100,7 +103,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     loadData();
+    const handleModeChange = () => {
+      setDataModeState(getDataMode());
+      loadData();
+    };
+    window.addEventListener('ddt_data_mode_changed', handleModeChange);
+    return () => {
+      window.removeEventListener('ddt_data_mode_changed', handleModeChange);
+    };
   }, []);
+
+  const handleSwitchToOffline = () => {
+    setDataMode('offline');
+    setDataModeState('offline');
+    setError(null);
+    loadData();
+  };
 
   const todayDate = new Date();
   const dateFormatted = todayDate.toLocaleDateString('en-US', {
@@ -305,20 +323,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   if (error || !data) {
     return (
-      <div className="ledger-card p-8 text-center my-8 max-w-md mx-auto">
+      <div className="ledger-card p-8 text-center my-8 max-w-lg mx-auto">
         <AlertTriangle className="w-8 h-8 text-stamp-red mx-auto mb-3" />
         <p className="text-stamp-red font-semibold mb-2">{error || 'Unable to load dashboard'}</p>
-        <p className="text-xs text-ink-soft font-mono mb-4">Check server connection and try again.</p>
-        <div className="flex items-center justify-center gap-2.5">
+        <p className="text-xs text-ink-soft font-mono mb-5 leading-relaxed">
+          {dataMode === 'remote'
+            ? 'Backend server di laptop tidak dapat dihubungi. Jika laptop mati atau Anda berada di luar rumah, beralih ke Mode Offline untuk menggunakan data lokal HP.'
+            : 'Gagal memuat data lokal. Silakan coba kembali.'}
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+          {dataMode === 'remote' && (
+            <button
+              onClick={handleSwitchToOffline}
+              className="w-full sm:w-auto px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-all shadow-subtle active:scale-95 flex items-center justify-center gap-1.5"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Gunakan Mode Offline (Lokal HP)</span>
+            </button>
+          )}
           <button
             onClick={loadData}
-            className="px-4 py-2 bg-ledger-blue text-paper text-xs font-semibold rounded-lg hover:bg-ledger-hover transition-all shadow-subtle active:scale-95"
+            className="w-full sm:w-auto px-4 py-2.5 bg-ledger-blue text-paper text-xs font-semibold rounded-lg hover:bg-ledger-hover transition-all shadow-subtle active:scale-95"
           >
             Retry Loading
           </button>
           <button
             onClick={() => onNavigate('settings')}
-            className="px-4 py-2 bg-paper border border-rule text-ink text-xs font-semibold rounded-lg hover:bg-card transition-all active:scale-95"
+            className="w-full sm:w-auto px-4 py-2.5 bg-paper border border-rule text-ink text-xs font-semibold rounded-lg hover:bg-card transition-all active:scale-95"
           >
             Open Settings
           </button>
@@ -332,10 +363,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       {/* Top Ledger Header with Live Text Animation & Theme Switcher */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-rule/70">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-mono uppercase tracking-wider text-ink-soft">
               Daily Ledger Overview
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border ml-1 ${
+                dataMode === 'offline'
+                  ? 'bg-amber-500/10 text-amber-600 border-amber-500/25'
+                  : 'bg-ledger-blue/10 text-ledger-blue border-ledger-blue/25'
+              }`}
+            >
+              {dataMode === 'offline' ? (
+                <>
+                  <Smartphone className="w-2.5 h-2.5" />
+                  <span>Offline HP</span>
+                </>
+              ) : (
+                <>
+                  <Server className="w-2.5 h-2.5" />
+                  <span>Remote PC</span>
+                </>
+              )}
             </span>
           </div>
           <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink">

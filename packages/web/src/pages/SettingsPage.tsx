@@ -13,6 +13,11 @@ import {
   resetApiBase,
   testServerConnection,
   getExportUrl,
+  getDataMode,
+  setDataMode,
+  pullDataFromRemoteServer,
+  exportDataJson,
+  type DataMode,
 } from '../api';
 import { Header } from '../components/Header';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -76,6 +81,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
   // Import state
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+
+  // Data storage and sync mode state (Offline vs Remote)
+  const [dataMode, setDataModeState] = useState<DataMode>(() => getDataMode());
+  const [pullingData, setPullingData] = useState(false);
+  const [pullResult, setPullResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Dynamic API server URL state
   const [serverUrl, setServerUrl] = useState<string>(() => {
@@ -221,13 +231,54 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
     }
   };
 
-  const handleExportData = () => {
-    const link = document.createElement('a');
-    link.href = getExportUrl();
-    link.download = `ddt-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDataModeChange = (mode: DataMode) => {
+    setDataMode(mode);
+    setDataModeState(mode);
+    setPullResult(null);
+    loadSettings();
+  };
+
+  const handlePullFromLaptop = async () => {
+    try {
+      setPullingData(true);
+      setPullResult(null);
+      const res = await pullDataFromRemoteServer();
+      setPullResult({ success: true, message: res.message || 'Semua data terbaru berhasil disalin dari laptop ke HP.' });
+      loadSettings();
+    } catch (err: any) {
+      setPullResult({
+        success: false,
+        message: err.message || 'Gagal menarik data dari laptop. Pastikan laptop menyala dan terhubung ke Wi-Fi yang sama.',
+      });
+    } finally {
+      setPullingData(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      if (dataMode === 'offline') {
+        const data = await exportDataJson();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `ddt-offline-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const link = document.createElement('a');
+        link.href = getExportUrl();
+        link.download = `ddt-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err: any) {
+      alert(`Export failed: ${err.message}`);
+    }
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,6 +325,150 @@ export const SettingsPage: React.FC<SettingsPageProps> = () => {
         </div>
       ) : (
         <form onSubmit={handleSaveAll} className="space-y-6">
+          {/* Data Storage & Sync Mode Section */}
+          <div className="ledger-card p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-rule/70">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-paper rounded-md border border-rule text-ledger-blue">
+                  <Database className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-base font-semibold text-ink">
+                    Data Storage & Sync Mode
+                  </h2>
+                  <p className="text-[11px] text-ink-soft">
+                    Pilih apakah aplikasi menyimpan data di HP secara offline atau tersambung ke laptop
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 p-1 bg-paper border border-rule rounded-md text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => handleDataModeChange('offline')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded transition-all font-medium',
+                    dataMode === 'offline'
+                      ? 'bg-card text-amber-600 font-bold shadow-xs border border-rule'
+                      : 'text-ink-soft hover:text-ink'
+                  )}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Mode Offline (Lokal HP)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDataModeChange('remote')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded transition-all font-medium',
+                    dataMode === 'remote'
+                      ? 'bg-card text-ledger-blue font-bold shadow-xs border border-rule'
+                      : 'text-ink-soft hover:text-ink'
+                  )}
+                >
+                  <Server className="w-3.5 h-3.5" />
+                  <span>Mode Remote (Laptop)</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div
+                onClick={() => handleDataModeChange('offline')}
+                className={cn(
+                  'p-3.5 rounded-lg border cursor-pointer transition-all space-y-2',
+                  dataMode === 'offline'
+                    ? 'bg-amber-500/5 border-amber-500/40 ring-1 ring-amber-500/30'
+                    : 'bg-card/50 border-rule hover:border-ink-soft'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-ink flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Mode Offline Mandiri</span>
+                  </span>
+                  {dataMode === 'offline' && (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600">
+                      Aktif
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-ink-soft leading-relaxed">
+                  Data jurnal, kanban, watchlist, makanan, dan game disimpan langsung di memori HP (IndexedDB). Tidak butuh laptop menyala, bisa digunakan saat offline atau di perjalanan.
+                </p>
+              </div>
+
+              <div
+                onClick={() => handleDataModeChange('remote')}
+                className={cn(
+                  'p-3.5 rounded-lg border cursor-pointer transition-all space-y-2',
+                  dataMode === 'remote'
+                    ? 'bg-ledger-blue/5 border-ledger-blue/40 ring-1 ring-ledger-blue/30'
+                    : 'bg-card/50 border-rule hover:border-ink-soft'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-ink flex items-center gap-1.5">
+                    <Server className="w-3.5 h-3.5 text-ledger-blue" />
+                    <span>Mode Remote Server</span>
+                  </span>
+                  {dataMode === 'remote' && (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-ledger-blue/20 text-ledger-blue">
+                      Aktif
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-ink-soft leading-relaxed">
+                  Aplikasi terhubung ke backend server DDT di laptop Anda melalui Wi-Fi lokal. Semua perubahan tersinkronisasi langsung ke database SQLite laptop.
+                </p>
+              </div>
+            </div>
+
+            {/* 1-Click Pull from Laptop */}
+            <div className="pt-3 border-t border-rule/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                  <Download className="w-3.5 h-3.5 text-ledger-blue" />
+                  <span>Tarik Data Terbaru dari Laptop</span>
+                </h3>
+                <p className="text-[11px] text-ink-soft">
+                  Salin seluruh database dari laptop ke penyimpanan offline HP saat tersambung di Wi-Fi yang sama
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePullFromLaptop}
+                disabled={pullingData}
+                className="px-4 py-2 bg-card border border-rule hover:border-ink-soft text-xs font-mono text-ink rounded-[4px] disabled:opacity-50 flex items-center gap-1.5 active:scale-95 transition-all shadow-xs flex-shrink-0"
+              >
+                {pullingData ? (
+                  <RotateCw className="w-3.5 h-3.5 animate-spin text-ledger-blue" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 text-ledger-blue" />
+                )}
+                <span>{pullingData ? 'Menarik Data...' : 'Tarik dari Laptop'}</span>
+              </button>
+            </div>
+
+            {pullResult && (
+              <div
+                className={`p-3 rounded-[4px] text-xs font-mono border flex items-center gap-2 ${
+                  pullResult.success
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                    : 'bg-stamp-light border-stamp-red/40 text-stamp-red'
+                }`}
+              >
+                {pullResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                )}
+                <span>{pullResult.message}</span>
+              </div>
+            )}
+          </div>
+
           {/* Third-party Integrations Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">

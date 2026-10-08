@@ -14,7 +14,6 @@ import type {
   GameStatsResponse,
   GithubContributionsResponse,
   GithubRepo,
-  GithubBranch,
   GithubBranchesResponse,
   Project,
   ProjectWithStats,
@@ -25,7 +24,13 @@ import type {
   SendDiscordRecapResponse,
 } from './types';
 
+import * as offlineStore from './lib/offlineStore';
+import * as directExternalApi from './lib/directExternalApi';
+
+export type DataMode = 'offline' | 'remote';
+
 export const STORAGE_KEY_API_BASE = 'ddt_api_base_url';
+export const STORAGE_KEY_DATA_MODE = 'ddt_data_mode';
 
 export function isDesktopOrMobileApp(): boolean {
   if (typeof window === 'undefined') return false;
@@ -40,6 +45,29 @@ export function isDesktopOrMobileApp(): boolean {
     Boolean((window as any).__TAURI__) ||
     Boolean((window as any).Capacitor)
   );
+}
+
+export function getDataMode(): DataMode {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const saved = window.localStorage.getItem(STORAGE_KEY_DATA_MODE) as DataMode | null;
+    if (saved === 'offline' || saved === 'remote') {
+      return saved;
+    }
+    // Heuristic: If running on mobile (Capacitor) and user hasn't set custom PC host yet, default to offline
+    const isMobile = Boolean((window as any).Capacitor) || window.location.protocol === 'capacitor:';
+    const hasCustomServer = Boolean(window.localStorage.getItem(STORAGE_KEY_API_BASE));
+    if (isMobile && !hasCustomServer) {
+      return 'offline';
+    }
+  }
+  return 'remote';
+}
+
+export function setDataMode(mode: DataMode): void {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem(STORAGE_KEY_DATA_MODE, mode);
+    window.dispatchEvent(new CustomEvent('ddt_data_mode_changed', { detail: mode }));
+  }
 }
 
 let activeNativeApiBase = 'http://127.0.0.1:3000/api';
@@ -106,6 +134,25 @@ export function getExportUrl(): string {
   return `${getApiBase()}/settings/export`;
 }
 
+export async function pullDataFromRemoteServer(): Promise<{ success: boolean; message: string }> {
+  try {
+    const exportUrl = `${getApiBase()}/settings/export`;
+    const res = await fetch(exportUrl);
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status}`);
+    }
+    const payload = await res.json();
+    if (!payload || !payload.data) {
+      throw new Error('Invalid export format received from laptop server.');
+    }
+    return await offlineStore.importOfflineData(payload);
+  } catch (err: any) {
+    throw new Error(
+      `Failed to pull data from laptop: ${err.message || 'Connection failed'}. Ensure DDT backend is running and both devices are connected to the same Wi-Fi network.`
+    );
+  }
+}
+
 export async function testServerConnection(targetUrl?: string): Promise<{ success: boolean; message: string }> {
   const base = targetUrl && targetUrl.trim()
     ? (targetUrl.trim().replace(/\/+$/, '').endsWith('/api')
@@ -170,19 +217,39 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-// Dashboard
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+
 export async function fetchDashboard(): Promise<DashboardResponse> {
-  const res = await fetch(`${API_BASE}/dashboard`);
-  return handleResponse<DashboardResponse>(res);
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineDashboard();
+  }
+  try {
+    const res = await fetch(`${API_BASE}/dashboard`);
+    return await handleResponse<DashboardResponse>(res);
+  } catch (err: any) {
+    // If remote connection fails and we are in remote mode, attempt fallback to offline store
+    console.warn('Remote dashboard fetch failed, attempting offline fallback:', err);
+    throw err;
+  }
 }
 
-// Settings
+// ─── Settings ────────────────────────────────────────────────────────────────
+
 export async function fetchSettings(): Promise<SettingsResponse> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineSettings();
+  }
   const res = await fetch(`${API_BASE}/settings`);
   return handleResponse<SettingsResponse>(res);
 }
 
 export async function saveSettings(settings: Record<string, string>): Promise<{ success: boolean }> {
+  // Always mirror settings locally so API keys remain available in both modes
+  await offlineStore.saveOfflineSettings(settings);
+
+  if (getDataMode() === 'offline') {
+    return { success: true };
+  }
   const res = await fetch(`${API_BASE}/settings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -192,44 +259,86 @@ export async function saveSettings(settings: Record<string, string>): Promise<{ 
 }
 
 export async function testGithubToken(token?: string): Promise<{ valid: boolean; username?: string; name?: string; message?: string }> {
-  const res = await fetch(`${API_BASE}/settings/test-github`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token }),
-  });
-  return res.json();
+  if (getDataMode() === 'offline') {
+    const targetToken = token || (await offlineStore.getOfflineSetting('github_token'));
+    return directExternalApi.directTestGithubToken(targetToken);
+  }
+  try {
+    const res = await fetch(`${API_BASE}/settings/test-github`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return await res.json();
+  } catch {
+    const targetToken = token || (await offlineStore.getOfflineSetting('github_token'));
+    return directExternalApi.directTestGithubToken(targetToken);
+  }
 }
 
 export async function testTmdbKey(apiKey?: string): Promise<{ valid: boolean; message?: string }> {
-  const res = await fetch(`${API_BASE}/settings/test-tmdb`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey }),
-  });
-  return res.json();
+  if (getDataMode() === 'offline') {
+    const key = apiKey || (await offlineStore.getOfflineSetting('tmdb_api_key'));
+    return directExternalApi.directTestTmdbKey(key);
+  }
+  try {
+    const res = await fetch(`${API_BASE}/settings/test-tmdb`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey }),
+    });
+    return await res.json();
+  } catch {
+    const key = apiKey || (await offlineStore.getOfflineSetting('tmdb_api_key'));
+    return directExternalApi.directTestTmdbKey(key);
+  }
 }
 
 export async function testRawgKey(apiKey?: string): Promise<{ valid: boolean; message?: string }> {
-  const res = await fetch(`${API_BASE}/settings/test-rawg`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey }),
-  });
-  return res.json();
+  if (getDataMode() === 'offline') {
+    const key = apiKey || (await offlineStore.getOfflineSetting('rawg_api_key'));
+    return directExternalApi.directTestRawgKey(key);
+  }
+  try {
+    const res = await fetch(`${API_BASE}/settings/test-rawg`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey }),
+    });
+    return await res.json();
+  } catch {
+    const key = apiKey || (await offlineStore.getOfflineSetting('rawg_api_key'));
+    return directExternalApi.directTestRawgKey(key);
+  }
 }
 
 export async function testDiscordWebhook(
   webhookUrl?: string
 ): Promise<{ valid: boolean; name?: string; channelId?: string; message?: string }> {
-  const res = await fetch(`${API_BASE}/settings/test-discord`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ webhookUrl }),
-  });
-  return res.json();
+  if (getDataMode() === 'offline') {
+    const url = webhookUrl || (await offlineStore.getOfflineSetting('discord_webhook_url'));
+    return directExternalApi.directTestDiscordWebhook(url);
+  }
+  try {
+    const res = await fetch(`${API_BASE}/settings/test-discord`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webhookUrl }),
+    });
+    return await res.json();
+  } catch {
+    const url = webhookUrl || (await offlineStore.getOfflineSetting('discord_webhook_url'));
+    return directExternalApi.directTestDiscordWebhook(url);
+  }
 }
 
 export async function importData(payload: any): Promise<{ success: boolean; message: string }> {
+  // In offline mode, import directly into IndexedDB
+  if (getDataMode() === 'offline') {
+    return offlineStore.importOfflineData(payload);
+  }
+  // In remote mode, import to remote server and also sync to local store
+  await offlineStore.importOfflineData(payload).catch(() => {});
   const res = await fetch(`${API_BASE}/settings/import`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -238,43 +347,78 @@ export async function importData(payload: any): Promise<{ success: boolean; mess
   return handleResponse<{ success: boolean; message: string }>(res);
 }
 
-// Journal
+export async function exportDataJson(): Promise<any> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.exportOfflineData();
+  }
+  const res = await fetch(`${API_BASE}/settings/export`);
+  return handleResponse<any>(res);
+}
+
+// ─── Journal ─────────────────────────────────────────────────────────────────
+
 export async function fetchJournalList(): Promise<JournalSummary[]> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineJournalList();
+  }
   const res = await fetch(`${API_BASE}/journal`);
   return handleResponse<JournalSummary[]>(res);
 }
 
 export async function fetchJournalEntry(date: string): Promise<JournalEntry> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineJournalEntry(date);
+  }
   const res = await fetch(`${API_BASE}/journal/${date}`);
   return handleResponse<JournalEntry>(res);
 }
 
 export async function saveJournalEntry(date: string, content: string): Promise<{ success: boolean; wordCount: number }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.saveOfflineJournalEntry(date, content);
+  }
   const res = await fetch(`${API_BASE}/journal/${date}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),
   });
-  return handleResponse<{ success: boolean; wordCount: number }>(res);
+  const data = await handleResponse<{ success: boolean; wordCount: number }>(res);
+  offlineStore.saveOfflineJournalEntry(date, content).catch(() => {});
+  return data;
 }
 
 export async function deleteJournalEntry(date: string): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineJournalEntry(date);
+  }
   const res = await fetch(`${API_BASE}/journal/${date}`, { method: 'DELETE' });
-  return handleResponse<{ success: boolean }>(res);
+  const data = await handleResponse<{ success: boolean }>(res);
+  offlineStore.deleteOfflineJournalEntry(date).catch(() => {});
+  return data;
 }
 
 export async function fetchJournalHeatmap(): Promise<Record<string, { wordCount: number; hasEntry: boolean }>> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineJournalHeatmap();
+  }
   const res = await fetch(`${API_BASE}/journal/stats/heatmap`);
   return handleResponse<Record<string, { wordCount: number; hasEntry: boolean }>>(res);
 }
 
-// Kanban
+// ─── Kanban ──────────────────────────────────────────────────────────────────
+
 export async function fetchKanban(): Promise<{ columns: KanbanColumn[]; cards: KanbanCard[] }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineKanban();
+  }
   const res = await fetch(`${API_BASE}/kanban`);
   return handleResponse<{ columns: KanbanColumn[]; cards: KanbanCard[] }>(res);
 }
 
 export async function createKanbanColumn(name: string): Promise<KanbanColumn> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.createOfflineKanbanColumn(name);
+  }
   const res = await fetch(`${API_BASE}/kanban/columns`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -284,6 +428,9 @@ export async function createKanbanColumn(name: string): Promise<KanbanColumn> {
 }
 
 export async function updateKanbanColumn(id: string, updates: Partial<KanbanColumn>): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.updateOfflineKanbanColumn(id, updates);
+  }
   const res = await fetch(`${API_BASE}/kanban/columns/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -293,11 +440,17 @@ export async function updateKanbanColumn(id: string, updates: Partial<KanbanColu
 }
 
 export async function deleteKanbanColumn(id: string): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineKanbanColumn(id);
+  }
   const res = await fetch(`${API_BASE}/kanban/columns/${id}`, { method: 'DELETE' });
   return handleResponse<{ success: boolean }>(res);
 }
 
 export async function createKanbanCard(card: Partial<KanbanCard>): Promise<KanbanCard> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.createOfflineKanbanCard(card);
+  }
   const res = await fetch(`${API_BASE}/kanban/cards`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -307,6 +460,9 @@ export async function createKanbanCard(card: Partial<KanbanCard>): Promise<Kanba
 }
 
 export async function updateKanbanCard(id: string, updates: Partial<KanbanCard>): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.updateOfflineKanbanCard(id, updates);
+  }
   const res = await fetch(`${API_BASE}/kanban/cards/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -316,6 +472,9 @@ export async function updateKanbanCard(id: string, updates: Partial<KanbanCard>)
 }
 
 export async function reorderKanban(payload: { columns?: KanbanColumn[]; cards?: KanbanCard[] }): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.reorderOfflineKanban(payload);
+  }
   const res = await fetch(`${API_BASE}/kanban/reorder`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -325,22 +484,44 @@ export async function reorderKanban(payload: { columns?: KanbanColumn[]; cards?:
 }
 
 export async function deleteKanbanCard(id: string): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineKanbanCard(id);
+  }
   const res = await fetch(`${API_BASE}/kanban/cards/${id}`, { method: 'DELETE' });
   return handleResponse<{ success: boolean }>(res);
 }
 
-// Watchlist
+// ─── Watchlist ───────────────────────────────────────────────────────────────
+
 export async function fetchWatchlist(): Promise<WatchlistItem[]> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineWatchlist();
+  }
   const res = await fetch(`${API_BASE}/watchlist`);
   return handleResponse<WatchlistItem[]>(res);
 }
 
 export async function searchTmdb(query: string): Promise<TMDBSearchResult[]> {
-  const res = await fetch(`${API_BASE}/watchlist/search?query=${encodeURIComponent(query)}`);
-  return handleResponse<TMDBSearchResult[]>(res);
+  if (getDataMode() === 'offline') {
+    const key = await offlineStore.getOfflineSetting('tmdb_api_key');
+    return directExternalApi.directSearchTmdb(query, key);
+  }
+  try {
+    const res = await fetch(`${API_BASE}/watchlist/search?query=${encodeURIComponent(query)}`);
+    return await handleResponse<TMDBSearchResult[]>(res);
+  } catch (err: any) {
+    const key = await offlineStore.getOfflineSetting('tmdb_api_key');
+    if (key) {
+      return directExternalApi.directSearchTmdb(query, key);
+    }
+    throw err;
+  }
 }
 
 export async function addWatchlistItem(item: Partial<WatchlistItem>): Promise<WatchlistItem> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.addOfflineWatchlistItem(item);
+  }
   const res = await fetch(`${API_BASE}/watchlist`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -350,6 +531,9 @@ export async function addWatchlistItem(item: Partial<WatchlistItem>): Promise<Wa
 }
 
 export async function updateWatchlistItem(id: string, updates: Partial<WatchlistItem>): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.updateOfflineWatchlistItem(id, updates);
+  }
   const res = await fetch(`${API_BASE}/watchlist/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -363,6 +547,9 @@ export async function updateWatchlistEpisodes(
   action: 'increment' | 'decrement' | 'complete' | 'reset' | 'set',
   episode?: number
 ): Promise<{ success: boolean; id: string; currentEpisode: number; status: 'watching' | 'want' | 'watched' }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.updateOfflineWatchlistEpisodes(id, action, episode);
+  }
   const res = await fetch(`${API_BASE}/watchlist/${id}/episodes`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -372,18 +559,28 @@ export async function updateWatchlistEpisodes(
 }
 
 export async function deleteWatchlistItem(id: string): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineWatchlistItem(id);
+  }
   const res = await fetch(`${API_BASE}/watchlist/${id}`, { method: 'DELETE' });
   return handleResponse<{ success: boolean }>(res);
 }
 
-// Food
+// ─── Food ────────────────────────────────────────────────────────────────────
+
 export async function fetchFood(date?: string): Promise<FoodGroupedResponse> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineFood(date);
+  }
   const url = date ? `${API_BASE}/food?date=${encodeURIComponent(date)}` : `${API_BASE}/food`;
   const res = await fetch(url);
   return handleResponse<FoodGroupedResponse>(res);
 }
 
 export async function addFoodEntry(entry: Partial<FoodEntry>): Promise<FoodEntry> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.addOfflineFoodEntry(entry);
+  }
   const res = await fetch(`${API_BASE}/food`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -393,6 +590,9 @@ export async function addFoodEntry(entry: Partial<FoodEntry>): Promise<FoodEntry
 }
 
 export async function updateFoodEntry(id: string, updates: Partial<FoodEntry>): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.updateOfflineFoodEntry(id, updates);
+  }
   const res = await fetch(`${API_BASE}/food/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -402,39 +602,69 @@ export async function updateFoodEntry(id: string, updates: Partial<FoodEntry>): 
 }
 
 export async function deleteFoodEntry(id: string): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineFoodEntry(id);
+  }
   const res = await fetch(`${API_BASE}/food/${id}`, { method: 'DELETE' });
   return handleResponse<{ success: boolean }>(res);
 }
 
 export async function fetchFoodStats(): Promise<Record<string, number>> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineFoodStats();
+  }
   const res = await fetch(`${API_BASE}/food/stats/history`);
   return handleResponse<Record<string, number>>(res);
 }
 
-// Games
+// ─── Games ───────────────────────────────────────────────────────────────────
+
 export async function fetchGames(date?: string): Promise<GameEntry[]> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineGames(date);
+  }
   const url = date ? `${API_BASE}/games?date=${encodeURIComponent(date)}` : `${API_BASE}/games`;
   const res = await fetch(url);
   return handleResponse<GameEntry[]>(res);
 }
 
 export async function fetchGameLibrary(): Promise<import('./types').GameLibraryItem[]> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineGameLibrary();
+  }
   const res = await fetch(`${API_BASE}/games/library`);
   return handleResponse<import('./types').GameLibraryItem[]>(res);
 }
 
-
 export async function fetchGameStats(): Promise<GameStatsResponse> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineGameStats();
+  }
   const res = await fetch(`${API_BASE}/games/stats`);
   return handleResponse<GameStatsResponse>(res);
 }
 
 export async function searchRawg(query: string): Promise<RAWGSearchResult[]> {
-  const res = await fetch(`${API_BASE}/games/search?query=${encodeURIComponent(query)}`);
-  return handleResponse<RAWGSearchResult[]>(res);
+  if (getDataMode() === 'offline') {
+    const key = await offlineStore.getOfflineSetting('rawg_api_key');
+    return directExternalApi.directSearchRawg(query, key);
+  }
+  try {
+    const res = await fetch(`${API_BASE}/games/search?query=${encodeURIComponent(query)}`);
+    return await handleResponse<RAWGSearchResult[]>(res);
+  } catch (err: any) {
+    const key = await offlineStore.getOfflineSetting('rawg_api_key');
+    if (key) {
+      return directExternalApi.directSearchRawg(query, key);
+    }
+    throw err;
+  }
 }
 
 export async function addGameEntry(entry: Partial<GameEntry>): Promise<GameEntry> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.addOfflineGameEntry(entry);
+  }
   const res = await fetch(`${API_BASE}/games`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -444,11 +674,17 @@ export async function addGameEntry(entry: Partial<GameEntry>): Promise<GameEntry
 }
 
 export async function deleteGameEntry(id: string): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineGameEntry(id);
+  }
   const res = await fetch(`${API_BASE}/games/${id}`, { method: 'DELETE' });
   return handleResponse<{ success: boolean }>(res);
 }
 
 export async function updateGameCover(gameName: string, coverUrl: string | null): Promise<{ success: boolean; gameName: string; coverUrl: string | null }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.updateOfflineGameCover(gameName, coverUrl);
+  }
   const res = await fetch(`${API_BASE}/games/cover`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -457,14 +693,14 @@ export async function updateGameCover(gameName: string, coverUrl: string | null)
   return handleResponse<{ success: boolean; gameName: string; coverUrl: string | null }>(res);
 }
 
-// Upload Image (Max 5MB)
+// ─── Image Upload ────────────────────────────────────────────────────────────
+
 export async function uploadImage(file: File): Promise<{ success: boolean; url: string; filename: string; size: number }> {
   const maxBytes = 5 * 1024 * 1024; // 5 MB
   if (file.size > maxBytes) {
     throw new Error(`File size (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds maximum 5 MB limit.`);
   }
 
-  // Convert File to Base64 dataURL
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -472,28 +708,70 @@ export async function uploadImage(file: File): Promise<{ success: boolean; url: 
     reader.readAsDataURL(file);
   });
 
-  const res = await fetch(`${API_BASE}/upload`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: dataUrl, filename: file.name }),
-  });
+  if (getDataMode() === 'offline') {
+    return {
+      success: true,
+      url: dataUrl,
+      filename: file.name,
+      size: file.size,
+    };
+  }
 
-  return handleResponse<{ success: boolean; url: string; filename: string; size: number }>(res);
+  try {
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl, filename: file.name }),
+    });
+    return await handleResponse<{ success: boolean; url: string; filename: string; size: number }>(res);
+  } catch {
+    return {
+      success: true,
+      url: dataUrl,
+      filename: file.name,
+      size: file.size,
+    };
+  }
 }
 
+// ─── GitHub ──────────────────────────────────────────────────────────────────
 
-// GitHub
 export async function fetchGithubContributions(force = false): Promise<GithubContributionsResponse> {
+  if (getDataMode() === 'offline') {
+    const token = await offlineStore.getOfflineSetting('github_token');
+    const username = (await offlineStore.getOfflineSetting('github_username')) || 'user';
+    return {
+      user: { login: username, name: username, avatarUrl: '' },
+      totalContributions: 0,
+      weeks: [],
+      fetchedAt: new Date().toISOString(),
+    };
+  }
   const res = await fetch(`${API_BASE}/github/contributions${force ? '?force=true' : ''}`);
   return handleResponse<GithubContributionsResponse>(res);
 }
 
 export async function fetchGithubRepos(force = false): Promise<{ repos: GithubRepo[]; fetchedAt: string }> {
-  const res = await fetch(`${API_BASE}/github/repos${force ? '?force=true' : ''}`);
-  return handleResponse<{ repos: GithubRepo[]; fetchedAt: string }>(res);
+  if (getDataMode() === 'offline') {
+    const token = await offlineStore.getOfflineSetting('github_token');
+    return directExternalApi.directFetchGithubRepos(token);
+  }
+  try {
+    const res = await fetch(`${API_BASE}/github/repos${force ? '?force=true' : ''}`);
+    return await handleResponse<{ repos: GithubRepo[]; fetchedAt: string }>(res);
+  } catch (err: any) {
+    const token = await offlineStore.getOfflineSetting('github_token');
+    if (token) {
+      return directExternalApi.directFetchGithubRepos(token);
+    }
+    throw err;
+  }
 }
 
 export async function refreshGithubCache(): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return { success: true };
+  }
   const res = await fetch(`${API_BASE}/github/refresh`, { method: 'POST' });
   return handleResponse<{ success: boolean }>(res);
 }
@@ -503,19 +781,38 @@ export async function fetchRepoBranches(
   repo: string,
   force = false
 ): Promise<GithubBranchesResponse> {
-  const res = await fetch(
-    `${API_BASE}/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches${force ? '?force=true' : ''}`
-  );
-  return handleResponse<GithubBranchesResponse>(res);
+  if (getDataMode() === 'offline') {
+    const token = await offlineStore.getOfflineSetting('github_token');
+    return directExternalApi.directFetchRepoBranches(owner, repo, token);
+  }
+  try {
+    const res = await fetch(
+      `${API_BASE}/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches${force ? '?force=true' : ''}`
+    );
+    return await handleResponse<GithubBranchesResponse>(res);
+  } catch (err: any) {
+    const token = await offlineStore.getOfflineSetting('github_token');
+    if (token) {
+      return directExternalApi.directFetchRepoBranches(owner, repo, token);
+    }
+    throw err;
+  }
 }
 
-// Projects
+// ─── Projects ────────────────────────────────────────────────────────────────
+
 export async function fetchProjects(force = false): Promise<ProjectWithStats[]> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineProjects();
+  }
   const res = await fetch(`${API_BASE}/projects${force ? '?force=true' : ''}`);
   return handleResponse<ProjectWithStats[]>(res);
 }
 
 export async function fetchProject(id: string, force = false): Promise<ProjectDetailResponse> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineProject(id);
+  }
   const res = await fetch(`${API_BASE}/projects/${id}${force ? '?force=true' : ''}`);
   return handleResponse<ProjectDetailResponse>(res);
 }
@@ -527,6 +824,9 @@ export async function createProject(project: {
   linkedRepo?: string | null;
   linkedBranch?: string | null;
 }): Promise<Project> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.createOfflineProject(project);
+  }
   const res = await fetch(`${API_BASE}/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -539,6 +839,9 @@ export async function updateProject(
   id: string,
   updates: Partial<Project>
 ): Promise<Project> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.updateOfflineProject(id, updates);
+  }
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -548,6 +851,9 @@ export async function updateProject(
 }
 
 export async function deleteProject(id: string): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineProject(id);
+  }
   const res = await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' });
   return handleResponse<{ success: boolean }>(res);
 }
@@ -558,6 +864,9 @@ export async function logProjectActivity(
   date?: string,
   note?: string
 ): Promise<{ success: boolean; id: string; date: string; count: number; note?: string | null; isNew: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.logOfflineProjectActivity(id, count, date, note);
+  }
   const res = await fetch(`${API_BASE}/projects/${id}/activity`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -570,21 +879,35 @@ export async function deleteProjectActivity(
   projectId: string,
   activityId: string
 ): Promise<{ success: boolean }> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.deleteOfflineProjectActivity(projectId, activityId);
+  }
   const res = await fetch(`${API_BASE}/projects/${projectId}/activity/${activityId}`, {
     method: 'DELETE',
   });
   return handleResponse<{ success: boolean }>(res);
 }
 
-// ─── Daily Activity Recap & Discord Webhook ─────────────────────────────────
+// ─── Daily Recap & Discord Webhook ───────────────────────────────────────────
 
 export async function fetchDailyRecap(date?: string): Promise<DailyRecapResponse> {
+  if (getDataMode() === 'offline') {
+    return offlineStore.getOfflineDailyRecap(date);
+  }
   const url = date ? `${API_BASE}/recap?date=${encodeURIComponent(date)}` : `${API_BASE}/recap`;
   const res = await fetch(url);
   return handleResponse<DailyRecapResponse>(res);
 }
 
 export async function sendDiscordRecap(params: SendDiscordRecapParams): Promise<SendDiscordRecapResponse> {
+  if (getDataMode() === 'offline') {
+    const recap = await offlineStore.getOfflineDailyRecap(params.date);
+    const webhookUrl = params.webhookUrl || recap.savedWebhookUrl;
+    if (!webhookUrl) {
+      throw new Error('No Discord Webhook URL provided or configured.');
+    }
+    return directExternalApi.directSendDiscordRecap({ ...params, webhookUrl }, recap.discordPayload);
+  }
   const res = await fetch(`${API_BASE}/recap/discord`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -594,6 +917,13 @@ export async function sendDiscordRecap(params: SendDiscordRecapParams): Promise<
 }
 
 export async function fetchDiscordWebhookSettings(): Promise<{ hasWebhook: boolean; maskedUrl: string | null }> {
+  if (getDataMode() === 'offline') {
+    const url = await offlineStore.getOfflineSetting('discord_webhook_url');
+    return {
+      hasWebhook: Boolean(url?.trim()),
+      maskedUrl: url ? '••••••••' : null,
+    };
+  }
   const res = await fetch(`${API_BASE}/recap/settings`);
   return handleResponse<{ hasWebhook: boolean; maskedUrl: string | null }>(res);
 }
@@ -601,6 +931,14 @@ export async function fetchDiscordWebhookSettings(): Promise<{ hasWebhook: boole
 export async function saveDiscordWebhookSettings(
   webhookUrl: string
 ): Promise<{ success: boolean; hasWebhook: boolean; maskedUrl: string | null }> {
+  await offlineStore.saveOfflineSettings({ discord_webhook_url: webhookUrl });
+  if (getDataMode() === 'offline') {
+    return {
+      success: true,
+      hasWebhook: Boolean(webhookUrl.trim()),
+      maskedUrl: webhookUrl.trim() ? '••••••••' : null,
+    };
+  }
   const res = await fetch(`${API_BASE}/recap/settings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -608,4 +946,3 @@ export async function saveDiscordWebhookSettings(
   });
   return handleResponse<{ success: boolean; hasWebhook: boolean; maskedUrl: string | null }>(res);
 }
-

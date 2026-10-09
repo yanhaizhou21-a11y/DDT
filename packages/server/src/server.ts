@@ -57,12 +57,6 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
   app.use('/api/projects', createProjectsRouter(db));
   app.use('/api/recap', createRecapRouter(db));
 
-  // Health check
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString() });
-  });
-
-
   // Serve static web app in production if web/dist exists
   const possibleStaticPaths = [
     path.resolve(__dirname, '../../web/dist'),
@@ -70,11 +64,38 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
     path.resolve(__dirname, '../../packages/web/dist'),
     path.resolve(__dirname, '../node_modules/@ddt/web/dist'),
     path.resolve(process.cwd(), 'packages/web/dist'),
+    path.resolve(process.cwd(), '../web/dist'),
     path.resolve(process.cwd(), 'node_modules/@ddt/web/dist'),
     path.resolve(process.cwd(), 'web/dist'),
   ];
 
   let staticPath = possibleStaticPaths.find((p) => fs.existsSync(p));
+
+  // Root API info & Health check
+  const handleApiStatus = (req: express.Request, res: express.Response) => {
+    // If a browser navigates directly to /api, redirect to the web dashboard
+    const isBrowserNavigation =
+      req.headers['sec-fetch-dest'] === 'document' ||
+      (Boolean(req.headers.accept?.includes('text/html')) && !req.headers.accept?.includes('application/json'));
+
+    if (isBrowserNavigation && staticPath) {
+      return res.redirect('/');
+    }
+
+    res.json({
+      status: 'ok',
+      service: 'DDT API Server',
+      version: '1.0.0',
+      time: new Date().toISOString(),
+    });
+  };
+
+  app.get('/api', handleApiStatus);
+  app.get('/api/', handleApiStatus);
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
   if (staticPath) {
     app.use(
       express.static(staticPath, {
@@ -98,6 +119,11 @@ export function createServer(options: { dbPath?: string } = {}): ServerInstance 
       res.sendFile(path.join(staticPath!, 'index.html'));
     });
   }
+
+  // JSON 404 fallback for unknown /api/* endpoints
+  app.all('/api/*', (_req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
+  });
 
   return { app, db, client, dbPath };
 }

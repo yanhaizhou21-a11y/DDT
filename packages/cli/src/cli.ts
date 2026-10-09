@@ -56,10 +56,11 @@ program
         console.log('   DDT - Daily Dashboard Tracker');
         console.log('   Personal Ledger Dashboard');
         console.log('========================================');
-        console.log(`\n  Dashboard:  ${localUrl}`);
-        console.log(`  LAN (Phone): ${lanUrl}/api`);
-        console.log(`  Database:   ${dbPath}`);
-        console.log('  Mode:       Local Single-User');
+        console.log(`\n  Dashboard (Local):   ${localUrl}`);
+        console.log(`  Dashboard (LAN):     ${lanUrl}`);
+        console.log(`  API Base (Mobile):   ${lanUrl}/api`);
+        console.log(`  Database:            ${dbPath}`);
+        console.log('  Mode:                Local Single-User');
         console.log('\nPress Ctrl+C to stop.\n');
 
         if (options.open !== false) {

@@ -45,21 +45,21 @@ async function testApiRoot() {
       },
     });
     assert.strictEqual(apiRes.status, 200, 'API request to /api should return 200 OK');
-    const apiJson = await apiRes.json();
+    const apiJson = (await apiRes.json()) as any;
     assert.strictEqual(apiJson.status, 'ok', 'API response status should be ok');
     console.log('  PASS: API request to /api returns status ok');
 
     // 4. API health check
     const healthRes = await fetch(`${baseUrl}/api/health`);
     assert.strictEqual(healthRes.status, 200);
-    const healthJson = await healthRes.json();
+    const healthJson = (await healthRes.json()) as any;
     assert.strictEqual(healthJson.status, 'ok');
     console.log('  PASS: /api/health returns status ok');
 
     // 5. Unknown /api endpoint returns JSON 404 instead of HTML error
     const notFoundRes = await fetch(`${baseUrl}/api/non-existent-route`);
     assert.strictEqual(notFoundRes.status, 404);
-    const notFoundJson = await notFoundRes.json();
+    const notFoundJson = (await notFoundRes.json()) as any;
     assert.strictEqual(notFoundJson.error, 'API endpoint not found');
     console.log('  PASS: Unknown /api/* route returns clean JSON 404');
 

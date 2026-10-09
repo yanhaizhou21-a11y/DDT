@@ -51,7 +51,11 @@ export function createProjectsRouter(db: AppDatabase): Router {
       const cached = await db.select().from(githubCache).where(eq(githubCache.key, cacheKey)).get();
       if (cached && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL) {
         try {
-          return JSON.parse(cached.payload);
+          const parsed = JSON.parse(cached.payload);
+          // If cached data was previously capped at exactly 100, bypass cache to fetch full uncapped history
+          if (parsed.totalCommits !== 100) {
+            return parsed;
+          }
         } catch {
           // Fall through
         }
@@ -76,39 +80,66 @@ export function createProjectsRouter(db: AppDatabase): Router {
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
       const sinceIso = oneYearAgo.toISOString();
 
-      // Fetch recent commits up to 100 on the selected branch (if specified)
+      // Fetch all commits on the selected branch (if specified) across all pages (unlimited)
       const [owner, repo] = cleanRepo.split('/');
       const branchParam = cleanBranch ? `&sha=${encodeURIComponent(cleanBranch)}` : '';
-      const res = await fetch(
-        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?since=${sinceIso}&per_page=100${branchParam}`,
-        { headers }
-      );
 
-      if (res.ok) {
-        const commits = (await res.json()) as any[];
-        if (Array.isArray(commits)) {
-          totalCommits = commits.length;
-          commits.forEach((c, idx) => {
-            const dateStr = c.commit?.author?.date || c.commit?.committer?.date;
-            if (dateStr) {
-              const date = dateStr.slice(0, 10);
-              historyMap[date] = (historyMap[date] || 0) + 1;
+      let page = 1;
+      let hasMore = true;
+      // ponytail: page <= 500 allows up to 50,000 commits in 12 months, avoiding infinite loop if Link header is malformed
+      const MAX_PAGES = 500;
+
+      while (hasMore && page <= MAX_PAGES) {
+        const res = await fetch(
+          `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?since=${sinceIso}&per_page=100&page=${page}${branchParam}`,
+          { headers }
+        );
+
+        if (!res.ok) {
+          if (page === 1) {
+            if (res.status === 404) {
+              return { historyMap: {}, totalCommits: 0, lastCommit: null, branch: cleanBranch || undefined, error: `Repository "${cleanRepo}" or branch "${cleanBranch}" not found or private.` };
+            } else if (res.status === 401 || res.status === 403) {
+              return { historyMap: {}, totalCommits: 0, lastCommit: null, branch: cleanBranch || undefined, error: 'GitHub API rate limit or token authorization error.' };
             }
-            if (idx === 0) {
-              lastCommit = {
-                sha: c.sha?.slice(0, 7),
-                message: c.commit?.message || '',
-                author: c.commit?.author?.name || c.author?.login || 'Unknown',
-                date: dateStr,
-                htmlUrl: c.html_url,
-              };
-            }
-          });
+          }
+          break;
         }
-      } else if (res.status === 404) {
-        return { historyMap: {}, totalCommits: 0, lastCommit: null, branch: cleanBranch || undefined, error: `Repository "${cleanRepo}" or branch "${cleanBranch}" not found or private.` };
-      } else if (res.status === 401 || res.status === 403) {
-        return { historyMap: {}, totalCommits: 0, lastCommit: null, branch: cleanBranch || undefined, error: 'GitHub API rate limit or token authorization error.' };
+
+        const commits = (await res.json()) as any[];
+        if (!Array.isArray(commits) || commits.length === 0) {
+          break;
+        }
+
+        totalCommits += commits.length;
+
+        commits.forEach((c) => {
+          const dateStr = c.commit?.author?.date || c.commit?.committer?.date;
+          if (dateStr) {
+            const date = dateStr.slice(0, 10);
+            historyMap[date] = (historyMap[date] || 0) + 1;
+          }
+          if (!lastCommit) {
+            lastCommit = {
+              sha: c.sha?.slice(0, 7),
+              message: c.commit?.message || '',
+              author: c.commit?.author?.name || c.author?.login || 'Unknown',
+              date: dateStr,
+              htmlUrl: c.html_url,
+            };
+          }
+        });
+
+        const linkHeader = res.headers.get('link');
+        if (linkHeader) {
+          hasMore = linkHeader.includes('rel="next"');
+        } else {
+          hasMore = commits.length === 100;
+        }
+
+        if (hasMore) {
+          page++;
+        }
       }
 
       const result = { historyMap, totalCommits, lastCommit, branch: cleanBranch || 'default' };
